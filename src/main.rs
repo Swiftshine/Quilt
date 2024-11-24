@@ -1,3 +1,6 @@
-fn main() {
-    println!("Hello, world!");
+mod quilt;
+use quilt::QuiltApp;
+
+fn main() -> Result<(), eframe::Error> {
+    QuiltApp::run()
 }
