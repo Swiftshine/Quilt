@@ -21,70 +21,70 @@ pub struct Wall {
 
 #[derive(Default)]
 pub struct LabeledWall {
-    start: Point2D,
-    end: Point2D,
-    unk_10: Point2D,
-    collision_type: String,
-    label: String
+    pub start: Point2D,
+    pub end: Point2D,
+    pub unk_10: Point2D,
+    pub collision_type: String,
+    pub label: String
 }
 
 #[derive(Default)]
 pub struct Params {
-    int_params: [i32; 3],
-    float_params: [f32; 3],
-    string_params: [String; 3],
+    pub int_params: [i32; 3],
+    pub float_params: [f32; 3],
+    pub string_params: [String; 3],
 }
 
 #[derive(Default)]
 /// Many fields are unknown.
 pub struct CommonGimmickParams {
-    int_params_1: [i32; 3],
-    float_params_1: [f32; 3],
-    int_params_2: [i32; 4],
-    float_params_2: [f32; 3],
-    float_params_3: [f32; 3],
-    string_params: [String; 3]
+    pub int_params_1: [i32; 3],
+    pub float_params_1: [f32; 3],
+    pub int_params_2: [i32; 4],
+    pub float_params_2: [f32; 3],
+    pub float_params_3: [f32; 3],
+    pub string_params: [String; 3]
 }
 
 #[derive(Default)]
 pub struct CommonGimmick {
-    name: String,
-    position: Point3D,
-    params: CommonGimmickParams
+    pub name: String,
+    pub position: Point3D,
+    pub params: CommonGimmickParams
 }
 
 #[derive(Default)]
 pub struct Gimmick {
-    name: String,
-    unk_30: [u8; 0x10],
-    position: Point3D,
-    params: Params
+    pub name: String,
+    pub unk_30: [u8; 0x10],
+    pub position: Point3D,
+    pub params: Params
 }
 
 #[derive(Default)]
 pub struct Path {
-    name: String,
-    path_type: String,
-    params: Params,
-    points: Vec<Point2D>
+    pub name: String,
+    pub path_type: String,
+    pub params: Params,
+    pub points: Vec<Point2D>
 }
 
 #[derive(Default)]
 pub struct Zone {
-    name: String,
-    unk_20: [u8; 0x20],
-    params: Params,
-    bounds_min: Point2D,
-    bounds_max: Point2D
+    pub name: String,
+    pub unk_20: [u8; 0x20],
+    pub params: Params,
+    pub bounds_min: Point2D,
+    pub bounds_max: Point2D
 }
 
 
 #[derive(Default)]
 pub struct CourseInfo {
-    name: String,
-    unk_20: [u8; 0x20],
-    params: Params,
-    position: Point3D
+    pub name: String,
+    pub unk_20: [u8; 0x20],
+    pub params: Params,
+    pub position: Point3D
 }
 
 #[derive(Default)]
