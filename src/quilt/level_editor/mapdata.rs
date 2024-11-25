@@ -13,10 +13,10 @@ const BASE_PATH_SIZE: usize = 0x11C;
 
 #[derive(Default)]
 pub struct Wall {
-    start: Point2D,
-    end: Point2D,
-    unk_10: Point2D,
-    collision_type: String
+    pub start: Point2D,
+    pub end: Point2D,
+    pub unk_10: Point2D,
+    pub collision_type: String
 }
 
 #[derive(Default)]
