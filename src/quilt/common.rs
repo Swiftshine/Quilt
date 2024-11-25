@@ -122,7 +122,7 @@ impl Default for Camera {
 
 impl Camera {
     pub fn update(&mut self, ctx: &egui::Context, canvas_response: &egui::Response) {
-        let zoom_sensitivity = 0.05;
+        let zoom_sensitivity = 0.1;
         let zoom_min = 0.5;
         let zoom_max = 15.0;
     
