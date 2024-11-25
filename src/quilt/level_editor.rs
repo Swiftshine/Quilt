@@ -91,6 +91,7 @@ impl LevelEditor {
         // they can't be edited at the same time,
         // for the sake of ease of use.
         self.selected_pair_index = enbin_index;
+        self.selected_gimmick_indices.clear();
     }
 
     fn update_level_data(&mut self) {
