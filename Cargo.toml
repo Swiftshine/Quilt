@@ -10,4 +10,6 @@ eframe = "0.29.1"
 egui = "0.29.1"
 encoding_rs = "0.8.35"
 gfarch = "0.2.1"
+reqwest = { version = "0.12.9", features = ["blocking"] }
 rfd = "0.15.1"
+serde_json = { version = "1.0.133", features = ["preserve_order"] }

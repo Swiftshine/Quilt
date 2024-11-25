@@ -16,7 +16,7 @@ impl QuiltApp {
     fn new() -> Self {
         Self {
             current_view: QuiltView::Home,
-            level_editor: LevelEditor::default()
+            level_editor: LevelEditor::new()
         }
     }
 

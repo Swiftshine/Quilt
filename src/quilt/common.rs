@@ -121,18 +121,22 @@ impl Default for Camera {
 }
 
 impl Camera {
-    pub fn update(&mut self, ctx: &egui::Context) {
+    pub fn update(&mut self, ctx: &egui::Context, canvas_response: &egui::Response) {
         let zoom_sensitivity = 0.05;
         let zoom_min = 0.5;
         let zoom_max = 15.0;
-
-        let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
-        if scroll_delta != 0.0 {
-            let zoom_change = zoom_sensitivity * scroll_delta.signum(); // adjust zoom sensitivity
-            self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max); // prevent extreme zoom levels
+    
+        // zoom handling
+        if canvas_response.hovered() {
+            let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
+            if scroll_delta != 0.0 {
+                let zoom_change = zoom_sensitivity * scroll_delta.signum();
+                self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max);
+            }
         }
-
-        if ctx.input(|i| i.key_pressed(egui::Key::R)) {
+    
+        // pan reset handling
+        if canvas_response.dragged() && ctx.input(|i| i.key_pressed(egui::Key::R)) {
             self.reset();
         }
     }
