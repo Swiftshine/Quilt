@@ -58,7 +58,9 @@ pub struct Gimmick {
     pub name: String,
     pub unk_30: [u8; 0x10],
     pub position: Point3D,
-    pub params: Params
+    pub params: Params,
+
+    pub is_selected: bool
 }
 
 #[derive(Default)]

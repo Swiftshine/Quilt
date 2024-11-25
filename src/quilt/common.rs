@@ -1,4 +1,5 @@
 use byteorder::{ByteOrder, BigEndian};
+use egui::Vec2;
 use encoding_rs::SHIFT_JIS;
 
 pub fn shift_jis_to_utf8(raw: &[u8]) -> String {
@@ -26,6 +27,14 @@ impl Point2D {
 
         point
     }
+
+    // pub fn to_pos2(&self) -> Pos2 {
+    //     Pos2 { x: self.x, y: self.y }
+    // }
+
+    pub fn to_vec2(&self) -> Vec2 {
+        Vec2 { x: self.x, y: self.y }
+    }
 }
 
 #[derive(Default)]
@@ -44,6 +53,13 @@ impl Point3D {
         point.z = BigEndian::read_f32(&input[8..0xC]);
 
         point
+    }
+
+    pub fn to_point_2d(&self) -> Point2D {
+        Point2D {
+            x: self.x,
+            y: self.y
+        }
     }
 }
 #[derive(Default)]
@@ -87,5 +103,61 @@ impl NameMap {
             self.indices.push(i);
             self.names.push(shift_jis_to_utf8(&name));
         }
+    }
+}
+
+pub struct Camera {
+    pub position: egui::Vec2,
+    pub zoom: f32
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            position: egui::Vec2::ZERO,
+            zoom: 1.0
+        }
+    }
+}
+
+impl Camera {
+    pub fn update(&mut self, ctx: &egui::Context) {
+        let zoom_sensitivity = 0.05;
+        let zoom_min = 0.5;
+        let zoom_max = 15.0;
+
+        let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
+        if scroll_delta != 0.0 {
+            let zoom_change = zoom_sensitivity * scroll_delta.signum(); // adjust zoom sensitivity
+            self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max); // prevent extreme zoom levels
+        }
+
+        if ctx.input(|i| i.key_pressed(egui::Key::R)) {
+            self.reset();
+        }
+    }
+
+    pub fn pan(&mut self, delta: egui::Vec2) {
+        self.position -= delta;
+    }
+
+    pub fn to_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
+        egui::Vec2 {
+            x: (pos.x - self.position.x) * self.zoom,
+            y: (-pos.y - self.position.y) * self.zoom
+        }
+
+    }
+
+    // pub fn from_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
+    //     egui::Vec2 {
+    //         x: (pos.x / self.zoom) + self.position.x,
+    //         y: (-pos.y / self.zoom) + self.position.y
+    //     }
+    // }
+
+    pub fn reset(&mut self) {
+        self.position = Default::default();
+        self.zoom = 1.0;
     }
 }
