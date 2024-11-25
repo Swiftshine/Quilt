@@ -21,7 +21,7 @@ pub struct LevelEditor {
     selected_pair_index: usize,
     current_mapdata: Mapdata,
     // current_endata: Endata,
-    camera: Camera
+    camera: Camera,
 }
 
 impl LevelEditor {
@@ -174,6 +174,16 @@ impl LevelEditor {
 
                 painter.rect_filled(square, 0.0, color);
 
+                if resp.hovered() {
+                    painter.text(
+                        screen_pos.to_pos2() + egui::Vec2::new(10.0, 10.0),
+                        egui::Align2::LEFT_CENTER,
+                        &gmk.name,
+                        egui::FontId::default(),
+                        egui::Color32::WHITE
+                    );
+                }
+                
                 if resp.clicked() {
                     gmk.is_selected = true;
                 } else if resp.dragged() {
@@ -183,8 +193,12 @@ impl LevelEditor {
 
                     gmk.position.x += world_delta.x;
                     gmk.position.y -= world_delta.y;
-                } else if resp.clicked_elsewhere() {
-                    gmk.is_selected = false;
+                }
+
+                if ui.ctx().input(|i| i.pointer.button_down(egui::PointerButton::Secondary)) {
+                    if !square.contains(ui.input(|i| i.pointer.latest_pos().unwrap_or_default())) {
+                        gmk.is_selected = false;
+                    }
                 }
             }
             /* end rendering */
@@ -194,6 +208,30 @@ impl LevelEditor {
             if response.dragged() {
                 let delta = response.drag_delta();
                 self.camera.pan(delta / self.camera.zoom);
+            }
+
+            // handle attributes
+            if let Some(gmk) = self.current_mapdata.gimmicks.iter_mut()
+                .find(|g| g.is_selected)
+            {
+                egui::Area::new(egui::Id::from("le_attribute_editor"))
+                
+                .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+                .show(ui.ctx(), |ui|{
+                    egui::Frame::popup(ui.style())
+                    .inner_margin(egui::Vec2::splat(8.0))
+                    .show(ui, |ui|{
+                        ui.label("Edit gimmick attributes");
+                        ui.horizontal(|ui|{
+                            ui.label("Name");
+                            ui.add(
+                                egui::TextEdit::singleline(
+                                    &mut gmk.name
+                                ).char_limit(0x30)
+                            );
+                        }); 
+                    });
+                });
             }
         });
     }
