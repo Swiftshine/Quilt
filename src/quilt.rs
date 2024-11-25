@@ -1,5 +1,6 @@
 mod views;
 mod level_editor;
+mod common;
 
 use eframe::{egui, NativeOptions};
 use views::QuiltView;

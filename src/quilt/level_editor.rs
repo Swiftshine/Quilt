@@ -1,9 +1,14 @@
-use std::{fs, path::PathBuf};
+mod mapdata;
+mod endata;
 
+use std::{fs, path::PathBuf};
 use egui::{self, Button};
 use gfarch::gfarch;
+use mapdata::Mapdata;
+// use endata::Endata;
 use rfd::FileDialog;
 use anyhow::Result;
+
 
 #[derive(Default)]
 pub struct LevelEditor {
@@ -12,6 +17,8 @@ pub struct LevelEditor {
     archive_contents: Vec<gfarch::FileContents>,
     selected_file_index: usize,
     selected_pair_index: usize,
+    current_mapdata: Mapdata,
+    // current_endata: Endata,
 }
 
 impl LevelEditor {
@@ -29,17 +36,30 @@ impl LevelEditor {
         self.selected_pair_index = enbin_index;
     }
 
+    fn update_level_data(&mut self) {
+        println!("endata not implemented yet");
+        // self.current_endata = Endata::from_data(
+        //     &self.archive_contents[self.selected_pair_index].contents
+        // );
+
+        self.current_mapdata = Mapdata::from_data(
+            &self.archive_contents[self.selected_pair_index + 1].contents
+        );
+    }
+
     fn open_file(&mut self) -> Result<()> {
-        
         if let Some(path) = FileDialog::new()
         .add_filter("Level archive", &["gfa"])
         .pick_file() {
             self.file_path = path;
             let data = fs::read(&self.file_path)?;
             self.archive_contents = gfarch::extract(&data)?;
-            self.file_open = true;
             self.selected_file_index = 0;
             self.set_pair(0);
+
+            self.update_level_data();
+
+            self.file_open = true;
         }
 
         Ok(())
@@ -48,7 +68,6 @@ impl LevelEditor {
     fn save_file(&mut self, _save_as: bool) {
         todo!()
     }
-
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
         egui::TopBottomPanel::top("le_top_panel")
