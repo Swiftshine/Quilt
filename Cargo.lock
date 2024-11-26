@@ -2656,6 +2656,7 @@ dependencies = [
  "egui",
  "encoding_rs",
  "gfarch",
+ "hex",
  "reqwest",
  "rfd",
  "serde_json",

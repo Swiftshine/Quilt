@@ -11,7 +11,7 @@ use rfd::FileDialog;
 use anyhow::{bail, Result};
 const SQUARE_SIZE: f32 = 2.0;
 use super::common::Camera;
-use serde_json::{self, Value};
+use serde_json;
 
 const GIMMICK_COLOR: Color32 = egui::Color32::from_rgb(
     0xF8, 0x33, 0x3C
@@ -21,9 +21,9 @@ const PATH_COLOR: Color32 = egui::Color32::from_rgb(
     0x44, 0xAF, 0x69
 );
 
-// const COMMON_GIMMICK_COLOR: Color32 = egui::Color32::from_rgb(
-//     0xFC, 0xAB, 0x10
-// );
+const COMMON_GIMMICK_COLOR: Color32 = egui::Color32::from_rgb(
+    0xFC, 0xAB, 0x10
+);
 
 const ZONE_COLOR: Color32 = egui::Color32::from_rgb(
     0x2B, 0x9E, 0xB3
@@ -48,6 +48,19 @@ enum EditMode {
     // CourseInfo,
 }
 
+#[derive(PartialEq)]
+// These are indices
+enum SelectType {
+    // Walls,
+    // LabeledWalls,
+    CommonGimmick(usize), 
+    Gimmick(usize),
+    // Zones,
+    // CourseInfo,
+}
+
+
+
 impl Default for EditMode {
     fn default() -> Self {
         EditMode::View
@@ -66,21 +79,23 @@ pub struct LevelEditor {
     display_none: bool,
     // current_endata: Endata,
     camera: Camera,
-    selected_gimmick_indices: Vec<usize>,
-    object_data_contents: String,
+    selected_object_indices: Vec<SelectType>,
+    object_data_json: serde_json::Value,
+    is_data_valid: bool,
 }
 
 impl LevelEditor {
     pub fn new() -> Self {
         Self {
-            object_data_contents: if let Ok(b) = fs::exists("res/objectdata.json") {
+            object_data_json: if let Ok(b) = fs::exists("res/objectdata.json") {
                 if b {
-                    fs::read_to_string("res/objectdata.json").unwrap_or_else(|_| String::new())
+                    let contents = fs::read_to_string("res/objectdata.json").unwrap_or_else(|_| String::new());
+                    serde_json::from_str(&contents).expect("failed to parse json")
                 } else {
-                    String::new()
+                    Default::default()
                 }
             } else {
-                String::new()
+                Default::default()
             },
 
             ..Default::default()
@@ -106,7 +121,7 @@ impl LevelEditor {
             }
 
             fs::write("res/objectdata.json", &content)?;
-            self.object_data_contents = content;
+            self.object_data_json = serde_json::from_str(&content).expect("failed to parse json");
         } else {
             bail!("failed to write objectdata.json");
         }
@@ -114,9 +129,16 @@ impl LevelEditor {
         Ok(())
     }
 
+    fn get_translated_common_gimmick_name(json: &serde_json::Value, hex: &str) -> Option<String> {
+        let common = json.get("common_gimmicks")?;
+        let data = common.get(hex)?;
+        let translation = data.get("name").and_then(|s| s.as_str())?;
+        Some(translation.to_string())
+    }
+
     fn refresh_object_data(&mut self) {
         if let Ok(s) = fs::read_to_string("res/objectdata.json") {
-            self.object_data_contents = s;
+            self.object_data_json = serde_json::from_str(&s).expect("failed to read json");
         }
     }
 
@@ -131,8 +153,8 @@ impl LevelEditor {
     fn update_level_data(&mut self) {
         println!("endata not implemented yet");
         // self.current_endata = Endata::from_data(
-            //     &self.archive_contents[self.selected_pair_index].contents
-            // );
+        //     &self.archive_contents[self.selected_pair_index].contents
+        // );
         
         self.current_mapdata = if self.archive_contents.len() > self.selected_pair_index + 1{
             Mapdata::from_data(
@@ -141,8 +163,8 @@ impl LevelEditor {
         } else {
             Mapdata::default()
         };
-
-        self.selected_gimmick_indices.clear();
+        
+        self.selected_object_indices.clear();
     }
 
     fn open_file(&mut self) -> Result<()> {
@@ -263,62 +285,329 @@ impl LevelEditor {
 
             self.update_walls(ui, rect);
             self.update_labeled_walls(ui, rect);
+            self.update_common_gimmicks(ui, rect);
             self.update_gimmicks(ui, rect);
-
             self.update_paths(ui, rect);
             self.update_zones(ui, rect);
             self.update_course_info(ui, rect);
+
             /* end rendering */
 
             // other stuff...
 
-            if response.dragged() {
-                let delta = response.drag_delta();
-                self.camera.pan(delta / self.camera.zoom);
-            }
-
-            if ui.ctx().input(|i| i.pointer.button_down(egui::PointerButton::Secondary)) {
-                if !self.selected_gimmick_indices.is_empty() {
-                    let index = self.selected_gimmick_indices[0];
-                    self.current_mapdata.gimmicks[index].is_selected = false;
-                    self.selected_gimmick_indices.clear();
-                }
-            }
+            self.handle_inputs(ui, &response);
 
             // handle attributes
             
             let object_data_exists = if let Ok(b) = fs::exists("res/objectdata.json") {
-                b || !self.object_data_contents.is_empty()
+                b || !self.is_data_valid
             } else {
                 false
             };
 
             if object_data_exists {
-                if self.selected_gimmick_indices.len() == 1 {
-                    self.process_object_attributes(ui);
-                }
+                self.process_object_attributes(ui);
             }
         });
     }
 
-    fn process_object_attributes(&mut self, ui: &mut egui::Ui) {
-        // gimmicks
+    fn handle_inputs(&mut self, ui: &mut egui::Ui, response: &egui::Response) {
+        if response.dragged() {
+            let delta = response.drag_delta();
+            self.camera.pan(delta / self.camera.zoom);
+        }
 
-        let gmk = 
-            &mut self.current_mapdata.gimmicks[self.selected_gimmick_indices[0]];
+        if ui.ctx().input(|i| i.pointer.button_down(egui::PointerButton::Secondary)) {
+            if !self.selected_object_indices.is_empty() {
+
+                if self.selected_object_indices.len() == 1 {
+                    match self.selected_object_indices[0] {
+                        SelectType::CommonGimmick(index) => {
+                            self.current_mapdata.common_gimmicks[index].is_selected = false;
+                        }
+
+                        SelectType::Gimmick(index) => {
+                            self.current_mapdata.gimmicks[index].is_selected = false;
+                        }
+                    }
+                }
+
+            }
+            self.selected_object_indices.clear();
+        }
+    }
+
+    fn update_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+        for wall in self.current_mapdata.walls.iter() {
+            let start = rect.min + 
+                self.camera.to_camera(wall.start.to_vec2());
+            let end = rect.min + 
+                self.camera.to_camera(wall.end.to_vec2());
+
+            painter.line_segment(
+                [start, end],
+                egui::Stroke::new(1.0, egui::Color32::WHITE)
+            );
+        }
+    }
+
+    fn update_labeled_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+        for wall in self.current_mapdata.labeled_walls.iter() {
+            let start = rect.min + 
+                self.camera.to_camera(wall.start.to_vec2());
+            let end = rect.min + 
+                self.camera.to_camera(wall.end.to_vec2());
+
+            painter.line_segment(
+                [start, end],
+                egui::Stroke::new(1.0, egui::Color32::LIGHT_RED)
+            );
+        }
+    }
+
+    fn update_common_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+        for (index, gmk) in self.current_mapdata.common_gimmicks.iter_mut().enumerate() {
+            if &gmk.hex == "NONE" && !self.display_none {
+                continue;
+            }
+
+            let pos = gmk.position.to_point_2d();
+            let screen_pos = rect.min.to_vec2() +
+                self.camera.to_camera(pos.to_vec2());
+
+            let square = egui::Rect::from_center_size(
+                {
+                    let pos = screen_pos.to_pos2();
+
+                    egui::Pos2::new(
+                        pos.x,
+                        pos.y - SQUARE_SIZE * 2.0
+                    )
+                },
+
+                egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)
+            );
+
+            let resp = ui.interact(
+                square,
+                egui::Id::new(gmk as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            let color = if gmk.is_selected {
+                COMMON_GIMMICK_COLOR
+            } else{
+                egui::Color32::LIGHT_GRAY
+            };
+
+            painter.rect_stroke(
+                square,
+                0.0,
+                egui::Stroke::new(1.0, color)
+            );
+
+            if resp.hovered() {
+                painter.text(
+                    screen_pos.to_pos2() + egui::Vec2::new(10.0, -10.0),
+                    egui::Align2::LEFT_CENTER,
+                    {
+                        let hex_name = gmk.hex.clone();
+
+                        if let Some(name) =
+                            Self::get_translated_common_gimmick_name(&self.object_data_json, &hex_name)
+                        {
+                            name
+                        } else {
+                            hex_name
+                        }
+                    },
+                    egui::FontId::default(),
+                    egui::Color32::WHITE
+                );
+            }
+
+            if resp.clicked() {
+                self.selected_object_indices.push(SelectType::CommonGimmick(index));
+            } else if resp.dragged() {
+                let world_delta = resp.drag_delta() / self.camera.zoom;
+
+                gmk.position.x += world_delta.x;
+                gmk.position.y -= world_delta.y;
+            }
+        }
+    }
+
+    fn update_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+        for (index, gmk) in self.current_mapdata.gimmicks.iter_mut().enumerate() {
+            if &gmk.name == "NONE" && !self.display_none {
+                continue;
+            }
+
+            let pos = gmk.position.to_point_2d();
+            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
+            let square = egui::Rect::from_center_size(
+
+                {
+                    let pos = screen_pos.to_pos2();
+
+                    egui::Pos2::new(
+                        pos.x,
+                        pos.y - SQUARE_SIZE * 2.0
+                    )
+                },
+                egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)
+            );
+
+            let resp = ui.interact(
+                square,
+                egui::Id::new(gmk as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            let color = if gmk.is_selected {
+                GIMMICK_COLOR
+            } else {
+                egui::Color32::LIGHT_GRAY
+            };
+
+            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+
+            if resp.hovered() {
+                painter.text(
+                    screen_pos.to_pos2() + egui::Vec2::new(10.0, -10.0),
+                    egui::Align2::LEFT_CENTER,
+                    &gmk.name,
+                    egui::FontId::default(),
+                    egui::Color32::WHITE
+                );
+            }
             
+            if resp.clicked() {
+                self.selected_object_indices.push(SelectType::Gimmick(index));
+            } else if resp.dragged() {   
+                let world_delta = resp.drag_delta() / self.camera.zoom;
+
+                gmk.position.x += world_delta.x;
+                gmk.position.y -= world_delta.y;
+            }
+        }
+    }
+
+    fn update_paths(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+
+        for path in self.current_mapdata.paths.iter() {
+            if &path.name == "NONE" && !self.display_none {
+                continue;
+            }
+
+            for i in 0..path.points.len() - 1 {
+                let start = rect.min + 
+                    self.camera.to_camera(path.points[i].to_vec2());
+                let end = rect.min + 
+                    self.camera.to_camera(path.points[i + 1].to_vec2());
+
+                painter.line_segment(
+                    [start, end],
+                    egui::Stroke::new(1.0, PATH_COLOR)
+                );
+            }
+        }
+    }
+
+    fn update_zones(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+
+        for zone in self.current_mapdata.zones.iter() {
+            if &zone.name == "NONE" && !self.display_none {
+                continue;
+            }
+
+            let min = rect.min +
+                self.camera.to_camera(zone.bounds_min.to_vec2());
+
+            let max = rect.min + 
+                self.camera.to_camera(zone.bounds_max.to_vec2());
+
+            painter.rect_stroke(
+                Rect::from_points(&[min, max]),
+                0.0,
+                egui::Stroke::new(1.0, ZONE_COLOR)
+            );
+        }
+    }
+
+    fn update_course_info(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+
+        for info in self.current_mapdata.course_infos.iter() {
+            if &info.name == "NONE" && !self.display_none {
+                continue;
+            }
+
+            let pos = rect.min +
+                self.camera.to_camera(info.position.to_point_2d().to_vec2());
+
+            painter.rect_stroke(
+                Rect::from_center_size(pos, egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)),
+                0.0,
+                egui::Stroke::new(1.0, egui::Color32::LIGHT_YELLOW)
+            );
+        }
+    }
+
+    fn process_object_attributes(&mut self, ui: &mut egui::Ui) {
+        if self.selected_object_indices.len() != 1 {
+            return;
+        }
+
+        match self.selected_object_indices[0] {
+            SelectType::CommonGimmick(index) => {
+                self.process_common_gimmick_attributes(ui, index);   
+            }
+
+            SelectType::Gimmick(index) => {
+                self.process_gimmick_attributes(ui, index);
+            }
+        }
+    }
+
+    fn process_common_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        let gmk = &mut self.current_mapdata.common_gimmicks[index];
+
         if !gmk.is_selected {
             gmk.is_selected = true;
         }
-        egui::Area::new(egui::Id::from("le_attribute_editor"))
-        
+
+        egui::Area::new(egui::Id::from("le_common_gimmick_attribute_editor"))
         .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
         .show(ui.ctx(), |ui|{
             egui::Frame::popup(ui.style())
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui|{
+                ui.label("Edit common gimmick attributes");
 
+            });
+        });
+    }
 
+    fn process_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        let gmk = &mut self.current_mapdata.gimmicks[index];
+            
+        if !gmk.is_selected {
+            gmk.is_selected = true;
+        }
+
+        egui::Area::new(egui::Id::from("le_gimmick_attribute_editor"))
+        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
                 ui.label("Edit gimmick attributes");
                 ui.horizontal(|ui|{
                     ui.label("Name");
@@ -329,8 +618,7 @@ impl LevelEditor {
                     );
                 });
 
-                let json: Value = serde_json::from_str(&self.object_data_contents).expect("failed to parse json");
-                if let Some(data) = json.get("gimmicks") {
+                if let Some(data) = self.object_data_json.get("gimmicks") {
                     if let Some(gmk_data) = data.get(&gmk.name) {
 
                         if let Some(desc) = gmk_data.get("description") {
@@ -446,143 +734,5 @@ impl LevelEditor {
                 });
             });
         });
-    }
-
-    fn update_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-        for wall in self.current_mapdata.walls.iter() {
-            let start = rect.min + 
-                self.camera.to_camera(wall.start.to_vec2());
-            let end = rect.min + 
-                self.camera.to_camera(wall.end.to_vec2());
-
-            painter.line_segment(
-                [start, end],
-                egui::Stroke::new(1.0, egui::Color32::WHITE)
-            );
-        }
-    }
-
-    fn update_labeled_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-        for wall in self.current_mapdata.labeled_walls.iter() {
-            let start = rect.min + 
-                self.camera.to_camera(wall.start.to_vec2());
-            let end = rect.min + 
-                self.camera.to_camera(wall.end.to_vec2());
-
-            painter.line_segment(
-                [start, end],
-                egui::Stroke::new(1.0, egui::Color32::LIGHT_RED)
-            );
-        }
-    }
-
-    fn update_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-        for (index, gmk) in self.current_mapdata.gimmicks.iter_mut().enumerate() {
-            if &gmk.name == "NONE" && !self.display_none {
-                continue;
-            }
-
-            let pos = gmk.position.to_point_2d();
-            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
-            let square = egui::Rect::from_center_size(
-
-                {
-                    let pos = screen_pos.to_pos2();
-
-                    egui::Pos2::new(
-                        pos.x,
-                        pos.y - SQUARE_SIZE * 2.0
-                    )
-                },
-                egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)
-            );
-
-            let resp = ui.interact(
-                square,
-                egui::Id::new(gmk as *const _),
-                egui::Sense::click_and_drag()
-            );
-
-            let color = if gmk.is_selected {
-                GIMMICK_COLOR
-            } else {
-                egui::Color32::LIGHT_GRAY
-            };
-
-            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
-
-            if resp.hovered() {
-                painter.text(
-                    screen_pos.to_pos2() + egui::Vec2::new(10.0, -10.0),
-                    egui::Align2::LEFT_CENTER,
-                    &gmk.name,
-                    egui::FontId::default(),
-                    egui::Color32::WHITE
-                );
-            }
-            
-            if resp.clicked() {
-                self.selected_gimmick_indices.push(index);
-            } else if resp.dragged() {   
-                let world_delta = resp.drag_delta() / self.camera.zoom;
-
-                gmk.position.x += world_delta.x;
-                gmk.position.y -= world_delta.y;
-            }
-        }
-    }
-
-    fn update_paths(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-
-        for path in self.current_mapdata.paths.iter() {
-            for i in 0..path.points.len() - 1 {
-                let start = rect.min + 
-                    self.camera.to_camera(path.points[i].to_vec2());
-                let end = rect.min + 
-                    self.camera.to_camera(path.points[i + 1].to_vec2());
-
-                painter.line_segment(
-                    [start, end],
-                    egui::Stroke::new(1.0, PATH_COLOR)
-                );
-            }
-        }
-    }
-
-    fn update_zones(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-
-        for zone in self.current_mapdata.zones.iter() {
-            let min = rect.min +
-                self.camera.to_camera(zone.bounds_min.to_vec2());
-
-            let max = rect.min + 
-                self.camera.to_camera(zone.bounds_max.to_vec2());
-
-            painter.rect_stroke(
-                Rect::from_points(&[min, max]),
-                0.0,
-                egui::Stroke::new(1.0, ZONE_COLOR)
-            );
-        }
-    }
-
-    fn update_course_info(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-
-        for info in self.current_mapdata.course_infos.iter() {
-            let pos = rect.min +
-                self.camera.to_camera(info.position.to_point_2d().to_vec2());
-
-            painter.rect_stroke(
-                Rect::from_center_size(pos, egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)),
-                0.0,
-                egui::Stroke::new(1.0, egui::Color32::LIGHT_YELLOW)
-            );
-        }
     }
 }

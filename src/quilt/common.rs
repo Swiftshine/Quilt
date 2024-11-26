@@ -1,16 +1,16 @@
 use byteorder::{ByteOrder, BigEndian};
 use egui::Vec2;
-use encoding_rs::SHIFT_JIS;
+// use encoding_rs::SHIFT_JIS;
 
-pub fn shift_jis_to_utf8(raw: &[u8]) -> String {
-    let (decoded, _, has_errors) = SHIFT_JIS.decode(raw);
+// pub fn shift_jis_to_utf8(raw: &[u8]) -> String {
+//     let (decoded, _, has_errors) = SHIFT_JIS.decode(raw);
 
-    if has_errors {
-        return String::from("<DECODE ERROR>");
-    }
+//     if has_errors {
+//         return String::from("<DECODE ERROR>");
+//     }
 
-    decoded.to_string()
-}
+//     decoded.to_string()
+// }
 
 #[derive(Default)]
 pub struct Point2D {
@@ -68,6 +68,12 @@ pub struct NameMap {
     pub indices: Vec<usize>,
 }
 
+#[derive(Default)]
+pub struct HexMap {
+    pub hex_names: Vec<String>,
+    pub indices: Vec<usize>
+}
+
 pub fn string_from_buffer(input: &[u8]) -> String {
     let null_terminator_pos = input[..]
         .iter()
@@ -101,7 +107,36 @@ impl NameMap {
             let name = &name_bytes[..null_terminator_pos];
 
             self.indices.push(i);
-            self.names.push(shift_jis_to_utf8(&name));
+            // self.names.push(shift_jis_to_utf8(&name));
+            self.names.push(String::from_utf8(name.to_vec()).unwrap());
+        }
+    }
+}
+
+impl HexMap {
+    pub fn read_names(
+        &mut self,
+        input: &[u8],
+        count: usize,
+        size: usize,
+        start_offset: usize // offset to the "footer"
+    ) {
+        for i in 0..count {
+            let start = start_offset + (i * size);
+            let end = start + size;
+
+            let name_bytes = &input[start..end];
+
+            let null_terminator_pos = name_bytes
+                .iter()
+                .position(|&byte| byte == 0x00)
+                .unwrap_or(size);
+
+            let name = &name_bytes[..null_terminator_pos];
+
+            self.indices.push(i);
+            // self.names.push(shift_jis_to_utf8(&name));
+            self.hex_names.push(hex::encode(&name).to_string().to_uppercase());
         }
     }
 }

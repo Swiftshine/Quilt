@@ -48,9 +48,11 @@ pub struct CommonGimmickParams {
 
 #[derive(Default)]
 pub struct CommonGimmick {
-    pub name: String,
+    pub hex: String,
     pub position: Point3D,
-    pub params: CommonGimmickParams
+    pub params: CommonGimmickParams,
+
+    pub is_selected: bool
 }
 
 #[derive(Default)]
@@ -103,7 +105,7 @@ pub struct Mapdata {
     pub zones: Vec<Zone>,
     pub course_infos: Vec<CourseInfo>,
 
-    pub common_gimmick_names: NameMap,
+    pub common_gimmick_names: HexMap,
     pub colbin_types: NameMap,
     pub wall_labels: NameMap,
 }
@@ -379,11 +381,11 @@ impl CommonGimmickParams {
 }
 
 impl CommonGimmick {
-    fn from_bytes(input: &[u8], name_map: &NameMap) -> Self {
+    fn from_bytes(input: &[u8], name_map: &HexMap) -> Self {
         let mut gmk = Self::default();
 
         let name_index = BigEndian::read_u32(&input[0..4]) as usize;
-        gmk.name = name_map.names[name_index].clone();
+        gmk.hex = name_map.hex_names[name_index].clone();
         gmk.position = Point3D::from_be_bytes(&input[4..0x10]);
         gmk.params = CommonGimmickParams::from_bytes(&input[0x10..]);
 
