@@ -33,8 +33,12 @@ const ZONE_COLOR: Color32 = egui::Color32::from_rgb(
 enum DataType {
     None,
     Int,
+    Bool,
     Float,
     String, // with a limit of 64 characters
+    DropdownInt,
+    DropdownFloat,
+    DropdownString, // with a limit of 64 characters
 }
 
 #[derive(PartialEq)]
@@ -583,14 +587,418 @@ impl LevelEditor {
             gmk.is_selected = true;
         }
 
+        let (name, is_hex) = if let Some(n) = Self::get_translated_common_gimmick_name(
+            &self.object_data_json, &gmk.hex
+        ) {
+            (n, false)
+        } else {
+            (gmk.hex.clone(), true)
+        };
+
         egui::Area::new(egui::Id::from("le_common_gimmick_attribute_editor"))
         .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
         .show(ui.ctx(), |ui|{
             egui::Frame::popup(ui.style())
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui|{
+                
                 ui.label("Edit common gimmick attributes");
+                if is_hex {
+                    ui.label(format!("Hex: {name}"));
+                } else {
+                    ui.label(format!("Name: {name}"));
+                }
 
+                let data = self.object_data_json.get("common_gimmicks").expect("couldn't find 'common_gimmicks' inside objectdata.json");
+
+                if let Some(gmk_data) = data.get(&gmk.hex) {
+                    if let Some(desc) = gmk_data.get("description").and_then(|d| d.as_str()) {
+                        if !desc.is_empty() {
+                            ui.label(desc);
+                        }
+                    }
+
+                    if let Some(note) = gmk_data.get("note").and_then(|n| n.as_str()) {
+                        if !note.is_empty() {
+                            ui.label(format!("Note: {note}"));
+                        }
+                    }
+                    
+                    // regular parameters
+                    if let Some(params) = gmk_data.get("parameters").and_then(|p| p.as_object()) {
+                        for (param_name, param_data) in params {
+                            ui.collapsing(param_name, |ui|{
+                                if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
+                                    if !param_desc.is_empty() {
+                                        ui.label(param_desc);
+                                    }
+                                }
+
+                                if let Some(param_note) = param_data.get("note").and_then(|n| n.as_str()) {
+                                    if !param_note.is_empty() {
+                                        ui.label(format!("Note: {param_note}"));
+                                    }
+                                }
+
+                                let slot = param_data.get("slot").and_then(|s| s.as_u64()).unwrap() as usize;
+                                let data_type = match param_data.get("data_type").and_then(|t| t.as_str()).unwrap() {
+                                    "int" => DataType::Int,
+                                    "bool" => DataType::Bool,
+                                    "float" => DataType::Float,
+                                    "string" => DataType::String,
+                                    "dropdown_int" => DataType::DropdownInt,
+                                    "dropdown_float" => DataType::DropdownFloat,
+                                    "dropdown_string" => DataType::DropdownString,
+                                    _ => DataType::None
+                                };
+
+                                match data_type {
+                                    DataType::Int => {
+                                        ui.add(
+                                            egui::DragValue::new(&mut gmk.params.int_params[slot])
+                                            .speed(1)
+                                            .range(i32::MIN..=i32::MAX)
+                                        );
+                                    }
+
+                                    DataType::Bool => {
+                                        let mut bool_value = gmk.params.int_params[slot] != 0;
+                                        if ui.checkbox(&mut bool_value, "Value").changed() {
+                                            gmk.params.int_params[slot] = if bool_value { 1 } else { 0 }
+                                        }
+                                    }
+                                    
+                                    DataType::Float => {
+                                        ui.add(
+                                            egui::DragValue::new(&mut gmk.params.float_params[slot])
+                                            .speed(1.0)
+                                            .range(f32::MIN..=f32::MAX)
+                                        );
+                                    }
+
+                                    DataType::String => {
+                                        ui.add(
+                                            egui::TextEdit::singleline(
+                                                &mut gmk.params.string_params[slot]
+                                            ).char_limit(0x40)
+                                        );
+                                    }
+
+                                    DataType::DropdownInt => {
+                                        let mut values: Vec<(String, i32)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_i64().unwrap() as i32
+                                            ));
+
+                                            if gmk.params.int_params[slot] == value.as_i64().unwrap() as i32 {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.int_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+                                    DataType::DropdownFloat => {
+                                        let mut values: Vec<(String, f32)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_f64().unwrap() as f32
+                                            ));
+
+                                            if gmk.params.float_params[slot] == value.as_f64().unwrap() as f32 {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.float_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+                                    DataType::DropdownString => {
+                                        let mut values: Vec<(String, String)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_str().unwrap().to_string()
+                                            ));
+
+                                            if gmk.params.string_params[slot] == value.as_str().unwrap().to_string() {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.string_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+
+                                    DataType::None => {
+                                        ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
+                                    }
+                                };
+                            });
+                        }
+                    }
+
+                    // short parameters
+                    if let Some(params) = gmk_data.get("short_parameters").and_then(|p| p.as_object()) {
+                        for (param_name, param_data) in params {
+                            ui.collapsing(param_name, |ui|{
+                                if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
+                                    if !param_desc.is_empty() {
+                                        ui.label(param_desc);
+                                    }
+                                }
+
+                                if let Some(param_note) = param_data.get("note").and_then(|n| n.as_str()) {
+                                    if !param_note.is_empty() {
+                                        ui.label(format!("Note: {param_note}"));
+                                    }
+                                }
+
+                                let slot = param_data.get("slot").and_then(|s| s.as_u64()).unwrap_or(0) as usize;
+                                let data_type = match param_data.get("data_type").and_then(|t| t.as_str()).unwrap() {
+                                    "int" => DataType::Int,
+                                    "bool" => DataType::Bool,
+                                    "float" => DataType::Float,
+                                    "string" => DataType::String,
+                                    "dropdown_int" => DataType::DropdownInt,
+                                    "dropdown_float" => DataType::DropdownFloat,
+                                    "dropdown_string" => DataType::DropdownString,
+                                    _ => DataType::None
+                                };
+
+                                match data_type {
+                                    DataType::Int => {
+                                        ui.add(
+                                            egui::DragValue::new(&mut gmk.params.short_int_params[slot])
+                                            .speed(1)
+                                            .range(i32::MIN..=i32::MAX)
+                                        );
+                                    }
+
+                                    DataType::Bool => {
+                                        let mut bool_value = gmk.params.short_int_params[slot] != 0;
+                                        if ui.checkbox(&mut bool_value, "Value").changed() {
+                                            gmk.params.short_int_params[slot] = if bool_value { 1 } else { 0 }
+                                        }
+                                    }
+                                    
+                                    DataType::Float => {
+                                        ui.add(
+                                            egui::DragValue::new(&mut gmk.params.short_float_params[slot])
+                                            .speed(1.0)
+                                            .range(f32::MIN..=f32::MAX)
+                                        );
+                                    }
+
+                                    DataType::String => {
+                                        ui.add(
+                                            egui::TextEdit::singleline(
+                                                &mut gmk.params.short_string_param
+                                            ).char_limit(8)
+                                        );
+                                    }
+
+                                    DataType::DropdownInt => {
+                                        let mut values: Vec<(String, i32)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_i64().unwrap() as i32
+                                            ));
+
+                                            if gmk.params.short_int_params[slot] == value.as_i64().unwrap() as i32 {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.short_int_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+                                    DataType::DropdownFloat => {
+                                        let mut values: Vec<(String, f32)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_f64().unwrap() as f32
+                                            ));
+
+                                            if gmk.params.short_float_params[slot] == value.as_f64().unwrap() as f32 {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.short_float_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+                                    DataType::DropdownString => {
+                                        let mut values: Vec<(String, String)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_str().unwrap().to_string()
+                                            ));
+
+                                            if gmk.params.short_string_param == value.as_str().unwrap().to_string() {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.short_string_param,
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+
+                                    DataType::None => {
+                                        ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
+                                    }
+                                };
+                            });
+                        }
+                    }
+                }
+
+                ui.collapsing("Raw data", |ui|{
+                    ui.label("Edit fields regardless of documentation.");
+
+                    ui.add_space(3.0);
+                    ui.label("Int values (common)");
+                    ui.horizontal(|ui|{
+                        for i in 0..2 {
+                            ui.add(
+                                egui::DragValue::new(&mut gmk.params.short_int_params[i])
+                                .speed(1)
+                                .range(i32::MIN..=i32::MAX)
+                            );
+                        }
+                    });
+
+                    ui.add_space(3.0);
+                    ui.label("Float values (common)");
+                    ui.horizontal(|ui|{
+                        for i in 0..2 {
+                            ui.add(
+                                egui::DragValue::new(&mut gmk.params.short_float_params[i])
+                                .speed(1)
+                                .range(f32::MIN..=f32::MAX)
+                            );
+                        }
+                    });
+
+                    ui.add_space(3.0);
+                    ui.label("String value (common)");
+                    ui.add(
+                        egui::TextEdit::singleline(&mut gmk.params.short_string_param)
+                        .char_limit(8)
+                    );
+
+                    ui.add_space(3.0);
+                    ui.label("Int values");
+                    ui.horizontal(|ui|{
+                        for i in 0..5 {
+                            ui.add(
+                                egui::DragValue::new(&mut gmk.params.int_params[i])
+                                .speed(1)
+                                .range(i32::MIN..=i32::MAX)
+                            );
+                        }
+                    });
+
+                    ui.add_space(3.0);
+                    ui.label("Float values");
+                    ui.horizontal(|ui|{
+                        for i in 0..5 {
+                            ui.add(
+                                egui::DragValue::new(&mut gmk.params.float_params[i])
+                                .speed(1)
+                                .range(f32::MIN..=f32::MAX)
+                            );
+                        }
+                    });
+
+                    ui.add_space(3.0);
+                    ui.label("String values");
+                    for i in 0..5 {
+                        ui.add(
+                            egui::TextEdit::singleline(
+                                &mut gmk.params.string_params[i]
+                            ).char_limit(0x40)
+                        );
+                    }
+                });
             });
         });
     }
@@ -618,81 +1026,172 @@ impl LevelEditor {
                     );
                 });
 
-                if let Some(data) = self.object_data_json.get("gimmicks") {
-                    if let Some(gmk_data) = data.get(&gmk.name) {
+                let data = self.object_data_json.get("gimmicks").expect("couldn't find 'gimmicks' in objectdata.json");
 
-                        if let Some(desc) = gmk_data.get("description") {
-                            let desc = desc.as_str().unwrap();
-                            if !desc.is_empty() {
-                                ui.label(desc);
-                            }
-                        }
-
-                        if let Some(note) = gmk_data.get("note") {
-                            let note = note.as_str().unwrap();
-                            if !note.is_empty() {
-                                ui.label("Note");
-                                ui.label(note);
-                            }
-                        }
-
-                        if let Some(params) = gmk_data.get("parameters").and_then(|p| p.as_object()) {
-                            for (param_name, param_data) in params {
-                                ui.collapsing(param_name, |ui|{
-                                    if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
-                                        if !param_desc.is_empty() {
-                                            ui.label(param_desc);
-                                        }
-                                    }
-
-                                    if let Some(param_note) = param_data.get("note").and_then(|n| n.as_str()) {
-                                        if !param_note.is_empty() {
-                                            ui.label(format!("Note: {param_note}"));
-                                        }
-                                    }
-
-                                    let slot = param_data.get("slot").and_then(|s| s.as_u64()).unwrap() as usize;
-
-                                    let data_type = match param_data.get("data_type").and_then(|t| t.as_str()).unwrap() {
-                                        "int" => DataType::Int,
-                                        "float" => DataType::Float,
-                                        "string" => DataType::String,
-
-                                        _ => DataType::None
-                                    };
-
-                                    match data_type {
-                                        DataType::Int => {
-                                            ui.add(
-                                                egui::DragValue::new(&mut gmk.params.int_params[slot])
-                                                .speed(1)
-                                                .range(i32::MIN..=i32::MAX)
-                                            );
-                                        }
-                                        
-                                        DataType::Float => {
-                                            ui.add(
-                                                egui::DragValue::new(&mut gmk.params.float_params[slot])
-                                                .speed(1.0)
-                                                .range(f32::MIN..=f32::MAX)
-                                            );
-
-                                        },
-
-                                        DataType::String => {
-                                            ui.add(
-                                                egui::TextEdit::singleline(
-                                                    &mut gmk.params.string_params[slot]
-                                                ).char_limit(0x40)
-                                            );
-                                        },
-
-                                        _ => {} // do nothing
-                                    };
-                                });
-                            }
+                // paramter handling
+                if let Some(gmk_data) = data.get(&gmk.name) {
+                    if let Some(desc) = gmk_data.get("description").and_then(|d| d.as_str()) {
+                        if !desc.is_empty() {
+                            ui.label(desc);
                         }
                     }
+                
+                    if let Some(note) = gmk_data.get("note").and_then(|n| n.as_str()) {
+                        if !note.is_empty() {
+                            ui.label(format!("Note: {note}"));
+                        }
+                    }
+
+                    if let Some(params) = gmk_data.get("parameters").and_then(|p| p.as_object()) {
+                        for (param_name, param_data) in params {
+                            ui.collapsing(param_name, |ui|{
+                                if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
+                                    if !param_desc.is_empty() {
+                                        ui.label(param_desc);
+                                    }
+                                }
+                                if let Some(param_note) = param_data.get("note").and_then(|n| n.as_str()) {
+                                    if !param_note.is_empty() {
+                                        ui.label(format!("Note: {param_note}"));
+                                    }
+                                }
+                                let slot = param_data.get("slot").and_then(|s| s.as_u64()).unwrap() as usize;
+                                let data_type = match param_data.get("data_type").and_then(|t| t.as_str()).unwrap() {
+                                    "int" => DataType::Int,
+                                    "bool" => DataType::Bool,
+                                    "float" => DataType::Float,
+                                    "string" => DataType::String,
+                                    "dropdown_int" => DataType::DropdownInt,
+                                    "dropdown_float" => DataType::DropdownFloat,
+                                    "dropdown_string" => DataType::DropdownString,
+                                    _ => DataType::None
+                                };
+
+                                match data_type {
+                                    DataType::Int => {
+                                        ui.add(
+                                            egui::DragValue::new(&mut gmk.params.int_params[slot])
+                                            .speed(1)
+                                            .range(i32::MIN..=i32::MAX)
+                                        );
+                                    }
+
+                                    DataType::Bool => {
+                                        let mut bool_value = gmk.params.int_params[slot] != 0;
+                                        if ui.checkbox(&mut bool_value, "Value").changed() {
+                                            gmk.params.int_params[slot] = if bool_value { 1 } else { 0 }
+                                        }
+                                    }
+                                    
+                                    DataType::Float => {
+                                        ui.add(
+                                            egui::DragValue::new(&mut gmk.params.float_params[slot])
+                                            .speed(1.0)
+                                            .range(f32::MIN..=f32::MAX)
+                                        );
+                                    }
+
+                                    DataType::String => {
+                                        ui.add(
+                                            egui::TextEdit::singleline(
+                                                &mut gmk.params.string_params[slot]
+                                            ).char_limit(0x40)
+                                        );
+                                    }
+
+                                    DataType::DropdownInt => {
+                                        let mut values: Vec<(String, i32)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_i64().unwrap() as i32
+                                            ));
+
+                                            if gmk.params.int_params[slot] == value.as_i64().unwrap() as i32 {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.int_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+                                    DataType::DropdownFloat => {
+                                        let mut values: Vec<(String, f32)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_f64().unwrap() as f32
+                                            ));
+
+                                            if gmk.params.float_params[slot] == value.as_f64().unwrap() as f32 {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.float_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+                                    DataType::DropdownString => {
+                                        let mut values: Vec<(String, String)> = Vec::new();
+                                        let mut value_index = 0;
+                                        for (value_name, value) in param_data.get("values")
+                                        .and_then(|v| v.as_object()).unwrap() {
+                                            values.push((
+                                                value_name.clone(), value.as_str().unwrap().to_string()
+                                            ));
+
+                                            if gmk.params.string_params[slot] == value.as_str().unwrap().to_string() {
+                                                value_index = values.len() - 1;
+                                            }
+                                        }
+
+                                        egui::ComboBox::from_label("Value")
+                                        .selected_text(
+                                            &values[value_index].0
+                                        ).show_ui(ui, |ui|{
+                                            for (value_name, value) in values {
+                                                ui.selectable_value(
+                                                    &mut gmk.params.string_params[slot],
+                                                    value,
+                                                    value_name
+                                                );
+                                            }
+                                        });
+                                    }
+
+
+                                    DataType::None => {
+                                        ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
+                                    }
+                                };
+                            });
+                        }
+                    }
+
                 }
 
                 ui.collapsing("Raw data", |ui|{

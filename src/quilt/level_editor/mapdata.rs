@@ -38,12 +38,12 @@ pub struct Params {
 #[derive(Default)]
 /// Many fields are unknown.
 pub struct CommonGimmickParams {
-    pub int_params_1: [i32; 3],
-    pub float_params_1: [f32; 3],
-    pub int_params_2: [i32; 4],
-    pub float_params_2: [f32; 3],
-    pub float_params_3: [f32; 3],
-    pub string_params: [String; 3]
+    pub short_int_params: [i32; 2],
+    pub short_float_params: [f32; 2],
+    pub short_string_param: String,
+    pub int_params: [i32; 5],
+    pub float_params: [f32; 5],
+    pub string_params: [String; 5]
 }
 
 #[derive(Default)]
@@ -340,37 +340,33 @@ impl CommonGimmickParams {
     fn from_bytes(input: &[u8]) -> Self {
         let mut params = Self::default();
 
-        for i in 0..3 {
+        for i in 0..2 {
             let start = i * 4;
             let end = start + 4;
-            params.int_params_1[i] = BigEndian::read_i32(&input[start..end]);
+            params.short_int_params[i] = BigEndian::read_i32(&input[start..end]);
         }
-        
-        for i in 0..3 {
-            let start = 0xC + (i * 4);
+
+        for i in 0..2 {
+            let start = 8 + (i * 4);
             let end = start + 4;
-            params.float_params_1[i] = BigEndian::read_f32(&input[start..end]);
+            params.short_float_params[i] = BigEndian::read_f32(&input[start..end]);
         }
         
-        for i in 0..4 {
+        params.short_string_param = string_from_buffer(&input[0x10..0x18]);
+
+        for i in 0..5 {
             let start = 0x18 + (i * 4);
             let end = start + 4;
-            params.int_params_2[i] = BigEndian::read_i32(&input[start..end]);
+            params.int_params[i] = BigEndian::read_i32(&input[start..end]);
         }
 
-        for i in 0..3 {
-            let start = 0x28 + (i * 4);
+        for i in 0..5 {
+            let start = 0x2C + (i * 4);
             let end = start + 4;
-            params.float_params_2[i] = BigEndian::read_f32(&input[start..end]);
+            params.float_params[i] = BigEndian::read_f32(&input[start..end]);
         }
 
-        for i in 0..3 {
-            let start = 0x34 + (i * 4);
-            let end = start + 4;
-            params.float_params_3[i] = BigEndian::read_f32(&input[start..end]);
-        }
-
-        for i in 0..3 {
+        for i in 0..5 {
             let start = 0x40 + (i * 64);
             let end = start + 64;
             params.string_params[i] = string_from_buffer(&input[start..end]);
