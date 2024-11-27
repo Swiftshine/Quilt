@@ -1,6 +1,7 @@
 use crate::quilt::common::*;
 use byteorder::{ByteOrder, BigEndian};
 
+const HEADER_SIZE: usize = 0x58;
 const WALL_SIZE: usize = 0x20;
 const LABELED_WALL_SIZE: usize = 0x24;
 const _PARAMS_SIZE: usize = 0xD8;
@@ -206,7 +207,6 @@ impl Mapdata {
                 &input[start..end],
                 &mapdata.common_gimmick_names
             ));
-
         }
 
         // gimmicks
@@ -270,6 +270,138 @@ impl Mapdata {
 
         mapdata
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        // preparations
+
+
+        // calculate offsets 
+        let wall_offset = HEADER_SIZE;
+        let labeled_wall_offset = wall_offset + (WALL_SIZE * self.walls.len());
+        let common_gimmick_offset = labeled_wall_offset + (LABELED_WALL_SIZE * self.labeled_walls.len());
+        let gimmick_offset = common_gimmick_offset + (COMMON_GIMMICK_SIZE * self.common_gimmicks.len());
+        let path_offset = gimmick_offset + (GIMMICK_SIZE * self.gimmicks.len());
+
+        // paths have a variable length
+        let mut path_chunk_size = 0;
+        for path in self.paths.iter() {
+            path_chunk_size += BASE_PATH_SIZE + (8 * path.points.len());
+        }
+
+        let zone_offset = path_offset + path_chunk_size;
+        let course_info_offset = zone_offset + (ZONE_SIZE * self.zones.len());
+        let common_gimmick_name_offset = course_info_offset + (COURSE_INFO_SIZE * self.course_infos.len());
+
+        let colbin_type_offset = common_gimmick_name_offset + 4 + (0x20 * self.common_gimmick_names.hex_names.len());
+        let labeled_wall_labels_offset = colbin_type_offset + 4 + (0x20 * self.colbin_types.names.len());
+        
+
+        // data writing
+        let mut out = Vec::<u8>::new();
+
+        // header
+        out.extend(self.unk_0.to_be_bytes());
+        out.extend(self.bounds_min.to_be_bytes());
+        out.extend(self.bounds_max.to_be_bytes());
+        out.extend((self.walls.len() as u32).to_be_bytes());
+        out.extend((wall_offset as u32).to_be_bytes());
+        out.extend((self.labeled_walls.len() as u32).to_be_bytes());
+        out.extend((labeled_wall_offset as u32).to_be_bytes());
+        out.extend((self.common_gimmicks.len() as u32).to_be_bytes());
+        out.extend((common_gimmick_offset as u32).to_be_bytes());
+        out.extend((self.gimmicks.len() as u32).to_be_bytes());
+        out.extend((gimmick_offset as u32).to_be_bytes());
+        out.extend((self.paths.len() as u32).to_be_bytes());
+        out.extend((path_offset as u32).to_be_bytes());
+        out.extend((self.zones.len() as u32).to_be_bytes());
+        out.extend((zone_offset as u32).to_be_bytes());
+        out.extend((self.course_infos.len() as u32).to_be_bytes());
+        out.extend((course_info_offset as u32).to_be_bytes());
+        out.extend((common_gimmick_name_offset as u32).to_be_bytes());
+        out.extend((colbin_type_offset as u32).to_be_bytes());
+        out.extend((labeled_wall_labels_offset as u32).to_be_bytes());
+
+        // walls
+        for (i, w) in self.walls.iter().enumerate() {
+            out.extend(w.to_bytes(i, &self.colbin_types));
+        }
+
+        // labeled walls
+        for (i, w) in self.labeled_walls.iter().enumerate() {
+            out.extend(w.to_bytes(i, &self.colbin_types, &self.wall_labels));
+        }
+
+        // common gimmicks
+        for gmk in self.common_gimmicks.iter() {
+            out.extend(gmk.to_bytes(&self.common_gimmick_names));
+        }
+
+        // gimmicks
+        for gmk in self.gimmicks.iter() {
+            out.extend(gmk.to_bytes());
+        }
+
+        // paths
+        for path in self.paths.iter() {
+            out.extend(path.to_bytes());
+        }
+
+        // zones
+        for zone in self.zones.iter() {
+            out.extend(zone.to_bytes());
+        }
+
+        // course info
+        for info in self.course_infos.iter() {
+            out.extend(info.to_bytes());
+        }
+        
+        // common gimmick names
+        out.extend((self.common_gimmick_names.hex_names.len() as u32).to_be_bytes());
+        for name in self.common_gimmick_names.hex_names.iter() {
+            let bytes = hex::decode(name).unwrap();
+            let mut padded_bytes = bytes;
+
+            if padded_bytes.len() < 0x20 {
+                padded_bytes.resize(0x20, 0);
+            }
+            out.extend(padded_bytes);
+        }
+
+        // colbin collision types
+        out.extend((self.colbin_types.names.len() as u32).to_be_bytes());
+        for col_type in self.colbin_types.names.iter() {
+            let bytes = col_type.as_bytes().to_vec();
+            let mut padded_bytes = bytes;
+            
+            if padded_bytes.len() < 0x20 {
+                padded_bytes.resize(0x20, 0);
+            }
+            out.extend(padded_bytes);
+        }
+        
+        
+        // labeled wall labels
+        out.extend((self.wall_labels.names.len() as u32).to_be_bytes());
+        for label in self.wall_labels.names.iter() {
+            let bytes = label.as_bytes().to_vec();
+            let mut padded_bytes = bytes;
+
+            if padded_bytes.len() < 0x20 {
+                padded_bytes.resize(0x20, 0);
+            }
+            out.extend(padded_bytes);
+        }
+
+        // alignment
+        let remainder = out.len() % 0x20;
+        if remainder != 0 {
+            let padding = 0x20 - remainder;
+            out.extend(vec![0u8; padding]);
+        }
+        
+        out
+    }
 }
 
 
@@ -286,6 +418,26 @@ impl Wall {
         wall.collision_type = name_map.names[type_index].clone();
 
         wall
+    }
+
+    pub fn to_bytes(&self, wall_index: usize, name_map: &NameMap) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        out.extend(self.start.to_be_bytes());
+        out.extend(self.end.to_be_bytes());
+        out.extend(self.unk_10.to_be_bytes());
+
+        out.extend((wall_index as u32).to_be_bytes());
+
+        let type_index = name_map
+            .names
+            .iter()
+            .position(|name| name == &self.collision_type)
+            .expect("collision_type not found in name_map");
+
+        out.extend((type_index as u32).to_be_bytes());
+
+        out
     }
 }
 
@@ -306,6 +458,39 @@ impl LabeledWall {
         wall.label = label_map.names[label_index].clone();
 
         wall
+    }
+
+    pub fn to_bytes(
+        &self,
+        index: usize,
+        collision_type_map: &NameMap,
+        label_map: &NameMap
+    ) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        out.extend(self.start.to_be_bytes());
+
+        out.extend(self.end.to_be_bytes());
+
+        out.extend(self.unk_10.to_be_bytes());
+
+        out.extend((index as u32).to_be_bytes());
+
+        let type_index = collision_type_map
+            .names
+            .iter()
+            .position(|name| name == &self.collision_type)
+            .expect("collision_type not found in collision_type_map");
+        out.extend((type_index as u32).to_be_bytes());
+
+        let label_index = label_map
+            .names
+            .iter()
+            .position(|name| name == &self.label)
+            .expect("label not found in label_map");
+        out.extend((label_index as u32).to_be_bytes());
+
+        out
     }
 }
 
@@ -333,6 +518,28 @@ impl Params {
         }
 
         params
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        for int in &self.int_params {
+            out.extend(int.to_be_bytes());
+        }
+
+        for float in &self.float_params {
+            out.extend(float.to_be_bytes());
+        }
+
+        for string in &self.string_params {
+            let mut buffer = [0u8; 64];
+            let bytes = string.as_bytes();
+            let len = bytes.len().min(64); // truncate if necessary
+            buffer[..len].copy_from_slice(&bytes[..len]);
+            out.extend(&buffer);
+        }
+
+        out
     }
 }
 
@@ -374,6 +581,44 @@ impl CommonGimmickParams {
 
         params
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        for int in &self.short_int_params {
+            out.extend(int.to_be_bytes());
+        }
+
+
+        for float in &self.short_float_params {
+            out.extend(float.to_be_bytes());
+        }
+
+        let mut short_string_buffer = [0u8; 8];
+        let bytes = self.short_string_param.as_bytes();
+        let len = bytes.len().min(8); // truncate if necessary
+        short_string_buffer[..len].copy_from_slice(&bytes[..len]);
+        out.extend(&short_string_buffer);
+
+        for int in &self.int_params {
+            out.extend(int.to_be_bytes());
+        }
+
+
+        for float in &self.float_params {
+            out.extend(float.to_be_bytes());
+        }
+
+        for string in &self.string_params {
+            let mut string_buffer = [0u8; 64];
+            let bytes = string.as_bytes();
+            let len = bytes.len().min(64); // truncate if necessary
+            string_buffer[..len].copy_from_slice(&bytes[..len]);
+            out.extend(&string_buffer);
+        }
+
+        out
+    }
 }
 
 impl CommonGimmick {
@@ -386,6 +631,25 @@ impl CommonGimmick {
         gmk.params = CommonGimmickParams::from_bytes(&input[0x10..]);
 
         gmk
+    }
+
+    pub fn to_bytes(&self, name_map: &HexMap) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        // name index
+        if let Some(index) = name_map.hex_names.iter().position(|name| name == &self.hex) {
+            out.extend((index as u32).to_be_bytes());
+        } else {
+            panic!("Hex string '{}' not found in name_map", self.hex);
+        }
+
+        // position
+        out.extend(self.position.to_be_bytes());
+
+        // params
+        out.extend(self.params.to_bytes());
+
+        out
     }
 }
 
@@ -401,6 +665,22 @@ impl Gimmick {
         
 
         gmk
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        out.extend(self.name.as_bytes());
+        out.extend(vec![0; 0x30 - self.name.len()]);
+
+
+        out.extend_from_slice(&self.unk_30);
+
+        out.extend(self.position.to_be_bytes());
+
+        out.extend(self.params.to_bytes());
+
+        out
     }
 }
 
@@ -425,6 +705,26 @@ impl Path {
 
         path
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        out.extend(self.name.as_bytes());
+        out.extend(vec![0; 0x20 - self.name.len()]);
+
+        out.extend(self.path_type.as_bytes());
+        out.extend(vec![0; 0x20 - self.path_type.len()]);
+
+        out.extend(self.params.to_bytes());
+
+        out.extend((self.points.len() as u32).to_be_bytes());
+
+        for point in &self.points {
+            out.extend(point.to_be_bytes());
+        }
+
+        out
+    }
 }
 
 
@@ -440,6 +740,24 @@ impl Zone {
 
         zone
     }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        out.extend(self.name.as_bytes());
+        out.extend(vec![0; 0x20 - self.name.len()]);
+
+        out.extend(self.unk_20);
+        out.extend(vec![0; 0x20 - self.unk_20.len()]);
+
+        out.extend(self.params.to_bytes());
+
+        out.extend(self.bounds_min.to_be_bytes());
+
+        out.extend(self.bounds_max.to_be_bytes());
+
+        out
+    }
 }
 
 impl CourseInfo {
@@ -452,5 +770,21 @@ impl CourseInfo {
         info.position = Point3D::from_be_bytes(&input[0x118..]);
         
         info
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        out.extend(self.name.as_bytes());
+        out.extend(vec![0; 0x20 - self.name.len()]);
+
+        out.extend(self.unk_20);
+        out.extend(vec![0; 0x20 - self.unk_20.len()]);
+
+        out.extend(self.params.to_bytes());
+
+        out.extend(self.position.to_be_bytes());
+
+        out
     }
 }

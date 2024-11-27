@@ -28,6 +28,13 @@ impl Point2D {
         point
     }
 
+    pub fn to_be_bytes(&self) -> [u8; 8] {
+        let mut bytes = [0u8; 8];
+        BigEndian::write_f32(&mut bytes[0..4], self.x);
+        BigEndian::write_f32(&mut bytes[4..8], self.y);
+        bytes
+    }
+
     // pub fn to_pos2(&self) -> Pos2 {
     //     Pos2 { x: self.x, y: self.y }
     // }
@@ -53,6 +60,14 @@ impl Point3D {
         point.z = BigEndian::read_f32(&input[8..0xC]);
 
         point
+    }
+
+    pub fn to_be_bytes(&self) -> [u8; 0xC] {
+        let mut bytes = [0u8; 0xC];
+        BigEndian::write_f32(&mut bytes[0..4], self.x);
+        BigEndian::write_f32(&mut bytes[4..8], self.y);
+        BigEndian::write_f32(&mut bytes[8..], self.z);
+        bytes
     }
 
     pub fn to_point_2d(&self) -> Point2D {

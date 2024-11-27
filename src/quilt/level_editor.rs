@@ -2,7 +2,7 @@ mod mapdata;
 mod endata;
 
 use std::{fs, path::PathBuf};
-use egui::{self, Button, Rect, Color32};
+use egui::{self, Button, Color32, Rect};
 use gfarch::gfarch;
 use mapdata::Mapdata;
 use reqwest::blocking::Client;
@@ -189,8 +189,50 @@ impl LevelEditor {
         Ok(())
     }
 
-    fn save_file(&mut self, _save_as: bool) {
-        todo!()
+    fn save_file(&mut self, save_as: bool) -> Result<()> {
+        let path = if !save_as {
+            self.file_path.clone()
+        } else {
+            match rfd::FileDialog::new()
+            .add_filter("Level archive", &["gfa"])
+            .save_file() {
+                Some(p) => p,
+                None => {
+                    bail!("User exited.");
+                }
+            }
+        };
+
+        // enbin
+        println!("enbin not implemented yet");
+        // mapbin
+        self.archive_contents[self.selected_pair_index + 1].contents = self.current_mapdata.to_bytes();
+        
+        // println!("path: {}", path.to_path_buf().to_str().unwrap());
+
+
+
+            let archive = gfarch::pack_from_files(
+                &self.archive_contents,
+                gfarch::Version::V3,
+                gfarch::CompressionType::BPE,
+                gfarch::GFCPOffset::Default
+            );
+
+            assert_ne!(0, archive.len());
+            println!("{}", archive.len());
+            match fs::write(&path, archive) {
+                Ok(_) => {
+                    println!("done");
+                },
+                Err(e) => {
+                    eprintln!("{}", e.to_string());
+                }
+            }
+       
+
+
+        Ok(())
     }
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
@@ -204,13 +246,13 @@ impl LevelEditor {
 
                 if ui.add_enabled(self.file_open, Button::new("Save"))
                 .clicked() {
-                    self.save_file(false);
+                    let _ = self.save_file(false);
                     ui.close_menu();
                 }
 
                 if ui.add_enabled(self.file_open, Button::new("Save as"))
                 .clicked() {
-                    self.save_file(true);
+                    let _ = self.save_file(true);
                     ui.close_menu();
                 }
             });
