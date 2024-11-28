@@ -31,15 +31,15 @@ pub struct Enemy {
     pub unk_170: u32,
 }
 
-#[derive(Default)]
-pub struct Line {
-    pub points: Vec<Point2D>
-}
+// #[derive(Default)]
+// pub struct Line {
+//     pub points: Vec<Point2D>
+// }
 
 #[derive(Default)]
 pub struct Endata {
     pub enemies: Vec<Enemy>,
-    pub lines: Vec<Line>,
+    pub unk_footer: Vec<u8>, // these float values dont seem to do anything
 }
 
 impl Endata {
@@ -56,7 +56,7 @@ impl Endata {
 
         // this value is usually 0x14
         let enemy_offset = BigEndian::read_u32(&input[0xC..0x10]) as usize;
-        let line_header_offset = BigEndian::read_u32(&input[0x10..0x14]) as usize;
+        let unk_header_offset = BigEndian::read_u32(&input[0x10..0x14]) as usize;
 
         let num_enemies = BigEndian::read_u32(&input[enemy_offset..enemy_offset + 4]) as usize;
         for i in 0..num_enemies {
@@ -69,43 +69,37 @@ impl Endata {
             );
         }
 
-        // let num_line_entries = BigEndian::read_u32(&input[line_header_offset..line_header_offset + 4]);
-        // let line_offset = BigEndian::read_u32(&input[line_header_offset + 4..line_header_offset + 8]) as usize;
-        
-        // let mut line_offset_total = 0;
-        // for _ in 0..num_line_entries {
-        //     let start = line_offset + 4 + line_offset_total;
+        endata.unk_footer = input[unk_header_offset..].to_vec();
 
-        //     let line = Line::from_bytes(&input[start..]);
-
-        //     line_offset_total += 4 + (8 * line.points.len());
-
-        //     endata.lines.push(line);
-        // }
-
-        let num_lines = BigEndian::read_u32(&input[line_header_offset..line_header_offset + 4]) as usize;
-        let mut total_points = 0;
-        for i in 0..num_lines {
-            let start = line_header_offset + 8 + (total_points * 8) + (i * 4);
-
-            let count = BigEndian::read_u32(&input[start..start + 4]) as usize;
-            
-            endata.lines.push(
-                Line::from_bytes(
-                    &input[start..],
-                    count
-                )
-            );
-
-            total_points += count;
-        }
-        
         endata
     }
 
-    // pub fn to_data(&self) -> Vec<u8> {
-    //     todo!()
-    // }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::<u8>::new();
+
+        // header
+        out.extend_from_slice(b"GFES");
+        out.extend(3u32.to_be_bytes());
+        out.extend(0u32.to_be_bytes());
+        out.extend(0x14u32.to_be_bytes());
+        
+        let unk_offset = 0x14 + // header size
+            (ENEMY_SIZE * self.enemies.len()) as u32;
+        
+        
+        out.extend(unk_offset.to_be_bytes());
+
+        // enemies
+        
+        for enemy in self.enemies.iter() {
+            out.extend(enemy.to_bytes());
+        }
+
+        // the data at the end, if any
+        out.extend_from_slice(&self.unk_footer);
+        
+        out
+    }
 }
 
 
@@ -127,6 +121,21 @@ impl EnemyParams {
 
         params
     }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        for i in 0..3 {
+            out.extend(self.float_params[i].to_be_bytes());
+        }
+
+        for i in 0..3 {
+            out.extend(self.int_params[i].to_be_bytes());
+        }
+
+        out
+    }
+
 }
 
 impl Enemy {
@@ -157,29 +166,51 @@ impl Enemy {
         enemy
     }
 
-    // fn to_bytes(&self) -> Vec<u8> {
-    //     todo!()
-    // }
-}
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::<u8>::new();
 
+        out.extend(string_to_buffer(&self.name, 0x20));
+        out.extend(string_to_buffer(&self.behavior, 0x20));
+        out.extend(string_to_buffer(&self.path_name, 0x20));
+        out.extend(string_to_buffer(&self.bead_type, 0x10));
+        out.extend(string_to_buffer(&self.bead_color, 0x10));
+        out.extend(string_to_buffer(&self.direction, 0x08));
+        out.extend(string_to_buffer(&self.unk_88, 0x08));
+        out.extend(string_to_buffer(&self.orientation, 0x10));
 
+        out.extend(self.position_1.to_be_bytes());
+        out.extend(self.position_2.to_be_bytes());
+        out.extend(self.position_3.to_be_bytes());
 
-impl Line {
-    fn from_bytes(input: &[u8], count: usize) -> Self {
-        let mut line = Self::default();
+        for param in self.params.iter() {
+            out.extend(param.to_bytes());
+        }
 
-        for i in 0..count {
-            let start = i * 4;
-            let end = start + 8;
-            line.points.push(
-                Point2D::from_be_bytes(&input[start..end])
-            );
-        };
+        out.extend(&self.unk_16C.to_be_bytes());
+        out.extend(&self.unk_170.to_be_bytes());
 
-        line
+        out
     }
-
-    // fn to_bytes(&self) -> Vec<u8> {
-    //     todo!()
-    // }
 }
+
+
+
+// impl Line {
+//     fn from_bytes(input: &[u8], count: usize) -> Self {
+//         let mut line = Self::default();
+
+//         for i in 0..count {
+//             let start = i * 4;
+//             let end = start + 8;
+//             line.points.push(
+//                 Point2D::from_be_bytes(&input[start..end])
+//             );
+//         };
+
+//         line
+//     }
+
+//     // fn to_bytes(&self) -> Vec<u8> {
+//     //     todo!()
+//     // }
+// }

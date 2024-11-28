@@ -371,34 +371,18 @@ impl Mapdata {
         // colbin collision types
         out.extend((self.colbin_types.names.len() as u32).to_be_bytes());
         for col_type in self.colbin_types.names.iter() {
-            let bytes = col_type.as_bytes().to_vec();
-            let mut padded_bytes = bytes;
-            
-            if padded_bytes.len() < 0x20 {
-                padded_bytes.resize(0x20, 0);
-            }
-            out.extend(padded_bytes);
+            out.extend(string_to_buffer(&col_type, 0x20));
         }
         
         
         // labeled wall labels
         out.extend((self.wall_labels.names.len() as u32).to_be_bytes());
         for label in self.wall_labels.names.iter() {
-            let bytes = label.as_bytes().to_vec();
-            let mut padded_bytes = bytes;
-
-            if padded_bytes.len() < 0x20 {
-                padded_bytes.resize(0x20, 0);
-            }
-            out.extend(padded_bytes);
+            out.extend(string_to_buffer(&label, 0x20));
         }
 
         // alignment
-        let remainder = out.len() % 0x20;
-        if remainder != 0 {
-            let padding = 0x20 - remainder;
-            out.extend(vec![0u8; padding]);
-        }
+        out.resize(out.len().next_multiple_of(0x20), 0);
         
         out
     }

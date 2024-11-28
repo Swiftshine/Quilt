@@ -42,18 +42,6 @@ enum DataType {
 }
 
 #[derive(PartialEq)]
-enum EditMode {
-    View,
-    // Walls,
-    // LabeledWalls,
-    // CommonGimmicks,
-    // Gimmicks,
-    // Zones,
-    // CourseInfo,
-    // Enemies
-}
-
-#[derive(PartialEq)]
 // These are indices
 enum SelectType {
     // Walls,
@@ -66,21 +54,14 @@ enum SelectType {
 }
 
 
-
-impl Default for EditMode {
-    fn default() -> Self {
-        EditMode::View
-    }
-}
-
 #[derive(Default)]
 pub struct LevelEditor {
     file_open: bool,
     file_path: PathBuf,
     archive_contents: Vec<gfarch::FileContents>,
     selected_file_index: usize,
-    selected_pair_index: usize,
-    // edit_mode: EditMode,
+    selected_enbin_index: Option<usize>,
+    selected_mapbin_index: Option<usize>,
     current_mapdata: Mapdata,
     display_none: bool,
     current_endata: Endata,
@@ -88,6 +69,14 @@ pub struct LevelEditor {
     selected_object_indices: Vec<SelectType>,
     object_data_json: serde_json::Value,
     is_data_valid: bool,
+
+    show_walls: bool,
+    show_labeled_walls: bool,
+    show_common_gimmicks: bool,
+    show_gimmicks: bool,
+    show_paths: bool,
+    show_zones: bool,
+    show_course_info: bool,
 }
 
 impl LevelEditor {
@@ -103,6 +92,14 @@ impl LevelEditor {
             } else {
                 Default::default()
             },
+
+            show_walls: true,
+            show_labeled_walls: true,
+            show_common_gimmicks: true,
+            show_gimmicks: true,
+            show_paths: true,
+            show_zones: true,
+            show_course_info: true,
 
             ..Default::default()
         }
@@ -147,38 +144,23 @@ impl LevelEditor {
             self.object_data_json = serde_json::from_str(&s).expect("failed to read json");
         }
     }
-
-    fn set_pair(&mut self, enbin_index: usize) {
-        // each enbin goes with a corresponding mapbin
-        // though both will be rendered at the same time,
-        // they can't be edited at the same time,
-        // for the sake of ease of use.
-        self.selected_pair_index = enbin_index;
-    }
     
     fn update_level_data(&mut self) {
-        // check if there's an enbin
-        if self.archive_contents[self.selected_pair_index].filename.contains(".enbin") {
-            self.current_endata = Endata::from_data(
-                &self.archive_contents[self.selected_pair_index].contents
-            );
-
-            self.current_mapdata = if self.archive_contents.len() > self.selected_pair_index + 1 
-                && self.archive_contents[self.selected_pair_index + 1].filename.contains(".mapbin") {
-                Mapdata::from_data(
-                    &self.archive_contents[self.selected_pair_index + 1].contents
-                )
-            } else {
-                Mapdata::default()
-            };
-            
+        self.current_endata = if let Some(enbin_index) = self.selected_enbin_index {
+            Endata::from_data(
+                &self.archive_contents[enbin_index].contents
+            )
         } else {
-            // it's a mapbin
-            self.current_mapdata = Mapdata::from_data(
-                &self.archive_contents[self.selected_pair_index].contents
-            );
-        }
-        
+            Default::default()
+        };
+
+        self.current_mapdata = if let Some(mapbin_index) = self.selected_mapbin_index {
+            Mapdata::from_data(
+                &self.archive_contents[mapbin_index].contents
+            )
+        } else {
+            Default::default()
+        };
         
         self.selected_object_indices.clear();
     }
@@ -190,8 +172,30 @@ impl LevelEditor {
             self.file_path = path;
             let data = fs::read(&self.file_path)?;
             self.archive_contents = gfarch::extract(&data)?;
+
+            if self.archive_contents.len() == 0 {
+                bail!("archive is invalid");
+            }
+
+
+            self.selected_enbin_index = 
+            if self.archive_contents[0].filename.contains(".enbin") {
+                Some(0)
+            } else {
+                None
+            };
+
+
+            
+            self.selected_mapbin_index = if self.archive_contents.len() > 1
+                && self.archive_contents[1].filename.contains(".mapbin")
+            {
+                Some(1)
+            } else {
+                None
+            };
+
             self.selected_file_index = 0;
-            self.set_pair(0);
 
             self.update_level_data();
 
@@ -218,9 +222,16 @@ impl LevelEditor {
         self.file_path = path;
 
         // enbin
-        println!("enbin not implemented yet");
+
+        // enbin saving still seems a bit odd
+        if let Some(_index) = self.selected_enbin_index {
+            // self.archive_contents[index].contents = self.current_endata.to_bytes();
+        }
+
         // mapbin
-        self.archive_contents[self.selected_pair_index + 1].contents = self.current_mapdata.to_bytes();
+        if let Some(index) = self.selected_mapbin_index {
+            self.archive_contents[index].contents = self.current_mapdata.to_bytes();
+        }
 
         let archive = gfarch::pack_from_files(
             &self.archive_contents,
@@ -282,12 +293,29 @@ impl LevelEditor {
     
                 if self.selected_file_index != index {
                     self.selected_file_index = index;
-                    // the pairs will always be even because they share the
-                    // same index as that of the mapbin
-                    self.selected_pair_index = index - (index % 2);
+
+                    // check if the index is that of an enbin
+                    self.selected_enbin_index = 
+                    if self.archive_contents[index].filename.contains(".enbin") {
+                        Some(index)    
+                    } else {
+                        None
+                    };
+                    
+                    self.selected_mapbin_index =
+                    if index % 2 == 0 &&
+                    self.archive_contents[index + 1].filename.contains(".mapbin") {
+                        Some(index + 1)
+                    } else if self.archive_contents[index].filename.contains(".mapbin") {
+                        Some(index)
+                    } else {
+                        None
+                    };
+                    
                     self.update_level_data();
                 }
             });
+
     
             if ui.button("Update data")
             .on_hover_text("Updates 'objectdata.json' from the internet.")
@@ -307,10 +335,29 @@ impl LevelEditor {
 
             ui.checkbox(&mut self.display_none, "Display 'NONE'?")
             .on_hover_text("Indicates whether or not to display entities with a name of 'NONE'.");
+
+            // if ui.button("Remove 'NONE'?")
+            // .on_hover_text("Any entities with a name of 'NONE' will be removed.")
+            // .clicked() {
+            //     self.current_mapdata.gimmicks.retain(|gimmick| gimmick.name != "NONE");
+            //     self.current_mapdata.paths.retain(|path| path.name != "NONE");
+            //     self.current_mapdata.zones.retain(|zone| zone.name != "NONE");
+            // }
         });
 
         // canvas
-        ui.label("Canvas");
+        ui.horizontal(|ui|{
+            ui.label("Canvas");
+            ui.add_space(3.0);
+            ui.checkbox(&mut self.show_walls, "Show Walls");
+            ui.checkbox(&mut self.show_labeled_walls, "Show Labeled Walls");
+            ui.checkbox(&mut self.show_common_gimmicks, "Show Common Gimmicks");
+            ui.checkbox(&mut self.show_gimmicks, "Show Gimmicks");
+            ui.checkbox(&mut self.show_paths, "Show Paths");
+            ui.checkbox(&mut self.show_zones, "Show Zones");
+            ui.checkbox(&mut self.show_course_info, "Show Course Info");
+        });
+
         egui::Frame::canvas(ui.style())
         .show(ui, |ui|{
             
@@ -327,16 +374,35 @@ impl LevelEditor {
 
             /* rendering */
 
-            self.update_walls(ui, rect);
-            self.update_labeled_walls(ui, rect);
-            self.update_common_gimmicks(ui, rect);
-            self.update_gimmicks(ui, rect);
-            self.update_paths(ui, rect);
-            self.update_zones(ui, rect);
-            self.update_course_info(ui, rect);
+            if self.show_walls {
+                self.update_walls(ui, rect);
+            }
+
+            if self.show_labeled_walls {
+                self.update_labeled_walls(ui, rect);
+            }
+
+            if self.show_common_gimmicks {
+                self.update_common_gimmicks(ui, rect);
+            }
+  
+            if self.show_gimmicks {
+                self.update_gimmicks(ui, rect);
+            }
+
+            if self.show_paths {
+                self.update_paths(ui, rect);
+            }
+
+            if self.show_zones {
+                self.update_zones(ui, rect);
+            }
+
+            if self.show_course_info {
+                self.update_course_info(ui, rect);
+            }
 
             self.update_enemies(ui, rect);
-            self.update_enemy_lines(ui, rect);
 
             /* end rendering */
 
@@ -654,27 +720,6 @@ impl LevelEditor {
 
                 enemy.position_1.x += world_delta.x;
                 enemy.position_1.y -= world_delta.y;
-            }
-        }
-    }
-
-
-    fn update_enemy_lines(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
-        for line in self.current_endata.lines.iter() {
-            for i in 0..line.points.len() - 1 {
-                let start = rect.min + 
-                    self.camera.to_camera(line.points[i].to_vec2());
-
-                let end = rect.min +
-                    self.camera.to_camera(line.points[i + 1].to_vec2());
-
-                painter.line_segment(
-                    [start, end],
-                    egui::Stroke::new(1.0, Color32::from_rgb(
-                        0xFF, 0x00, 0x00
-                    ))
-                );
             }
         }
     }

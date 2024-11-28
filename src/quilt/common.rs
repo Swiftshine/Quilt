@@ -100,6 +100,12 @@ pub fn string_from_buffer(input: &[u8]) -> String {
     String::from_utf8(string.to_vec()).unwrap_or_else(|_| String::default())
 }
 
+pub fn string_to_buffer(input: &str, len: usize) -> Vec<u8> {
+    let mut out = input.as_bytes().to_vec();
+    out.resize(len, 0);
+    out
+}
+
 impl NameMap {
     pub fn read_names(
         &mut self,
