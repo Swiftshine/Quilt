@@ -6,7 +6,7 @@ use egui::{self, Button, Color32, Rect};
 use gfarch::gfarch;
 use mapdata::Mapdata;
 use reqwest::blocking::Client;
-// use endata::Endata;
+use endata::Endata;
 use rfd::FileDialog;
 use anyhow::{bail, Result};
 const SQUARE_SIZE: f32 = 2.0;
@@ -50,6 +50,7 @@ enum EditMode {
     // Gimmicks,
     // Zones,
     // CourseInfo,
+    // Enemies
 }
 
 #[derive(PartialEq)]
@@ -61,6 +62,7 @@ enum SelectType {
     Gimmick(usize),
     // Zones,
     // CourseInfo,
+    // Enemies
 }
 
 
@@ -81,7 +83,7 @@ pub struct LevelEditor {
     // edit_mode: EditMode,
     current_mapdata: Mapdata,
     display_none: bool,
-    // current_endata: Endata,
+    current_endata: Endata,
     camera: Camera,
     selected_object_indices: Vec<SelectType>,
     object_data_json: serde_json::Value,
@@ -155,18 +157,28 @@ impl LevelEditor {
     }
     
     fn update_level_data(&mut self) {
-        println!("endata not implemented yet");
-        // self.current_endata = Endata::from_data(
-        //     &self.archive_contents[self.selected_pair_index].contents
-        // );
-        
-        self.current_mapdata = if self.archive_contents.len() > self.selected_pair_index + 1{
-            Mapdata::from_data(
-                &self.archive_contents[self.selected_pair_index + 1].contents
-            )
+        // check if there's an enbin
+        if self.archive_contents[self.selected_pair_index].filename.contains(".enbin") {
+            self.current_endata = Endata::from_data(
+                &self.archive_contents[self.selected_pair_index].contents
+            );
+
+            self.current_mapdata = if self.archive_contents.len() > self.selected_pair_index + 1 
+                && self.archive_contents[self.selected_pair_index + 1].filename.contains(".mapbin") {
+                Mapdata::from_data(
+                    &self.archive_contents[self.selected_pair_index + 1].contents
+                )
+            } else {
+                Mapdata::default()
+            };
+            
         } else {
-            Mapdata::default()
-        };
+            // it's a mapbin
+            self.current_mapdata = Mapdata::from_data(
+                &self.archive_contents[self.selected_pair_index].contents
+            );
+        }
+        
         
         self.selected_object_indices.clear();
     }
@@ -203,35 +215,21 @@ impl LevelEditor {
             }
         };
 
+        self.file_path = path;
+
         // enbin
         println!("enbin not implemented yet");
         // mapbin
         self.archive_contents[self.selected_pair_index + 1].contents = self.current_mapdata.to_bytes();
-        
-        // println!("path: {}", path.to_path_buf().to_str().unwrap());
 
+        let archive = gfarch::pack_from_files(
+            &self.archive_contents,
+            gfarch::Version::V3,
+            gfarch::CompressionType::BPE,
+            gfarch::GFCPOffset::Default
+        );
 
-
-            let archive = gfarch::pack_from_files(
-                &self.archive_contents,
-                gfarch::Version::V3,
-                gfarch::CompressionType::BPE,
-                gfarch::GFCPOffset::Default
-            );
-
-            assert_ne!(0, archive.len());
-            println!("{}", archive.len());
-            match fs::write(&path, archive) {
-                Ok(_) => {
-                    println!("done");
-                },
-                Err(e) => {
-                    eprintln!("{}", e.to_string());
-                }
-            }
-       
-
-
+        fs::write(&self.file_path, archive)?;
         Ok(())
     }
 
@@ -336,6 +334,9 @@ impl LevelEditor {
             self.update_paths(ui, rect);
             self.update_zones(ui, rect);
             self.update_course_info(ui, rect);
+
+            self.update_enemies(ui, rect);
+            self.update_enemy_lines(ui, rect);
 
             /* end rendering */
 
@@ -603,6 +604,78 @@ impl LevelEditor {
                 0.0,
                 egui::Stroke::new(1.0, egui::Color32::LIGHT_YELLOW)
             );
+        }
+    }
+
+    fn update_enemies(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+        
+        for enemy in self.current_endata.enemies.iter_mut() {
+            let pos = enemy.position_1.to_point_2d();
+            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
+            let square = egui::Rect::from_center_size(
+                {
+                    let pos = screen_pos.to_pos2();
+
+                    egui::Pos2::new(
+                        pos.x,
+                        pos.y - SQUARE_SIZE * 2.0
+                    )
+                },
+                egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)
+            );
+
+            let resp = ui.interact(
+                square,
+                egui::Id::new(enemy as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            let color = egui::Color32::from_rgb(
+                0xE3, 0x96, 0xDF
+            );
+
+            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+
+            if resp.hovered() {
+                painter.text(
+                    screen_pos.to_pos2() + egui::Vec2::new(10.0, -10.0),
+                    egui::Align2::LEFT_CENTER,
+                    &enemy.name,
+                    egui::FontId::default(),
+                    egui::Color32::WHITE
+                );
+            }
+
+            if resp.clicked() {
+                // self.selected_object_indices.push(SelectType::Gimmick(index));
+            } else if resp.dragged() {   
+                let world_delta = resp.drag_delta() / self.camera.zoom;
+
+                enemy.position_1.x += world_delta.x;
+                enemy.position_1.y -= world_delta.y;
+            }
+        }
+    }
+
+
+    fn update_enemy_lines(&mut self, ui: &mut egui::Ui, rect: Rect) {
+        let painter = ui.painter_at(rect);
+        for line in self.current_endata.lines.iter() {
+            for i in 0..line.points.len() - 1 {
+                let start = rect.min + 
+                    self.camera.to_camera(line.points[i].to_vec2());
+
+                let end = rect.min +
+                    self.camera.to_camera(line.points[i + 1].to_vec2());
+
+                painter.line_segment(
+                    [start, end],
+                    egui::Stroke::new(1.0, Color32::from_rgb(
+                        0xFF, 0x00, 0x00
+                    ))
+                );
+            }
         }
     }
 
