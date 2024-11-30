@@ -1,6 +1,5 @@
 use super::{
-    LevelEditor,
-    ObjectType
+    Enemy, LevelEditor, ObjectType
 };
 
 use std::fs;
@@ -69,13 +68,21 @@ impl LevelEditor {
             ui.checkbox(&mut self.display_none, "Display 'NONE'?")
             .on_hover_text("Indicates whether or not to display entities with a name of 'NONE'.");
 
-            // if ui.button("Remove 'NONE'?")
-            // .on_hover_text("Any entities with a name of 'NONE' will be removed.")
-            // .clicked() {
-            //     self.current_mapdata.gimmicks.retain(|gimmick| gimmick.name != "NONE");
-            //     self.current_mapdata.paths.retain(|path| path.name != "NONE");
-            //     self.current_mapdata.zones.retain(|zone| zone.name != "NONE");
-            // }
+            if ui.button("Remove 'NONE'?")
+            .on_hover_text("Any entities with a name of 'NONE' will be removed.")
+            .clicked() {
+                self.current_mapdata.gimmicks.retain(|gimmick| gimmick.name != "NONE");
+                self.current_mapdata.paths.retain(|path| path.name != "NONE");
+                self.current_mapdata.zones.retain(|zone| zone.name != "NONE");
+            }
+
+            ui.collapsing("Level information", |ui|{
+                ui.label("Mapdata").highlight();
+                ui.horizontal(|ui|{
+                    ui.label("Unknown @ 0x0");
+                    ui.add(egui::DragValue::new(&mut self.current_mapdata.unk_0).range(f32::MIN..=f32::MAX));
+                })
+            });
         });
 
         // canvas
@@ -157,6 +164,13 @@ impl LevelEditor {
                                 .is_none() {
                                     self.current_mapdata.common_gimmick_names.hex_names.push(hex.to_owned());
                                 }
+                            }
+
+                            ObjectType::Enemy => {
+                                let mut enemy = Enemy::new();
+                                let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
+                                enemy.position_1 = Point2D::from_pos2(pos).to_point_3d();
+                                self.current_endata.enemies.push(enemy);
                             }
 
                             // _ => {}

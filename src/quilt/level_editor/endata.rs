@@ -143,6 +143,19 @@ impl EnemyParams {
 }
 
 impl Enemy {
+    pub fn new() -> Self {
+        let mut enemy = Self::default();
+        
+        enemy.name = String::from("ENEMY00");
+        enemy.behavior = String::from("STAND");
+        enemy.bead_type = String::from("BEAD_KIND_00");
+        enemy.bead_color = String::from("RANDOM");
+        enemy.direction = String::from("LEFT");
+        enemy.orientation = String::from("NONE");
+
+        enemy
+    }
+
     fn from_bytes(input: &[u8]) -> Self {
         let mut enemy = Self::default();
 

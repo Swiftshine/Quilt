@@ -5,18 +5,13 @@ mod le_util;
 mod le_canvas;
 mod le_object;
 
-
 use std::{fs, path::PathBuf};
 use egui::{self, Button};
 use gfarch::gfarch;
 use mapdata::*;
 use endata::*;
-
 use super::common::Camera;
 use serde_json;
-
-
-
 
 #[derive(PartialEq)]
 // These are indices
@@ -38,7 +33,7 @@ enum ObjectType {
     Gimmick,
     // Zones,
     // CourseInfo,
-    // Enemies
+    Enemy
 }
 
 
@@ -177,16 +172,17 @@ impl LevelEditor {
                                     self.current_add_object = Some(ObjectType::CommonGimmick(hex.to_owned()))
                                 }
                             }
-
-
                         }
-                        
 
                     });
                 });
 
                 if ui.button("Add Gimmick").clicked() {
                     self.current_add_object = Some(ObjectType::Gimmick);
+                }
+
+                if ui.button("Add Enemy").clicked() {
+                    self.current_add_object = Some(ObjectType::Enemy);
                 }
 
             });
