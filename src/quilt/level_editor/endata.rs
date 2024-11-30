@@ -251,7 +251,14 @@ pub fn label_to_color_string(label: &str) -> String {
     }.to_string()
 }
 
-pub const ENEMY_LIST: [(&str, &str); 96] = [
+pub const ENEMY_LIST: [(&str, &str); 103] = [
+    ("BOSS01", "Fangora"),
+    ("BOSS02", "Hot Wings"),
+    ("BOSS03", "Squashini"),
+    ("BOSS04", "Capamari"),
+    ("BOSS05", "King Dedede"),
+    ("BOSS06", "Meta Knight"),
+    ("BOSS07", "Yin-Yarn"),
     ("ENEMY00", "Green Magmotamus"),
     ("ENEMY01", "Shelby"),
     ("ENEMY02", "Uniclod"),
@@ -350,12 +357,12 @@ pub const ENEMY_LIST: [(&str, &str); 96] = [
     ("HELP_ROBOT", "Controls Screen"),
 ];
 
-pub fn enemy_id_to_name(enemy_id: &str) -> &str {
+pub fn enemy_id_to_name(enemy_id: &str) -> String {
     for (id, name) in ENEMY_LIST {
         if id == enemy_id {
-            return name;
+            return String::from(name);
         }
     }
 
-    return "<error>";
+    return "raw: ".to_string() + enemy_id;
 }
