@@ -208,7 +208,8 @@ impl LevelEditor {
             self.camera.pan(delta / self.camera.zoom);
         }
 
-        if ui.ctx().input(|i| i.pointer.button_down(egui::PointerButton::Secondary)) {
+
+        if ui.ctx().input(|i| i.key_pressed(egui::Key::Escape)) {
             self.deselect_all();
         }
     }
