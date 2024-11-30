@@ -29,6 +29,9 @@ pub struct Enemy {
     pub params: [EnemyParams; 7],
     pub unk_16C: u32,
     pub unk_170: u32,
+
+
+    pub is_selected: bool
 }
 
 // #[derive(Default)]
@@ -84,13 +87,14 @@ impl Endata {
         out.extend(0x14u32.to_be_bytes());
         
         let unk_offset = 0x14 + // header size
-            (ENEMY_SIZE * self.enemies.len()) as u32;
+            4 + // enemy count
+            (ENEMY_SIZE * self.enemies.len()) as u32; // enemy entries
         
         
         out.extend(unk_offset.to_be_bytes());
+        out.extend((self.enemies.len() as u32).to_be_bytes());
 
         // enemies
-        
         for enemy in self.enemies.iter() {
             out.extend(enemy.to_bytes());
         }
@@ -214,3 +218,144 @@ impl Enemy {
 //     //     todo!()
 //     // }
 // }
+
+
+pub fn color_string_to_label(s: &str) -> String {
+    // the color "PURPLE" is typed as "PERPLE" in the game's code.
+
+    match s {
+        "RED" => "Red",
+        "ORANGE" => "Orange",
+        "YELLOW" => "Yellow",
+        "GREEN" => "Green",
+        "BLUE" => "Blue",
+        "PERPLE" => "Purple",
+        "WHITE" => "White",
+        "RANDOM" => "Random",
+        _ => "<error>"
+    }.to_string()
+}
+
+
+pub fn label_to_color_string(label: &str) -> String {
+    match label {
+        "Red" => "RED",
+        "Orange" => "ORANGE",
+        "Yellow" => "YELLOW",
+        "Green" => "GREEN",
+        "Blue" => "BLUE",
+        "Purple" => "PERPLE", // note the typo in the game's code
+        "White" => "WHITE",
+        "Random" => "RANDOM",
+        _ => "<error>",
+    }.to_string()
+}
+
+pub const ENEMY_LIST: [(&str, &str); 96] = [
+    ("ENEMY00", "Green Magmotamus"),
+    ("ENEMY01", "Shelby"),
+    ("ENEMY02", "Uniclod"),
+    ("ENEMY03", "Buttonbee"),
+    ("ENEMY04", "Slobba"),
+    ("ENEMY05", "Sulkworm"),
+    ("ENEMY06", "Dandan"),
+    ("ENEMY07", "Jelly Jr."),
+    ("ENEMY08", "Calderon"),
+    ("ENEMY09", "Swadclod"),
+    ("ENEMY10", "Sneak Sack"),
+    ("ENEMY11", "Battins"),
+    ("ENEMY12", "Candlemander"),
+    ("ENEMY13", "Sea Jelly"),
+    ("ENEMY14", "Whistle Soldier"),
+    ("ENEMY15", "Sword Soldier"),
+    ("ENEMY16", "Spear Soldier"),
+    ("ENEMY17", "Cannon Soldier"),
+    ("ENEMY18", "Large Sawgill"),
+    ("ENEMY19", "Anemonee"),
+    ("ENEMY20", "Danglerfish"),
+    ("ENEMY21", "Bobber Clod"),
+    ("ENEMY23", "Magmotamus"),
+    ("ENEMY24", "Snip-Snap"),
+    ("ENEMY25", "Gator"),
+    ("ENEMY26", "Waddle Dee"),
+    ("ENEMY27", "Spear Waddle Dee"),
+    ("ENEMY28", "Waddle Doo"),
+    ("ENEMY29", "Ooki"),
+    ("ENEMY30", "Bomber"),
+    ("ENEMY31", "Flamer"),
+    ("ENEMY32", "Scarfy"),
+    ("ENEMY33", "Blipper"),
+    ("ENEMY34", "Buttonbug"),
+    ("ENEMY35", "Bronto Burt"),
+    ("ENEMY36", "Scared Soldier"),
+    ("ENEMY37", "Grizzo"),
+    ("ENEMY38", "Shotso"),
+    ("ENEMY39", "Parasol Waddle Dee"),
+    ("ENEMY40", "Chilly"),
+    ("ENEMY41", "Waddle Dee (Duplicate)"),
+    ("ENEMY42", "UFO"),
+    ("ENEMY43", "Bow Waddle Dee"),
+    ("ENEMY45", "Cyclod"),
+    ("ENEMY46", "Buttonfly"),
+    ("ENEMY48", "Space Jelly"),
+    ("ENEMY49", "Truck Monster"),
+    ("ENEMY50", "Large Cannon (Battleship Halberd)"),
+    ("ENEMY51", "Small Cannon (Battleship Halberd)"),
+    ("ENEMY52", "Battleship Halberd Turret"),
+    ("ENEMY53", "Battleship Halberd Turret (Turret only)"),
+    ("ENEMY54", "Battleship Halberd Flamethrower"),
+    ("ENEMY55", "Podium (Cyclod)"),
+    ("ENEMY56", "Battleship Halberd Flamethrower Barrier"),
+    ("ENEMY57", "Orbitfly"),
+    ("ENEMY58", "Spore Jelly"),
+    ("ENEMY59", "UFO (Alt.)"),
+    ("ENEMY60", "Dropso"),
+    ("ENEMY61", "Stogue"),
+    ("ENEMY62", "Capamari Tentacle"),
+    ("ENEMY63", "Unidentified Enemy 63"),
+    ("ENEMY64", "Unidentified Enemy 64"),
+    ("ENEMY65", "Unidentified Enemy 65"),
+    ("ENEMY66", "Unidentified Enemy 66"),
+    ("ENEMY67", "Unidentified Enemy 67"),
+    ("ENEMY68", "Unidentified Enemy 68"),
+    ("ENEMY69", "Meta Knight's Sword"),
+    ("ENEMY70", "Unidentified Enemy 70"),
+    ("ENEMY71", "Unidentified Enemy 71"),
+    ("ENEMY72", "Unidentified Enemy 72"),
+    ("ENEMY74", "Unidentified Enemy 74"),
+    ("ENEMY75", "Unidentified Enemy 75"),
+    ("ENEMY76", "Smiley Face"),
+    ("ENEMY78", "Unidentified Enemy 78"),
+    ("ENEMY80", "Unidentified Enemy 80"),
+    ("ENEMY81", "Unidentified Enemy 81"),
+    ("ENEMY82", "Unidentified Enemy 82"),
+    ("ENEMY83", "Unidentified Enemy 83"),
+    ("ENEMY84", "Unidentified Enemy 84"),
+    ("ENEMY100", "Small Sawgill"),
+    ("ENEMY101", "Freezo"),
+    ("ENEMY102", "Bobber Clod (Duplicate)"),
+    ("ENEMY103", "Horizontal Battleship Halberd Barrier"),
+    ("ENEMY106", "Lil' Kracko"),
+    ("ENEMY107", "Kracko"),
+    ("ENEMY110", "Emba"),
+    ("ENEMY111", "Whistle Mariner"),
+    ("ENEMY112", "Sword Mariner"),
+    ("ENEMY113", "Spear Mariner"),
+    ("ENEMY114", "Cannon Mariner"),
+    ("ENEMY115", "Wicked Willow"),
+    ("ENEMY116", "Cutfish"),
+    ("ENEMY117", "Blast Mariner"),
+    ("ENEMY118", "Scared Mariner"),
+    ("ENEMY119", "Small Cannon (Moon Base)"),
+    ("HELP_ROBOT", "Controls Screen"),
+];
+
+pub fn enemy_id_to_name(enemy_id: &str) -> &str {
+    for (id, name) in ENEMY_LIST {
+        if id == enemy_id {
+            return name;
+        }
+    }
+
+    return "<error>";
+}

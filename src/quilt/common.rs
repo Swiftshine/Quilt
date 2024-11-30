@@ -1,5 +1,5 @@
 use byteorder::{ByteOrder, BigEndian};
-use egui::Vec2;
+use egui::{Pos2, Vec2};
 // use encoding_rs::SHIFT_JIS;
 
 // pub fn shift_jis_to_utf8(raw: &[u8]) -> String {
@@ -35,12 +35,34 @@ impl Point2D {
         bytes
     }
 
+    pub fn from_pos2(pos: Pos2) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y
+        }
+    }
+
+    // pub fn from_vec2(pos: Vec2) -> Self {
+    //     Self {
+    //         x: pos.x,
+    //         y: pos.y
+    //     }
+    // }
+
     // pub fn to_pos2(&self) -> Pos2 {
     //     Pos2 { x: self.x, y: self.y }
     // }
 
     pub fn to_vec2(&self) -> Vec2 {
         Vec2 { x: self.x, y: self.y }
+    }
+
+    pub fn to_point_3d(&self) -> Point3D {
+        Point3D {
+            x: self.x,
+            y: self.y,
+            z: 0.0
+        }
     }
 }
 
@@ -156,7 +178,6 @@ impl HexMap {
             let name = &name_bytes[..null_terminator_pos];
 
             self.indices.push(i);
-            // self.names.push(shift_jis_to_utf8(&name));
             self.hex_names.push(hex::encode(&name).to_string().to_uppercase());
         }
     }
@@ -192,7 +213,10 @@ impl Camera {
         }
     
         // pan reset handling
-        if canvas_response.dragged() && ctx.input(|i| i.key_pressed(egui::Key::R)) {
+
+        if canvas_response.dragged_by(egui::PointerButton::Primary)
+            && ctx.input(|i| i.key_pressed(egui::Key::R))
+        {
             self.reset();
         }
     }
@@ -209,12 +233,19 @@ impl Camera {
 
     }
 
-    // pub fn from_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
+    // pub fn from_camera(&self) -> egui::Vec2 {
     //     egui::Vec2 {
-    //         x: (pos.x / self.zoom) + self.position.x,
-    //         y: (-pos.y / self.zoom) + self.position.y
+    //         x: (self.position.x / self.zoom) + self.position.x,
+    //         y: (-self.position.y / self.zoom) + self.position.y
     //     }
     // }
+
+    pub fn convert_from_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
+        egui::Vec2 {
+            x: (pos.x / self.zoom) + self.position.x,
+            y: (-pos.y / self.zoom) - self.position.y
+        }
+    }
 
     pub fn reset(&mut self) {
         self.position = Default::default();

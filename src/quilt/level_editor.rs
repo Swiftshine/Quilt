@@ -4,13 +4,13 @@ mod endata;
 use std::{fs, path::PathBuf};
 use egui::{self, Button, Color32, Rect};
 use gfarch::gfarch;
-use mapdata::Mapdata;
+use mapdata::*;
 use reqwest::blocking::Client;
-use endata::Endata;
+use endata::*;
 use rfd::FileDialog;
 use anyhow::{bail, Result};
 const SQUARE_SIZE: f32 = 2.0;
-use super::common::Camera;
+use super::common::{Camera, Point2D};
 use serde_json;
 
 const GIMMICK_COLOR: Color32 = egui::Color32::from_rgb(
@@ -43,11 +43,22 @@ enum DataType {
 
 #[derive(PartialEq)]
 // These are indices
-enum SelectType {
+enum ObjectIndex {
     // Walls,
     // LabeledWalls,
     CommonGimmick(usize), 
     Gimmick(usize),
+    // Zones,
+    // CourseInfo,
+    Enemy(usize)
+}
+
+#[derive(PartialEq)]
+enum ObjectType {
+    // Walls,
+    // LabeledWalls,
+    CommonGimmick(String), 
+    Gimmick,
     // Zones,
     // CourseInfo,
     // Enemies
@@ -56,20 +67,27 @@ enum SelectType {
 
 #[derive(Default)]
 pub struct LevelEditor {
+    // i/o
     file_open: bool,
     file_path: PathBuf,
+
+    // files
     archive_contents: Vec<gfarch::FileContents>,
     selected_file_index: usize,
     selected_enbin_index: Option<usize>,
     selected_mapbin_index: Option<usize>,
     current_mapdata: Mapdata,
-    display_none: bool,
     current_endata: Endata,
-    camera: Camera,
-    selected_object_indices: Vec<SelectType>,
-    object_data_json: serde_json::Value,
-    is_data_valid: bool,
 
+    // editor
+    display_none: bool,
+    camera: Camera,
+    selected_object_indices: Vec<ObjectIndex>,
+    current_add_object: Option<ObjectType>,
+    object_data_json: serde_json::Value,
+    is_object_data_valid: bool,
+
+    // level contents
     show_walls: bool,
     show_labeled_walls: bool,
     show_common_gimmicks: bool,
@@ -77,6 +95,10 @@ pub struct LevelEditor {
     show_paths: bool,
     show_zones: bool,
     show_course_info: bool,
+
+    // ui
+    show_object_context_menu: bool,
+    common_gimmick_object_query: String,
 }
 
 impl LevelEditor {
@@ -103,6 +125,25 @@ impl LevelEditor {
 
             ..Default::default()
         }
+    }
+
+    fn deselect_all(&mut self) {
+        for select_type in self.selected_object_indices.iter() {
+            match select_type {
+                ObjectIndex::CommonGimmick(index) => {
+                    self.current_mapdata.common_gimmicks[*index].is_selected = false;
+                }
+
+                ObjectIndex::Gimmick(index) => {
+                    self.current_mapdata.gimmicks[*index].is_selected = false;
+                }
+
+                ObjectIndex::Enemy(index) => {
+                    self.current_endata.enemies[*index].is_selected = false;
+                }
+            }
+        }
+        self.selected_object_indices.clear();
     }
 
     fn update_object_data(&mut self) -> Result<()> {
@@ -222,10 +263,9 @@ impl LevelEditor {
         self.file_path = path;
 
         // enbin
-
-        // enbin saving still seems a bit odd
-        if let Some(_index) = self.selected_enbin_index {
-            // self.archive_contents[index].contents = self.current_endata.to_bytes();
+        
+        if let Some(index) = self.selected_enbin_index {
+            self.archive_contents[index].contents = self.current_endata.to_bytes();
         }
 
         // mapbin
@@ -321,7 +361,7 @@ impl LevelEditor {
             .on_hover_text("Updates 'objectdata.json' from the internet.")
             .clicked() {
                 if let Ok(_) = self.update_object_data() {
-                    println!("Succeeded.");
+                    // println!("Succeeded.");
                 } else {
                     println!("Failed.");
                 }
@@ -371,6 +411,67 @@ impl LevelEditor {
             // draw black
             let painter = ui.painter_at(rect);
             painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
+            
+            // object placement
+            if let Some(object_type) = &self.current_add_object {
+                if let Some(mut pointer_pos) = response.hover_pos() {
+                    pointer_pos += rect.min.to_vec2();
+
+                    painter.circle_filled(pointer_pos, 1.0, egui::Color32::GRAY);
+                    let crosshair_size = 10.0;
+
+                    // draw horizontal line
+                    painter.line_segment(
+                        [pointer_pos - egui::vec2(crosshair_size, 0.0), pointer_pos + egui::vec2(crosshair_size, 0.0)],
+                        egui::Stroke::new(1.0, egui::Color32::WHITE),
+                    );
+                    
+                    // draw vertical line
+                    painter.line_segment(
+                        [pointer_pos - egui::vec2(0.0, crosshair_size), pointer_pos + egui::vec2(0.0, crosshair_size)],
+                        egui::Stroke::new(1.0, egui::Color32::WHITE),
+                    );
+                }
+
+                if response.hovered() && ui.ctx().input(|i| i.pointer.any_released()) {
+                    if let Some(pointer_pos) = response.hover_pos() {
+
+                        match object_type {
+                            ObjectType::Gimmick => {
+                                let mut gmk = Gimmick::default();
+                                
+                                // the position gets put somewhere
+                                // below the mouse. not sure how to fix it
+                                let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
+
+                                gmk.position = Point2D::from_pos2(pos).to_point_3d();
+                                gmk.name = String::from("NEW");
+                                self.current_mapdata.gimmicks.push(gmk);
+                            }
+
+                            ObjectType::CommonGimmick(hex) => {
+                                let mut gmk = CommonGimmick::default();
+
+                                let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
+                                gmk.position = Point2D::from_pos2(pos).to_point_3d();
+                                gmk.hex = hex.to_owned();
+                                self.current_mapdata.common_gimmicks.push(gmk);
+
+                                let hex_str = hex.to_owned();
+                                if self.current_mapdata.common_gimmick_names.hex_names
+                                .iter()
+                                .position(|g| g.as_str() == &hex_str)
+                                .is_none() {
+                                    self.current_mapdata.common_gimmick_names.hex_names.push(hex.to_owned());
+                                }
+                            }
+
+                            // _ => {}
+                        }
+                        self.current_add_object = None;
+                    }
+                }
+            }
 
             /* rendering */
 
@@ -413,7 +514,7 @@ impl LevelEditor {
             // handle attributes
             
             let object_data_exists = if let Ok(b) = fs::exists("res/objectdata.json") {
-                b || !self.is_data_valid
+                b || !self.is_object_data_valid
             } else {
                 false
             };
@@ -422,31 +523,82 @@ impl LevelEditor {
                 self.process_object_attributes(ui);
             }
         });
+
+        
+    }
+
+    fn object_context_menu(&mut self, ui: &mut egui::Ui) {
+        egui::Area::new(egui::Id::from("le_object_context_menu"))
+        .anchor(
+            egui::Align2::RIGHT_BOTTOM,
+            egui::Vec2::splat(1.0)
+        )
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
+                ui.label("Add object");
+
+                ui.collapsing("Add Common Gimmick", |ui|{
+                    ui.label("Search");
+                    ui.text_edit_singleline(&mut self.common_gimmick_object_query);
+                    egui::ScrollArea::vertical()
+                    .id_salt("le_add_common_gimmick")
+                    .max_height(150.0)
+                    .show(ui, |ui|{
+                        // iterate through common gimmick names
+    
+                        let data = self.object_data_json.get("common_gimmicks")
+                        .expect("couldn't find 'common_gimmicks' inside objectdata.json")
+                        .as_object().unwrap();
+                        
+                        for (hex, values) in data {
+                            let name = values.get("name").and_then(|s| s.as_str()).unwrap();
+
+                            
+                            if name.to_lowercase()
+                            .contains(&self.common_gimmick_object_query.to_lowercase()) {
+                                let mut selected = false;
+
+                                ui.selectable_value(&mut selected, true, name);
+
+                                if selected {
+                                    self.current_add_object = Some(ObjectType::CommonGimmick(hex.to_owned()))
+                                }
+                            }
+
+
+                        }
+                        
+
+                    });
+                });
+
+                if ui.button("Add Gimmick").clicked() {
+                    self.current_add_object = Some(ObjectType::Gimmick);
+                }
+
+            });
+        });
     }
 
     fn handle_inputs(&mut self, ui: &mut egui::Ui, response: &egui::Response) {
-        if response.dragged() {
+        
+        if ui.ctx().input(|i| i.pointer.secondary_clicked()) {
+            self.show_object_context_menu = !self.show_object_context_menu;
+        }
+        
+        if self.show_object_context_menu {
+            self.object_context_menu(ui);
+        }
+
+        if response.dragged_by(egui::PointerButton::Primary) {
             let delta = response.drag_delta();
             self.camera.pan(delta / self.camera.zoom);
         }
 
         if ui.ctx().input(|i| i.pointer.button_down(egui::PointerButton::Secondary)) {
-            if !self.selected_object_indices.is_empty() {
-
-                if self.selected_object_indices.len() == 1 {
-                    match self.selected_object_indices[0] {
-                        SelectType::CommonGimmick(index) => {
-                            self.current_mapdata.common_gimmicks[index].is_selected = false;
-                        }
-
-                        SelectType::Gimmick(index) => {
-                            self.current_mapdata.gimmicks[index].is_selected = false;
-                        }
-                    }
-                }
-
-            }
-            self.selected_object_indices.clear();
+            self.deselect_all();
         }
     }
 
@@ -543,7 +695,7 @@ impl LevelEditor {
             }
 
             if resp.clicked() {
-                self.selected_object_indices.push(SelectType::CommonGimmick(index));
+                self.selected_object_indices.push(ObjectIndex::CommonGimmick(index));
             } else if resp.dragged() {
                 let world_delta = resp.drag_delta() / self.camera.zoom;
 
@@ -600,7 +752,7 @@ impl LevelEditor {
             }
             
             if resp.clicked() {
-                self.selected_object_indices.push(SelectType::Gimmick(index));
+                self.selected_object_indices.push(ObjectIndex::Gimmick(index));
             } else if resp.dragged() {   
                 let world_delta = resp.drag_delta() / self.camera.zoom;
 
@@ -676,7 +828,7 @@ impl LevelEditor {
     fn update_enemies(&mut self, ui: &mut egui::Ui, rect: Rect) {
         let painter = ui.painter_at(rect);
         
-        for enemy in self.current_endata.enemies.iter_mut() {
+        for (index, enemy) in self.current_endata.enemies.iter_mut().enumerate() {
             let pos = enemy.position_1.to_point_2d();
             let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
             let square = egui::Rect::from_center_size(
@@ -707,14 +859,14 @@ impl LevelEditor {
                 painter.text(
                     screen_pos.to_pos2() + egui::Vec2::new(10.0, -10.0),
                     egui::Align2::LEFT_CENTER,
-                    &enemy.name,
+                    enemy_id_to_name(&enemy.name),
                     egui::FontId::default(),
                     egui::Color32::WHITE
                 );
             }
 
             if resp.clicked() {
-                // self.selected_object_indices.push(SelectType::Gimmick(index));
+                self.selected_object_indices.push(ObjectIndex::Enemy(index));
             } else if resp.dragged() {   
                 let world_delta = resp.drag_delta() / self.camera.zoom;
 
@@ -730,22 +882,40 @@ impl LevelEditor {
         }
 
         match self.selected_object_indices[0] {
-            SelectType::CommonGimmick(index) => {
+            ObjectIndex::CommonGimmick(index) => {
                 self.process_common_gimmick_attributes(ui, index);   
             }
 
-            SelectType::Gimmick(index) => {
+            ObjectIndex::Gimmick(index) => {
                 self.process_gimmick_attributes(ui, index);
+            }
+
+            ObjectIndex::Enemy(index) => {
+                self.process_enemy_attributes(ui, index);
             }
         }
     }
 
     fn process_common_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.common_gimmicks.remove(index);
+            self.deselect_all();
+            return;
+        }
+
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        
         let gmk = &mut self.current_mapdata.common_gimmicks[index];
 
-        if !gmk.is_selected {
-            gmk.is_selected = true;
-        }
+        gmk.is_selected = true;
 
         let (name, is_hex) = if let Some(n) = Self::get_translated_common_gimmick_name(
             &self.object_data_json, &gmk.hex
@@ -755,21 +925,23 @@ impl LevelEditor {
             (gmk.hex.clone(), true)
         };
 
+
         egui::Area::new(egui::Id::from("le_common_gimmick_attribute_editor"))
         .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
         .show(ui.ctx(), |ui|{
             egui::Frame::popup(ui.style())
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui|{
-                
                 ui.label("Edit common gimmick attributes");
+
                 if is_hex {
                     ui.label(format!("Hex: {name}"));
                 } else {
                     ui.label(format!("Name: {name}"));
                 }
 
-                let data = self.object_data_json.get("common_gimmicks").expect("couldn't find 'common_gimmicks' inside objectdata.json");
+                let data = self.object_data_json.get("common_gimmicks")
+                .expect("couldn't find 'common_gimmicks' inside objectdata.json");
 
                 if let Some(gmk_data) = data.get(&gmk.hex) {
                     if let Some(desc) = gmk_data.get("description").and_then(|d| d.as_str()) {
@@ -1164,11 +1336,25 @@ impl LevelEditor {
     }
 
     fn process_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
-        let gmk = &mut self.current_mapdata.gimmicks[index];
-            
-        if !gmk.is_selected {
-            gmk.is_selected = true;
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.gimmicks.remove(index);
+            self.deselect_all();
+            return;
         }
+
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        let gmk = &mut self.current_mapdata.gimmicks[index];
+
+        gmk.is_selected = true;
+
 
         egui::Area::new(egui::Id::from("le_gimmick_attribute_editor"))
         .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
@@ -1389,6 +1575,180 @@ impl LevelEditor {
                                 &mut gmk.params.string_params[i]
                             ).char_limit(0x40)
                         );
+                    }
+                });
+            });
+        });
+    }
+
+
+    fn process_enemy_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.gimmicks.remove(index);
+            self.deselect_all();
+            return;
+        }
+
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        let enemy = &mut self.current_endata.enemies[index];
+
+        enemy.is_selected = true;
+
+        egui::Area::new(egui::Id::from("le_enemy_attribute_editor"))
+        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
+                ui.label("Edit enemy attributes");
+
+                egui::ComboBox::from_label("Enemy")
+                .selected_text(enemy_id_to_name(&enemy.name))
+                .show_ui(ui, |ui|{
+                    for (id, name) in ENEMY_LIST {
+                        ui.selectable_value(
+                            &mut enemy.name,
+                            String::from(id),
+                            name
+                        );
+                    }
+                });
+ 
+                egui::ComboBox::from_label("Behavior")
+                .selected_text(&enemy.behavior)
+                .show_ui(ui, |ui|{
+                    let behaviors = [
+                        "STAND", "WALK1", "WALK2", "WALK_AREA",
+                        "JUMP", "JUMP_LR", "FLOAT", "UP_DOWN",
+                        "SLIDE", "SEARCH", "ATTACK1", "ATTACK2",
+                        "ATTACK3", "READER", "FOLLOWING", "PURSUE",
+                        "ESCAPE", "DEMO", "EVENT"
+                    ];
+
+                    for behavior in behaviors {
+                        ui.selectable_value(
+                            &mut enemy.behavior,
+                            String::from(behavior),
+                            behavior
+                        );
+                    }
+                });
+
+                ui.horizontal(|ui|{
+                    ui.label("Path name");
+                    ui.add(
+                        egui::TextEdit::singleline(
+                            &mut enemy.path_name
+                        ).char_limit(0x20)
+                    );
+                });
+
+                egui::ComboBox::from_label("Bead type")
+                .selected_text(&enemy.bead_type)
+                .show_ui(ui, |ui|{
+                    for i in 0..=11 {
+                        let bead_type = format!("BEAD_KIND_{:02}", i);
+                        ui.selectable_value(
+                            &mut enemy.bead_type,
+                            bead_type.clone(),
+                            &bead_type,
+                        );
+                    }
+                });
+
+                egui::ComboBox::from_label("Bead color")
+                .selected_text(
+                    color_string_to_label(&enemy.bead_color)
+                )
+                .show_ui(ui, |ui|{
+                
+                    for color in [
+                        "Red", "Orange", "Yellow", "Green",
+                        "Blue", "Purple", "White", "Random"
+                    ] {
+                        ui.selectable_value(
+                            &mut enemy.bead_color,
+                            label_to_color_string(color),
+                            color
+                        );
+                    }
+                });
+
+                egui::ComboBox::from_label("Direction")
+                .selected_text(&enemy.direction)
+                .show_ui(ui, |ui|{
+                    let dirs = [
+                        "RIGHT", "LEFT", "UP", "DOWN"
+                    ];
+
+                    for dir in dirs {   
+                        ui.selectable_value(
+                            &mut enemy.direction,
+                            String::from(dir),
+                            dir,
+                        );
+                    }
+                });
+
+                ui.horizontal(|ui|{
+                    ui.label("Unknown @ 0x88");
+                    ui.add(
+                        egui::TextEdit::singleline(
+                            &mut enemy.unk_88
+                        ).char_limit(8)
+                    );
+                });
+
+
+                egui::ComboBox::from_label("Orientation")
+                .selected_text(&enemy.orientation)
+                .show_ui(ui, |ui|{
+                    let orientations = [
+                        "NONE", "FRONT", "BACK"
+                    ];
+
+                    for orientation in orientations {   
+                        ui.selectable_value(
+                            &mut enemy.orientation,
+                            String::from(orientation),
+                            orientation,
+                        );
+                    }
+                });
+
+                ui.collapsing("Parameters", |ui|{
+                    for i in 0..7 {
+                        ui.collapsing(format!("Set {}", i + 1), |ui|{
+                            ui.label("Float values");
+                            ui.horizontal(|ui|{
+                                for j in 0..3 {
+                                    ui.add(
+                                        egui::DragValue::new(&mut enemy.params[i].float_params[j])
+                                        .speed(1.0)
+                                        .range(f32::MIN..=f32::MAX)
+                                    );
+                                }
+                            });
+                            
+                            ui.label("Int values");
+                            ui.horizontal(|ui|{
+                                for j in 0..3 {
+                                    ui.add(
+                                        egui::DragValue::new(&mut enemy.params[i].int_params[j])
+                                        .speed(1.0)
+                                        .range(f32::MIN..=f32::MAX)
+                                    );
+                                }
+                            });
+                        });
                     }
                 });
             });
