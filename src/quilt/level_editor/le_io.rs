@@ -28,7 +28,7 @@ impl LevelEditor {
         self.selected_object_indices.clear();
     }
 
-    pub fn open_file(&mut self) -> Result<()> {
+    pub fn open_file(&mut self, ctx: &egui::Context) -> Result<()> {
         if let Some(path) = FileDialog::new()
         .add_filter("Level archive", &["gfa"])
         .pick_file() {
@@ -62,6 +62,11 @@ impl LevelEditor {
             self.update_level_data();
 
             self.file_open = true;
+            
+            // images
+            self.object_textures.clear();
+
+            self.load_object_textures(ctx);
         }
 
         Ok(())

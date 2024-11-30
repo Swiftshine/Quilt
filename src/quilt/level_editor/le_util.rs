@@ -9,6 +9,53 @@ use reqwest::blocking::Client;
 use serde_json;
 
 impl LevelEditor {
+    pub fn load_image_from_tex_folder(folder_name: &str, file_name: &str) -> Result<egui::ColorImage> {
+        let path = format!("res/tex/{folder_name}/{file_name}.png");
+        let image = image::open(&path)?.to_rgba8();
+
+        let (width, height) = image.dimensions();
+        let pixels = image
+            .pixels()
+            .map(|p| egui::Color32::from_rgba_unmultiplied(p[0], p[1], p[2], p[3]))
+            .collect();
+
+        Ok(egui::ColorImage {
+                size: [width as usize, height as usize],
+                pixels
+            }
+        )
+    }
+
+    pub fn load_object_textures(&mut self, ctx: &egui::Context) {
+        // gimmicks
+
+        for gmk in self.current_mapdata.gimmicks.iter() {
+            let key = format!("gimmick-{}", &gmk.name);
+            if !self.object_textures.contains_key(&key) {
+                if let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
+                    let texture = ctx.load_texture(
+                        &key, image_data, egui::TextureOptions::LINEAR
+                    );
+
+                    self.object_textures.insert(key, texture);
+                }
+            }
+        }
+
+        for gmk in self.current_mapdata.common_gimmicks.iter() {
+            let key = format!("common_gimmick-{}", &gmk.hex);
+            if !self.object_textures.contains_key(&key) {
+                if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", &gmk.hex) {
+                    let texture = ctx.load_texture(
+                        &key, image_data, egui::TextureOptions::LINEAR
+                    );
+
+                    self.object_textures.insert(key, texture);
+                }
+            }
+        }
+    }
+
     pub fn deselect_all(&mut self) {
         for select_type in self.selected_object_indices.iter() {
             match select_type {

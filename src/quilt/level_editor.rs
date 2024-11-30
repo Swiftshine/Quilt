@@ -5,8 +5,8 @@ mod le_util;
 mod le_canvas;
 mod le_object;
 
-use std::{fs, path::PathBuf};
-use egui::{self, Button};
+use std::{collections::HashMap, fs, path::PathBuf};
+use egui::{self, Button, TextureHandle};
 use gfarch::gfarch;
 use mapdata::*;
 use endata::*;
@@ -71,6 +71,9 @@ pub struct LevelEditor {
     // ui
     show_object_context_menu: bool,
     common_gimmick_object_query: String,
+
+    // graphics
+    object_textures: HashMap<String, TextureHandle>
 }
 
 impl LevelEditor {
@@ -105,7 +108,7 @@ impl LevelEditor {
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
                 if ui.button("Open").clicked() {
-                    let _ = self.open_file();
+                    let _ = self.open_file(ui.ctx());
                     ui.close_menu();
                 }
 

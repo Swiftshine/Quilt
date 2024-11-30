@@ -109,17 +109,22 @@ impl LevelEditor {
                 egui::Sense::click_and_drag()
             );
 
-            let color = if gmk.is_selected {
-                COMMON_GIMMICK_COLOR
-            } else{
-                egui::Color32::LIGHT_GRAY
-            };
-
-            painter.rect_stroke(
-                square,
-                0.0,
-                egui::Stroke::new(1.0, color)
-            );
+            if let Some(texture) = self.object_textures.get(&format!("common_gimmick-{}", &gmk.hex)) {
+                painter.image(
+                    texture.id(),
+                    square,
+                    egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
+                    egui::Color32::WHITE
+                );
+            } else {
+                let color = if gmk.is_selected {
+                    COMMON_GIMMICK_COLOR
+                } else {
+                    egui::Color32::LIGHT_GRAY
+                };
+    
+                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            }
 
             if resp.hovered() {
                 painter.text(
@@ -180,13 +185,23 @@ impl LevelEditor {
                 egui::Sense::click_and_drag()
             );
 
-            let color = if gmk.is_selected {
-                GIMMICK_COLOR
+            if let Some(texture) = self.object_textures.get(&format!("gimmick-{}", &gmk.name)) {
+                painter.image(
+                    texture.id(),
+                    square,
+                    egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
+                    egui::Color32::WHITE
+                );
             } else {
-                egui::Color32::LIGHT_GRAY
-            };
+                let color = if gmk.is_selected {
+                    GIMMICK_COLOR
+                } else {
+                    egui::Color32::LIGHT_GRAY
+                };
+    
+                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            }
 
-            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
 
             if resp.hovered() {
                 painter.text(
