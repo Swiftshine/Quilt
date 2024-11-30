@@ -2,7 +2,10 @@ mod views;
 mod level_editor;
 mod common;
 
+use std::sync::Arc;
+
 use eframe::{egui, NativeOptions};
+use egui::IconData;
 use views::QuiltView;
 use level_editor::LevelEditor;
 
@@ -22,11 +25,33 @@ impl QuiltApp {
 
     /// Starts the application.
     pub fn run() -> Result<(), eframe::Error> {
+        let mut options = NativeOptions::default();
+
+        options.viewport.icon = Some(
+            Arc::new(
+                IconData {
+                    rgba: {
+                        let icon = include_bytes!("../assets/icon.png");
+                        let image = image::load_from_memory(icon)
+                            .expect("Failed to open icon path")
+                            .into_rgba8();
+
+                        image.into_raw()
+                    },
+
+                    width: 48,
+                    height: 48
+                }
+            )
+        );
+
+
         eframe::run_native(
             "Quilt",
-            NativeOptions::default(),
+            options,
             Box::new(|_cc| {
                 // QuiltApp::setup_fonts(&cc.egui_ctx);
+                // egui_extras::install_image_loaders(&cc.egui_ctx);
                 Ok(Box::<QuiltApp>::from( QuiltApp::new() ))
             })
         )
