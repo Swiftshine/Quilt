@@ -901,7 +901,7 @@ impl LevelEditor {
             i.key_pressed(egui::Key::Delete)
         }) {
             self.current_mapdata.common_gimmicks.remove(index);
-            self.deselect_all();
+            self.selected_object_indices.clear();
             return;
         }
 
@@ -1340,7 +1340,7 @@ impl LevelEditor {
             i.key_pressed(egui::Key::Delete)
         }) {
             self.current_mapdata.gimmicks.remove(index);
-            self.deselect_all();
+            self.selected_object_indices.clear();
             return;
         }
 
@@ -1586,8 +1586,8 @@ impl LevelEditor {
         if ui.ctx().input(|i|{
             i.key_pressed(egui::Key::Delete)
         }) {
-            self.current_mapdata.gimmicks.remove(index);
-            self.deselect_all();
+            self.current_endata.enemies.remove(index);
+            self.selected_object_indices.clear();
             return;
         }
 
@@ -1737,7 +1737,7 @@ impl LevelEditor {
                                     );
                                 }
                             });
-                            
+
                             ui.label("Int values");
                             ui.horizontal(|ui|{
                                 for j in 0..3 {
