@@ -110,12 +110,21 @@ impl LevelEditor {
             );
 
             if let Some(texture) = self.object_textures.get(&format!("common_gimmick-{}", &gmk.hex)) {
+                if gmk.is_selected {
+                    painter.rect_filled(
+                        square,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10)
+                    );
+                }
+
                 painter.image(
                     texture.id(),
                     square,
                     egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
                     egui::Color32::WHITE
                 );
+
             } else {
                 let color = if gmk.is_selected {
                     COMMON_GIMMICK_COLOR
@@ -186,6 +195,14 @@ impl LevelEditor {
             );
 
             if let Some(texture) = self.object_textures.get(&format!("gimmick-{}", &gmk.name)) {
+                if gmk.is_selected {
+                    painter.rect_filled(
+                        square,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10)
+                    );
+                }
+                
                 painter.image(
                     texture.id(),
                     square,
