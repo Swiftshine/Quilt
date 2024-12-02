@@ -384,6 +384,16 @@ impl LevelEditor {
                     ui.label(format!("Name: {name}"));
                 }
 
+                ui.label("Position");
+                ui.horizontal(|ui|{
+                    ui.label("X");
+                    ui.add(egui::DragValue::new(&mut gmk.position.x).speed(0.5).range(f32::MIN..=f32::MAX));
+                    ui.label("Y");
+                    ui.add(egui::DragValue::new(&mut gmk.position.y).speed(0.5).range(f32::MIN..=f32::MAX));
+                    ui.label("Z");
+                    ui.add(egui::DragValue::new(&mut gmk.position.z).speed(0.5).range(f32::MIN..=f32::MAX));
+                });
+
                 let data = self.object_data_json.get("common_gimmicks")
                 .expect("couldn't find 'common_gimmicks' inside objectdata.json");
 
@@ -814,6 +824,16 @@ impl LevelEditor {
                             &mut gmk.name
                         ).char_limit(0x30)
                     );
+                });
+
+                ui.label("Position");
+                ui.horizontal(|ui|{
+                    ui.label("X");
+                    ui.add(egui::DragValue::new(&mut gmk.position.x).speed(0.5).range(f32::MIN..=f32::MAX));
+                    ui.label("Y");
+                    ui.add(egui::DragValue::new(&mut gmk.position.y).speed(0.5).range(f32::MIN..=f32::MAX));
+                    ui.label("Z");
+                    ui.add(egui::DragValue::new(&mut gmk.position.z).speed(0.5).range(f32::MIN..=f32::MAX));
                 });
 
                 let data = self.object_data_json.get("gimmicks").expect("couldn't find 'gimmicks' in objectdata.json");
