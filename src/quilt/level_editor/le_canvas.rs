@@ -112,6 +112,11 @@ impl LevelEditor {
             let painter = ui.painter_at(rect);
             painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
             
+            // remove object if user doesn't want it
+            if ui.ctx().input(|i| i.key_pressed(egui::Key::Escape)) {
+                self.current_add_object = None;
+            }
+
             // object placement
             if let Some(object_type) = &self.current_add_object {
                 if let Some(mut pointer_pos) = response.hover_pos() {
