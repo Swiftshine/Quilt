@@ -168,6 +168,8 @@ impl LevelEditor {
                                 .is_none() {
                                     self.current_mapdata.common_gimmick_names.hex_names.push(hex.to_owned());
                                 }
+
+                                self.add_common_gimmick_texture(ui.ctx(), &hex_str);
                             }
 
                             ObjectType::Enemy => {

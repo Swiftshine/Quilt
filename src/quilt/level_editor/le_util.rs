@@ -9,6 +9,18 @@ use reqwest::blocking::Client;
 use serde_json;
 
 impl LevelEditor {
+    pub fn add_common_gimmick_texture(&mut self, ctx: &egui::Context, hex: &str) {
+        let key = format!("common_gimmick-{}", hex);
+        if !self.object_textures.contains_key(&key) {
+                if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex) {
+                let texture = ctx.load_texture(
+                    &key, image_data, egui::TextureOptions::LINEAR
+                );
+                self.object_textures.insert(key, texture);
+            }
+        }
+    }
+
     pub fn load_image_from_tex_folder(folder_name: &str, file_name: &str) -> Result<egui::ColorImage> {
         let path = format!("res/tex/{folder_name}/{file_name}.png");
         let image = image::open(&path)?.to_rgba8();

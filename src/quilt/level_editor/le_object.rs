@@ -173,6 +173,17 @@ impl LevelEditor {
                 continue;
             }
 
+            // add texture if not in current level's texture cache
+            let key = format!("gimmick-{}", &gmk.name);
+            if !self.object_textures.contains_key(&key) {
+                if let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
+                    let texture = ui.ctx().load_texture(
+                        &key, image_data, egui::TextureOptions::LINEAR
+                    );
+                    self.object_textures.insert(key, texture);
+                }
+            }
+
             let pos = gmk.position.to_point_2d();
             let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
             let square = egui::Rect::from_center_size(
