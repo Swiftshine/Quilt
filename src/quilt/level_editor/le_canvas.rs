@@ -143,6 +143,7 @@ impl LevelEditor {
                         match object_type {
                             ObjectType::Wall => {
                                 let mut wall = Wall::default();
+                                wall.collision_type = String::from("NML");
                                 let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
                                 wall.start = Point2D::from_vec2(start);
 
