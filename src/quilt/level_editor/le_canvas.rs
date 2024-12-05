@@ -156,9 +156,7 @@ impl LevelEditor {
 
                             ObjectType::Gimmick => {
                                 let mut gmk = Gimmick::default();
-                                
-                                // the position gets put somewhere
-                                // below the mouse. not sure how to fix it
+
                                 let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
 
                                 gmk.position = Point2D::from_pos2(pos).to_point_3d();
