@@ -141,6 +141,19 @@ impl LevelEditor {
                         pointer_pos -= rect.min.to_vec2();
 
                         match object_type {
+                            ObjectType::Wall => {
+                                let mut wall = Wall::default();
+                                let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                                wall.start = Point2D::from_vec2(start);
+
+                                wall.end = Point2D {
+                                    x: wall.start.x + 5.0,
+                                    y: wall.start.y
+                                };
+
+                                self.current_mapdata.walls.push(wall);
+                            }
+
                             ObjectType::Gimmick => {
                                 let mut gmk = Gimmick::default();
                                 

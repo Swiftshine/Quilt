@@ -71,6 +71,10 @@ impl LevelEditor {
     pub fn deselect_all(&mut self) {
         for select_type in self.selected_object_indices.iter() {
             match select_type {
+                ObjectIndex::Wall(index) => {
+                    self.current_mapdata.walls[*index].is_selected = false;
+                }
+                
                 ObjectIndex::CommonGimmick(index) => {
                     self.current_mapdata.common_gimmicks[*index].is_selected = false;
                 }

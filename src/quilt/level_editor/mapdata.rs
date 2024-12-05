@@ -17,14 +17,16 @@ pub struct Wall {
     pub start: Point2D,
     pub end: Point2D,
     pub unk_10: Point2D,
-    pub collision_type: String
+    pub collision_type: String,
+
+    pub is_selected: bool
 }
 
 #[derive(Default)]
 pub struct LabeledWall {
     pub start: Point2D,
     pub end: Point2D,
-    pub unk_10: Point2D,
+    pub unk_10: Point2D, // this is an angle of some sort
     pub collision_type: String,
     pub label: String
 }
@@ -772,3 +774,70 @@ impl CourseInfo {
         out
     }
 }
+
+// other types may exist, but they're either
+// unused or get coerced into other types
+// (e.g. "NML_S" -> "NML_SOFT").
+// this list is all that was found in the game's binary
+pub const COLLISION_TYPES: [&str; 60] = [
+    "NML",
+    "CANCEL_METAMO",
+    "GO_HEAVEN",
+    "GO_SEC",
+    "THROUGH",
+    "SLOW",
+    "NONE_SLIP",
+    "NML_URA",
+    "THROUGH_URA",
+    "NML_SOFT",
+    "THROUGH_SOFT",
+    "NML_HARD",
+    "THROUGH_HARD",
+    "CAMERA",
+    "CAMERA_THROUGH",
+    "CAMERA_PLAYER",
+    "CAMERA_PLAYER_Y",
+    "CAMERA_MORI",
+    "CAMERA_NML_PLAYER",
+    "CAMERA_M",
+    "CAMERA_THROUGH_M",
+    "CAMERA_PLAYER_M",
+    "CAMERA_PLAYER_Y_M",
+    "CAMERA_NML_PLAYER_M",
+    "DAMAGE",
+    "ONE_DEAD",
+    "IGNORE_PLAYER",
+    "QUICKSAND",
+    "ENT_TUNNEL",
+    "CART",
+    "DESTROY_GIMMICK",
+    "NML_SLIP",
+    "THROUGH_SLIP",
+    "SPIN",
+    "SPIN_DMG",
+    "SPIN_CORRECT",
+    "NML_BEAD_NS",
+    "NML_BEAD_NS_HARD",
+    "NML_BEAD_NS_URA",
+    "THROUGH_BEAD_NS",
+    "BEAD_ONLY",
+    "NML_SIT_FLOOR",
+    "THROUGH_SIT_FLOOR",
+    "DMG_FIRE",
+    "DMG_ICE",
+    "DMG_THUNDER",
+    "DELETE_ENEMY",
+    "ACCEL_GROUND",
+    "PLAYER_ONLY",
+    "PLAYER_ONLY_THROUGH",
+    "PL_PENDULUM_REFLECT",
+    "RSTONE_COMMAND",
+    "REFLECT_CAPTURE_OBJ",
+    "NML_ICE",
+    "THROUGH_ICE",
+    "GO_HEAVEN_FIRE",
+    "GO_HEAVEN_FIRE_PL_ONLY",
+    "PULL_ENEMY",
+    "NONE",
+    "THROUGH_TRAIN_LIMIT",
+];
