@@ -90,10 +90,10 @@ impl LevelEditor {
                 egui::Sense::click_and_drag()
             );
 
-            let (start_color, end_color) = if wall.is_selected {
-                (egui::Color32::LIGHT_RED, egui::Color32::LIGHT_BLUE)
+            let color = if wall.is_selected {
+                egui::Color32::LIGHT_BLUE
             } else {
-                (egui::Color32::WHITE, egui::Color32::WHITE)
+                egui::Color32::WHITE
             };
 
             painter.line_segment(
@@ -105,8 +105,8 @@ impl LevelEditor {
                 continue;
             }
 
-            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, start_color);
-            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, end_color);
+            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, color);
+            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, color);
             
             let mut clicked = false;
             let mut dragged = false;
@@ -137,22 +137,94 @@ impl LevelEditor {
             if dragged {
                 wall.set_normalized_vector();
             }
-            
         }
     }
 
     pub fn update_labeled_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
         let painter = ui.painter_at(rect);
-        for wall in self.current_mapdata.labeled_walls.iter() {
+        for (index, wall) in self.current_mapdata.labeled_walls.iter_mut().enumerate() {
             let start = rect.min + 
                 self.camera.to_camera(wall.start.to_vec2());
             let end = rect.min + 
                 self.camera.to_camera(wall.end.to_vec2());
 
+            let start_rect = egui::Rect::from_center_size(
+                egui::Pos2::new(
+                    start.x,
+                    start.y - CIRCLE_RADIUS * 2.0
+                ),
+
+                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom)
+            );
+
+            let end_rect = egui::Rect::from_center_size(
+                egui::Pos2::new(
+                    end.x,
+                    end.y - CIRCLE_RADIUS * 2.0
+                ),
+                
+                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom)
+            );
+
+            let start_resp = ui.interact(
+                start_rect,
+                egui::Id::new(&wall.start as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            let end_resp = ui.interact(
+                end_rect,
+                egui::Id::new(&wall.end as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            let color = if wall.is_selected {
+                egui::Color32::RED
+            } else {
+                egui::Color32::WHITE
+            };
+
             painter.line_segment(
                 [start, end],
                 egui::Stroke::new(1.0, egui::Color32::LIGHT_RED)
             );
+            
+            if !matches!(self.labeled_wall_edit_mode, EditMode::Edit) {
+                continue;
+            }
+
+            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, color);
+            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, color);
+            
+            let mut clicked = false;
+            let mut dragged = false;
+            if start_resp.clicked() {
+                clicked = true;
+            } else if start_resp.dragged() {
+                let world_delta = start_resp.drag_delta() / self.camera.zoom;
+                wall.start.x += world_delta.x;
+                wall.start.y -= world_delta.y;
+                
+                dragged = true;
+            }
+            
+            if end_resp.clicked() {
+                clicked = true;
+            } else if end_resp.dragged() {
+                let world_delta = end_resp.drag_delta() / self.camera.zoom;
+                wall.end.x += world_delta.x;
+                wall.end.y -= world_delta.y;
+                
+                dragged = true;
+            }
+            
+            if clicked {
+                self.selected_object_indices.push(ObjectIndex::LabeledWall(index));
+            }
+            
+            if dragged {
+                wall.set_normalized_vector();
+            }
         }
     }
 
@@ -503,6 +575,67 @@ impl LevelEditor {
                     }
                 });
                 ui.add(egui::TextEdit::singleline(&mut wall.collision_type).char_limit(0x20));
+            });
+        });
+    }
+
+    pub fn process_labeled_wall_attributes(&mut self, ui: &egui::Ui, index: usize) {
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.walls.remove(index);
+            self.selected_object_indices.clear();
+            return;
+        }
+
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        let wall = &mut self.current_mapdata.labeled_walls[index];
+        wall.is_selected = true;
+
+        egui::Area::new(egui::Id::from("le_labeled_wall_attribute_editor"))
+        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
+                ui.label("Edit wall attributes");
+
+                ui.label("Start Position");
+                ui.horizontal(|ui|{
+                    ui.label("X");
+                    ui.add(egui::DragValue::new(&mut wall.start.x).speed(0.5).range(f32::MIN..=f32::MAX));
+                    ui.label("Y");
+                    ui.add(egui::DragValue::new(&mut wall.start.y).speed(0.5).range(f32::MIN..=f32::MAX));
+                });
+
+                ui.label("End Position");
+                ui.horizontal(|ui|{
+                    ui.label("X");
+                    ui.add(egui::DragValue::new(&mut wall.end.x).speed(0.5).range(f32::MIN..=f32::MAX));
+                    ui.label("Y");
+                    ui.add(egui::DragValue::new(&mut wall.end.y).speed(0.5).range(f32::MIN..=f32::MAX));
+                });
+
+                egui::ComboBox::from_label("Collision Type")
+                .selected_text(&wall.collision_type)
+                .show_ui(ui, |ui|{
+                    for collision_type in COLLISION_TYPES {
+                        ui.selectable_value(&mut wall.collision_type, collision_type.to_string(), collision_type);
+                    }
+                });
+
+                ui.add(egui::TextEdit::singleline(&mut wall.collision_type).char_limit(0x20));
+
+                ui.label("Label");
+                ui.add(
+                    egui::TextEdit::singleline(&mut wall.label).char_limit(0x20)
+                );
             });
         });
     }

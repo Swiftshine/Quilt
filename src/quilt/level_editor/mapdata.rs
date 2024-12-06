@@ -26,9 +26,11 @@ pub struct Wall {
 pub struct LabeledWall {
     pub start: Point2D,
     pub end: Point2D,
-    pub unk_10: Point2D, // this is an angle of some sort
+    pub normalized_vector: Point2D, // this is an angle of some sort
     pub collision_type: String,
-    pub label: String
+    pub label: String,
+
+    pub is_selected: bool
 }
 
 #[derive(Default)]
@@ -463,7 +465,7 @@ impl LabeledWall {
 
         wall.start = Point2D::from_be_bytes(&input[..8]);
         wall.end = Point2D::from_be_bytes(&input[8..0x10]);
-        wall.unk_10 = Point2D::from_be_bytes(&input[0x10..0x18]);
+        wall.normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
         
         let type_index = BigEndian::read_u32(&input[0x1C..0x20]) as usize;
 
@@ -488,7 +490,7 @@ impl LabeledWall {
 
         out.extend(self.end.to_be_bytes());
 
-        out.extend(self.unk_10.to_be_bytes());
+        out.extend(self.normalized_vector.to_be_bytes());
 
         out.extend((index as u32).to_be_bytes());
 
@@ -507,6 +509,19 @@ impl LabeledWall {
         out.extend((label_index as u32).to_be_bytes());
 
         out
+    }
+
+    pub fn set_normalized_vector(&mut self) {
+        let direction = (self.end.x - self.start.x, self.end.y - self.start.y);
+        let magnitude = f32::sqrt(direction.0.powf(2.0) + direction.1.powf(2.0));
+        let normalized = (direction.0 / magnitude, direction.1 / magnitude);
+        
+        self.normalized_vector = Point2D {
+            x: -normalized.1, // this has to be inverted,
+            // because otherwise, the player's NURBS animation
+            // (namely, the player's feet) would face the opposite direction
+            y: normalized.0
+        };
     }
 }
 

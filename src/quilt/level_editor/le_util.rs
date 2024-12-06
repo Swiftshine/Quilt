@@ -15,7 +15,7 @@ impl LevelEditor {
             EditMode::Edit => "Edit"
         }.to_string()
     }
-    
+
     pub fn add_common_gimmick_texture(&mut self, ctx: &egui::Context, hex: &str) {
         let key = format!("common_gimmick-{}", hex);
         if !self.object_textures.contains_key(&key) {
@@ -81,7 +81,11 @@ impl LevelEditor {
                 ObjectIndex::Wall(index) => {
                     self.current_mapdata.walls[*index].is_selected = false;
                 }
-                
+
+                ObjectIndex::LabeledWall(index) => {
+                    self.current_mapdata.labeled_walls[*index].is_selected = false;
+                }       
+                         
                 ObjectIndex::CommonGimmick(index) => {
                     self.current_mapdata.common_gimmicks[*index].is_selected = false;
                 }

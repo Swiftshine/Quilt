@@ -17,7 +17,7 @@ use serde_json;
 // These are indices
 enum ObjectIndex {
     Wall(usize),
-    // LabeledWalls,
+    LabeledWall(usize),
     CommonGimmick(usize), 
     Gimmick(usize),
     // Zones,
@@ -28,7 +28,7 @@ enum ObjectIndex {
 #[derive(PartialEq)]
 enum ObjectType {
     Wall,
-    // LabeledWalls,
+    LabeledWall,
     CommonGimmick(String), 
     Gimmick,
     // Zones,
@@ -157,8 +157,13 @@ impl LevelEditor {
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui|{
                 ui.label("Add object");
+                
                 if ui.button("Add Wall").clicked() {
                     self.current_add_object = Some(ObjectType::Wall);
+                }
+
+                if ui.button("Add Labeled Wall").clicked() {
+                    self.current_add_object = Some(ObjectType::LabeledWall);
                 }
 
                 ui.collapsing("Add Common Gimmick", |ui|{
@@ -235,6 +240,10 @@ impl LevelEditor {
         match self.selected_object_indices[0] {
             ObjectIndex::Wall(index) => {
                 self.process_wall_attributes(ui, index);
+            }
+
+            ObjectIndex::LabeledWall(index) => {
+                self.process_labeled_wall_attributes(ui, index);
             }
             
             ObjectIndex::CommonGimmick(index) => {
