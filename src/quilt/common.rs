@@ -102,13 +102,11 @@ impl Point3D {
 #[derive(Default)]
 pub struct NameMap {
     pub names: Vec<String>, // ShiftJIS or ASCII names
-    pub indices: Vec<usize>,
 }
 
 #[derive(Default)]
 pub struct HexMap {
     pub hex_names: Vec<String>,
-    pub indices: Vec<usize>
 }
 
 pub fn string_from_buffer(input: &[u8]) -> String {
@@ -149,8 +147,6 @@ impl NameMap {
 
             let name = &name_bytes[..null_terminator_pos];
 
-            self.indices.push(i);
-            // self.names.push(shift_jis_to_utf8(&name));
             self.names.push(String::from_utf8(name.to_vec()).unwrap());
         }
     }
@@ -176,8 +172,6 @@ impl HexMap {
                 .unwrap_or(size);
 
             let name = &name_bytes[..null_terminator_pos];
-
-            self.indices.push(i);
             self.hex_names.push(hex::encode(&name).to_string().to_uppercase());
         }
     }

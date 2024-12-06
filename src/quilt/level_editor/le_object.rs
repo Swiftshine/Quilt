@@ -113,24 +113,33 @@ impl LevelEditor {
             );
 
             let mut clicked = false;
+            let mut dragged = false;
             if start_resp.clicked() {
                 clicked = true;
             } else if start_resp.dragged() {
                 let world_delta = start_resp.drag_delta() / self.camera.zoom;
                 wall.start.x += world_delta.x;
                 wall.start.y -= world_delta.y;
-            }
 
+                dragged = true;
+            }
+            
             if end_resp.clicked() {
                 clicked = true;
             } else if end_resp.dragged() {
                 let world_delta = end_resp.drag_delta() / self.camera.zoom;
                 wall.end.x += world_delta.x;
                 wall.end.y -= world_delta.y;
-            }
 
+                dragged = true;
+            }
+            
             if clicked {
                 self.selected_object_indices.push(ObjectIndex::Wall(index));
+            }
+            
+            if dragged {
+                wall.set_normalized_vector();
             }
         }
     }
@@ -480,14 +489,6 @@ impl LevelEditor {
                     ui.add(egui::DragValue::new(&mut wall.end.x).speed(0.5).range(f32::MIN..=f32::MAX));
                     ui.label("Y");
                     ui.add(egui::DragValue::new(&mut wall.end.y).speed(0.5).range(f32::MIN..=f32::MAX));
-                });
-
-                ui.label("Unknown @ 0x10");
-                ui.horizontal(|ui|{
-                    ui.label("X");
-                    ui.add(egui::DragValue::new(&mut wall.unk_10.x).speed(0.5).range(f32::MIN..=f32::MAX));
-                    ui.label("Y");
-                    ui.add(egui::DragValue::new(&mut wall.unk_10.y).speed(0.5).range(f32::MIN..=f32::MAX));
                 });
 
                 egui::ComboBox::from_label("Collision Type")
