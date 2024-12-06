@@ -5,8 +5,7 @@ use egui::{
 };
 
 use super::{
-    LevelEditor,
-    ObjectIndex, COLLISION_TYPES
+    EditMode, LevelEditor, ObjectIndex, COLLISION_TYPES
 };
 
 use super::{
@@ -97,21 +96,18 @@ impl LevelEditor {
                 (egui::Color32::WHITE, egui::Color32::WHITE)
             };
 
-
-            // let color  = if wall.is_selected {
-            //     WALL_COLOR
-            // } else {
-            //     egui::Color32::WHITE
-            // };
-
-            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, start_color);
-            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, end_color);
-            
             painter.line_segment(
                 [start, end],
                 egui::Stroke::new(1.0, egui::Color32::WHITE)
             );
+            
+            if !matches!(self.wall_edit_mode, EditMode::Edit) {
+                continue;
+            }
 
+            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, start_color);
+            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, end_color);
+            
             let mut clicked = false;
             let mut dragged = false;
             if start_resp.clicked() {
@@ -120,7 +116,7 @@ impl LevelEditor {
                 let world_delta = start_resp.drag_delta() / self.camera.zoom;
                 wall.start.x += world_delta.x;
                 wall.start.y -= world_delta.y;
-
+                
                 dragged = true;
             }
             
@@ -130,7 +126,7 @@ impl LevelEditor {
                 let world_delta = end_resp.drag_delta() / self.camera.zoom;
                 wall.end.x += world_delta.x;
                 wall.end.y -= world_delta.y;
-
+                
                 dragged = true;
             }
             
@@ -141,6 +137,7 @@ impl LevelEditor {
             if dragged {
                 wall.set_normalized_vector();
             }
+            
         }
     }
 
@@ -190,7 +187,7 @@ impl LevelEditor {
             );
 
             if let Some(texture) = self.object_textures.get(&format!("common_gimmick-{}", &gmk.hex)) {
-                if gmk.is_selected {
+                if gmk.is_selected && matches!(self.common_gimmick_edit_mode, EditMode::Edit) {
                     painter.rect_filled(
                         square,
                         0.0,
@@ -213,6 +210,10 @@ impl LevelEditor {
                 };
     
                 painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            }
+
+            if !matches!(self.common_gimmick_edit_mode, EditMode::Edit) {
+                continue;
             }
 
             if resp.hovered() {
@@ -286,7 +287,7 @@ impl LevelEditor {
             );
 
             if let Some(texture) = self.object_textures.get(&format!("gimmick-{}", &gmk.name)) {
-                if gmk.is_selected {
+                if gmk.is_selected && matches!(self.gimmick_edit_mode, EditMode::Edit) {
                     painter.rect_filled(
                         square,
                         0.0,
@@ -310,6 +311,9 @@ impl LevelEditor {
                 painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
             }
 
+            if !matches!(self.gimmick_edit_mode, EditMode::Edit) {
+                continue;
+            }
 
             if resp.hovered() {
                 painter.text(

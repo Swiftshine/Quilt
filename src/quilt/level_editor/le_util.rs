@@ -1,6 +1,5 @@
 use super::{
-    LevelEditor,
-    ObjectIndex
+    EditMode, LevelEditor, ObjectIndex
 };
 
 use std::fs;
@@ -9,6 +8,14 @@ use reqwest::blocking::Client;
 use serde_json;
 
 impl LevelEditor {
+    pub fn edit_mode_to_string(edit_mode: EditMode) -> String {
+        match edit_mode {
+            EditMode::Hide => "Hide",
+            EditMode::View => "View",
+            EditMode::Edit => "Edit"
+        }.to_string()
+    }
+    
     pub fn add_common_gimmick_texture(&mut self, ctx: &egui::Context, hex: &str) {
         let key = format!("common_gimmick-{}", hex);
         if !self.object_textures.contains_key(&key) {

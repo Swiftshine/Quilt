@@ -1,5 +1,5 @@
 use super::{
-    Enemy, LevelEditor, ObjectType
+    EditMode, Enemy, LevelEditor, ObjectType
 };
 
 use std::fs;
@@ -88,14 +88,43 @@ impl LevelEditor {
         // canvas
         ui.horizontal(|ui|{
             ui.label("Canvas");
-            ui.add_space(3.0);
-            ui.checkbox(&mut self.show_walls, "Show Walls");
-            ui.checkbox(&mut self.show_labeled_walls, "Show Labeled Walls");
-            ui.checkbox(&mut self.show_common_gimmicks, "Show Common Gimmicks");
-            ui.checkbox(&mut self.show_gimmicks, "Show Gimmicks");
-            ui.checkbox(&mut self.show_paths, "Show Paths");
-            ui.checkbox(&mut self.show_zones, "Show Zones");
-            ui.checkbox(&mut self.show_course_info, "Show Course Info");
+            ui.separator();
+
+            let targets = [
+                (&mut self.wall_edit_mode, "Walls"),
+                (&mut self.labeled_wall_edit_mode, "Labeled Walls"),
+                (&mut self.common_gimmick_edit_mode, "Common Gimmicks"),
+                (&mut self.gimmick_edit_mode, "Gimmicks"),
+                (&mut self.path_edit_mode, "Paths"),
+                (&mut self.zone_edit_mode, "Zones"),
+                (&mut self.course_info_edit_mode, "Course Infos")
+            ];
+
+            for (mode, text) in targets {
+                // egui's combo boxes has the text be on the right of the 
+                // combo box. frankly, it looks bad when multiple options
+                // are strung together horizontally, because English
+                // is read from left-to-right. 
+                // unfortunately, there's no option to edit this,
+                // so this will be the solution instead
+
+                ui.label(text);
+                
+                egui::ComboBox::from_id_salt(format!("le_edit_mode_change_{}", text))
+                .selected_text(Self::edit_mode_to_string(mode.clone()))
+                .show_ui(ui, |ui|{
+                    let edit_modes = [
+                        EditMode::Hide,
+                        EditMode::View,
+                        EditMode::Edit
+                    ];
+
+                    for edit_mode in edit_modes {
+                        ui.selectable_value(mode, edit_mode, Self::edit_mode_to_string(edit_mode.clone()));
+                    }
+                });
+            }
+
         });
 
         egui::Frame::canvas(ui.style())
@@ -200,31 +229,31 @@ impl LevelEditor {
 
             /* rendering */
 
-            if self.show_walls {
+            if !matches!(self.wall_edit_mode, EditMode::Hide) {
                 self.update_walls(ui, rect);
             }
 
-            if self.show_labeled_walls {
+            if !matches!(self.labeled_wall_edit_mode, EditMode::Hide) {
                 self.update_labeled_walls(ui, rect);
             }
 
-            if self.show_common_gimmicks {
+            if !matches!(self.common_gimmick_edit_mode, EditMode::Hide) {
                 self.update_common_gimmicks(ui, rect);
             }
-  
-            if self.show_gimmicks {
+            
+            if !matches!(self.gimmick_edit_mode, EditMode::Hide) {
                 self.update_gimmicks(ui, rect);
             }
 
-            if self.show_paths {
+            if !matches!(self.path_edit_mode, EditMode::Hide) {
                 self.update_paths(ui, rect);
             }
 
-            if self.show_zones {
+            if !matches!(self.zone_edit_mode, EditMode::Hide) {
                 self.update_zones(ui, rect);
             }
 
-            if self.show_course_info {
+            if !matches!(self.course_info_edit_mode, EditMode::Hide) {
                 self.update_course_info(ui, rect);
             }
 

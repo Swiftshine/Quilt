@@ -36,6 +36,19 @@ enum ObjectType {
     Enemy
 }
 
+#[derive(PartialEq, Clone, Copy)]
+pub enum EditMode {
+    Hide,
+    View,
+    Edit
+}
+
+
+impl Default for EditMode {
+    fn default() -> Self {
+        Self::View
+    }
+}
 
 #[derive(Default)]
 pub struct LevelEditor {
@@ -59,14 +72,14 @@ pub struct LevelEditor {
     object_data_json: serde_json::Value,
     is_object_data_valid: bool,
 
-    // level contents
-    show_walls: bool,
-    show_labeled_walls: bool,
-    show_common_gimmicks: bool,
-    show_gimmicks: bool,
-    show_paths: bool,
-    show_zones: bool,
-    show_course_info: bool,
+    // editing modes
+    wall_edit_mode: EditMode,
+    labeled_wall_edit_mode: EditMode,
+    common_gimmick_edit_mode: EditMode,
+    gimmick_edit_mode: EditMode,
+    path_edit_mode: EditMode,
+    zone_edit_mode: EditMode,
+    course_info_edit_mode: EditMode,
 
     // ui
     show_object_context_menu: bool,
@@ -90,13 +103,10 @@ impl LevelEditor {
                 Default::default()
             },
 
-            show_walls: true,
-            show_labeled_walls: true,
-            show_common_gimmicks: true,
-            show_gimmicks: true,
-            show_paths: true,
-            show_zones: true,
-            show_course_info: true,
+            common_gimmick_edit_mode: EditMode::Edit,
+            gimmick_edit_mode: EditMode::Edit,
+            zone_edit_mode: EditMode::Edit,
+            course_info_edit_mode: EditMode::Edit,
 
             ..Default::default()
         }
