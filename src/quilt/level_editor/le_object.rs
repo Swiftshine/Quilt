@@ -433,7 +433,7 @@ impl LevelEditor {
     pub fn update_zones(&mut self, ui: &mut egui::Ui, rect: Rect) {
         let painter = ui.painter_at(rect);
 
-        for zone in self.current_mapdata.zones.iter() {
+        for (index, zone) in self.current_mapdata.zones.iter_mut().enumerate() {
             if &zone.name == "NONE" && !self.display_none {
                 continue;
             }
@@ -444,11 +444,56 @@ impl LevelEditor {
             let max = rect.min + 
                 self.camera.to_camera(zone.bounds_max.to_vec2());
 
+            let square = egui::Rect::from_points(&[min, max]);
+
+            let body_resp = ui.interact(
+                square,
+                egui::Id::new(zone as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            if zone.is_selected {
+                painter.rect_filled(
+                    square,
+                    0.0,
+                    egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10)
+                );
+            }
+
             painter.rect_stroke(
                 Rect::from_points(&[min, max]),
                 0.0,
                 egui::Stroke::new(1.0, ZONE_COLOR)
             );
+            
+            // todo - add response for bounds min and bounds max
+
+            // if body_resp.hovered() {
+            //     painter.text(
+            //         {
+            //             egui::Pos2::new(
+            //                 max.x,
+            //                 (-(min.y - max.y).abs()) - 10.0
+            //             )
+            //         },
+
+            //         egui::Align2::LEFT_CENTER,
+            //         &zone.name,
+            //         egui::FontId::default(),
+            //         egui::Color32::WHITE
+            //     );
+            // }
+
+            if body_resp.clicked() {
+                self.selected_object_indices.push(ObjectIndex::Zone(index));
+            } else if body_resp.dragged() {   
+                let world_delta = body_resp.drag_delta() / self.camera.zoom;
+
+                zone.bounds_min.x += world_delta.x;
+                zone.bounds_min.y -= world_delta.y;
+                zone.bounds_max.x += world_delta.x;
+                zone.bounds_max.y -= world_delta.y;
+            }
         }
     }
 
@@ -1345,7 +1390,47 @@ impl LevelEditor {
         });
     }
 
+    pub fn process_zone_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.zones.remove(index);
+            self.selected_object_indices.clear();
+            return;
+        }
 
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        let zone = &mut self.current_mapdata.zones[index];
+
+        zone.is_selected = true;
+
+        egui::Area::new(egui::Id::from("le_zone_attribute_editor"))
+        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
+                ui.label("Edit zone attributes");
+
+                ui.label("Name");
+                ui.add(
+                    egui::TextEdit::singleline(&mut zone.name).char_limit(0x20)
+                );
+         
+                ui.label("Unknown @ 0x20");
+                ui.add(
+                    egui::TextEdit::singleline(&mut zone.unk_20).char_limit(0x20)
+                );
+
+            });
+        });
+    }
     pub fn process_enemy_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
         if ui.ctx().input(|i|{
             i.key_pressed(egui::Key::Delete)

@@ -81,10 +81,12 @@ pub struct Path {
 #[derive(Default)]
 pub struct Zone {
     pub name: String,
-    pub unk_20: [u8; 0x20],
+    pub unk_20: String,
     pub params: Params,
     pub bounds_min: Point2D,
-    pub bounds_max: Point2D
+    pub bounds_max: Point2D,
+
+    pub is_selected: bool,
 }
 
 
@@ -764,7 +766,7 @@ impl Zone {
         let mut zone = Self::default();
 
         zone.name = string_from_buffer(&input[..0x20]);
-        zone.unk_20.copy_from_slice(&input[0x20..0x40]);
+        zone.unk_20 = string_from_buffer(&input[0x20..0x40]);
         zone.params = Params::from_bytes(&input[0x40..0x118]);
         zone.bounds_min = Point2D::from_be_bytes(&input[0x118..0x120]);
         zone.bounds_max = Point2D::from_be_bytes(&input[0x120..0x128]);
@@ -778,7 +780,7 @@ impl Zone {
         out.extend(self.name.as_bytes());
         out.extend(vec![0; 0x20 - self.name.len()]);
 
-        out.extend(self.unk_20);
+        out.extend(self.unk_20.as_bytes());
         out.extend(vec![0; 0x20 - self.unk_20.len()]);
 
         out.extend(self.params.to_bytes());

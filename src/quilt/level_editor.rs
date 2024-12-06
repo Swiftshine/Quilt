@@ -20,8 +20,9 @@ enum ObjectIndex {
     LabeledWall(usize),
     CommonGimmick(usize), 
     Gimmick(usize),
-    // Zones,
-    // CourseInfo,
+    // Path(usize),
+    Zone(usize),
+    // CourseInfo(usize),
     Enemy(usize)
 }
 
@@ -31,7 +32,8 @@ enum ObjectType {
     LabeledWall,
     CommonGimmick(String), 
     Gimmick,
-    // Zones,
+    // Path,
+    // Zone,
     // CourseInfo,
     Enemy
 }
@@ -42,7 +44,6 @@ pub enum EditMode {
     View,
     Edit
 }
-
 
 impl Default for EditMode {
     fn default() -> Self {
@@ -230,8 +231,6 @@ impl LevelEditor {
         }
     }
 
-    
-
     fn process_object_attributes(&mut self, ui: &mut egui::Ui) {
         if self.selected_object_indices.len() != 1 {
             return;
@@ -252,6 +251,10 @@ impl LevelEditor {
 
             ObjectIndex::Gimmick(index) => {
                 self.process_gimmick_attributes(ui, index);
+            }
+
+            ObjectIndex::Zone(index) => {
+                self.process_zone_attributes(ui, index);
             }
 
             ObjectIndex::Enemy(index) => {
