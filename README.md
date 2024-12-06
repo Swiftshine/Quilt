@@ -4,13 +4,15 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 ## Features
 ### Work in progress
 - [ ] Level editor
+#### Almost there!
 The following are what need to be completed for the level editor to be marked as complete.
-    - [ ] Toggle to edit walls/paths
-    - [ ] Labeled Wall editing
-    - [ ] Path editing
-    - [ ] Zone editing
-    - [ ] Race Course Info editing
-    - [ ] Open/Save as folder
+- Toggle to edit walls/paths
+- Labeled Wall editing
+- Path editing
+- Zone editing
+- Race Course Info editing
+- Open/Save as folder
+
 ### Planned
 - [ ] Level graphics editor
 ### Roadmap
