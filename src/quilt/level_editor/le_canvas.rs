@@ -230,7 +230,7 @@ impl LevelEditor {
                             ObjectType::Zone => {
                                 let mut zone = Zone::default();
                                 let start = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
-                                let end = start + 5.0;
+                                let end = start + egui::Vec2::splat(5.0);
 
                                 zone.bounds_start = Point2D::from_pos2(start);
                                 zone.bounds_end = Point2D::from_pos2(end);
