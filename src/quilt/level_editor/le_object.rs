@@ -35,6 +35,10 @@ const ZONE_COLOR: Color32 = egui::Color32::from_rgb(
     0x2B, 0x9E, 0xB3
 );
 
+const COURSE_INFO_COLOR: Color32 = egui::Color32::from_rgb(
+    0xEA, 0x8C, 0x55
+);
+
 const SQUARE_SIZE: f32 = 2.0;
 const CIRCLE_RADIUS: f32 = 0.1;
 
@@ -452,6 +456,9 @@ impl LevelEditor {
                 egui::Sense::click_and_drag()
             );
 
+            
+            
+            
             if zone.is_selected {
                 painter.rect_filled(
                     square,
@@ -459,28 +466,16 @@ impl LevelEditor {
                     egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10)
                 );
             }
-
+            
             painter.rect_stroke(
                 Rect::from_points(&[start, end]),
                 0.0,
                 egui::Stroke::new(1.0, ZONE_COLOR)
             );
-
-            // if body_resp.hovered() {
-            //     painter.text(
-            //         {
-            //             egui::Pos2::new(
-            //                 max.x,
-            //                 (-(min.y - max.y).abs()) - 10.0
-            //             )
-            //         },
-
-            //         egui::Align2::LEFT_CENTER,
-            //         &zone.name,
-            //         egui::FontId::default(),
-            //         egui::Color32::WHITE
-            //     );
-            // }
+            
+            if !matches!(self.zone_edit_mode, EditMode::Edit) {
+                continue;
+            }
 
             if body_resp.clicked() {
                 self.selected_object_indices.push(ObjectIndex::Zone(index));
@@ -555,7 +550,7 @@ impl LevelEditor {
     pub fn update_course_info(&mut self, ui: &mut egui::Ui, rect: Rect) {
         let painter = ui.painter_at(rect);
 
-        for info in self.current_mapdata.course_infos.iter() {
+        for (index, info) in self.current_mapdata.course_infos.iter_mut().enumerate() {
             if &info.name == "NONE" && !self.display_none {
                 continue;
             }
@@ -563,11 +558,51 @@ impl LevelEditor {
             let pos = rect.min +
                 self.camera.to_camera(info.position.to_point_2d().to_vec2());
 
-            painter.rect_stroke(
-                Rect::from_center_size(pos, egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)),
-                0.0,
-                egui::Stroke::new(1.0, egui::Color32::LIGHT_YELLOW)
+            let square = egui::Rect::from_center_size(
+                egui::Pos2::new(
+                    pos.x,
+                    pos.y - SQUARE_SIZE * 2.0
+                ),
+
+                egui::Vec2::splat(SQUARE_SIZE * self.camera.zoom)
             );
+
+            let color = if info.is_selected {
+                COURSE_INFO_COLOR
+            } else {
+                egui::Color32::WHITE
+            };
+            
+            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            
+            if !matches!(self.course_info_edit_mode, EditMode::Edit) {
+                continue;
+            }
+
+            let resp = ui.interact(
+                square,
+                egui::Id::new(info as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            if resp.hovered() {
+                painter.text(
+                    pos + egui::Vec2::new(10.0, -10.0),
+                    egui::Align2::LEFT_CENTER,
+                    &info.name,
+                    egui::FontId::default(),
+                    egui::Color32::WHITE
+                );
+            }
+
+            if resp.clicked() {
+                self.selected_object_indices.push(ObjectIndex::CourseInfo(index));
+            } else if resp.dragged() {
+                let world_delta = resp.drag_delta() / self.camera.zoom;
+
+                info.position.x += world_delta.x;
+                info.position.y -= world_delta.y;
+            }
         }
     }
 
@@ -1514,7 +1549,6 @@ impl LevelEditor {
                     }
                 }
 
-         
                 ui.label("Unknown @ 0x20");
                 ui.add(
                     egui::TextEdit::singleline(&mut zone.unk_20).char_limit(0x20)
@@ -1564,6 +1598,73 @@ impl LevelEditor {
             });
         });
     }
+
+    pub fn process_course_info_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.course_infos.remove(index);
+            self.selected_object_indices.clear();
+            return;
+        }
+
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        let info = &mut self.current_mapdata.course_infos[index];
+        info.is_selected = true;
+
+        egui::Area::new(egui::Id::from("le_course_info_attribute_editor"))
+        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
+                ui.label("Edit course info attributes");
+                    
+                ui.label("Name");
+                ui.add(
+                    egui::TextEdit::singleline(&mut info.name).char_limit(0x20)
+                );
+
+                let data = self.object_data_json.get("course_infos")
+                .expect("couldn't find 'course_infos' in objectdata.json");
+
+                if let Some(course_info_data) = data.get(&info.name) {
+                    if let Some(desc) = course_info_data.get("description").and_then(|d| d.as_str()) {
+                        if !desc.is_empty() {
+                            ui.label(desc);
+                        }
+                    }
+
+                    if let Some(note) = course_info_data.get("note").and_then(|n| n.as_str()) {
+                        if !note.is_empty() {
+                            ui.label(format!("Note: {note}"));
+                        }
+                    }
+                }
+
+                ui.label("Unknown @ 0x20");
+                ui.add(
+                    egui::TextEdit::singleline(&mut info.unk_20).char_limit(0x20)
+                );
+
+                Self::process_mapdata_parameters(
+                    &self.object_data_json,
+                    ui,
+                    &info.name,
+                    "course_infos",
+                    &mut info.params
+                );
+            });
+        });
+    }
+
+
     pub fn process_enemy_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
         if ui.ctx().input(|i|{
             i.key_pressed(egui::Key::Delete)

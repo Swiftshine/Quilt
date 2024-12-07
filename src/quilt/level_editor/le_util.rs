@@ -98,6 +98,10 @@ impl LevelEditor {
                     self.current_mapdata.zones[*index].is_selected = false;
                 }
 
+                ObjectIndex::CourseInfo(index) => {
+                    self.current_mapdata.course_infos[*index].is_selected = false;
+                }
+
                 ObjectIndex::Enemy(index) => {
                     self.current_endata.enemies[*index].is_selected = false;
                 }

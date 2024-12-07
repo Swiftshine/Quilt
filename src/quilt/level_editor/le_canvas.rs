@@ -198,8 +198,6 @@ impl LevelEditor {
                                 self.current_mapdata.labeled_walls.push(wall);
                             }
 
-                            
-
                             ObjectType::CommonGimmick(hex) => {
                                 let mut gmk = CommonGimmick::default();
 
@@ -236,8 +234,16 @@ impl LevelEditor {
 
                                 zone.bounds_start = Point2D::from_pos2(start);
                                 zone.bounds_end = Point2D::from_pos2(end);
-                                
+                                zone.name = String::from("NEW");
                                 self.current_mapdata.zones.push(zone);
+                            }
+
+                            ObjectType::CourseInfo => {
+                                let mut course_info = CourseInfo::default();
+                                let pos = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                                course_info.position = Point2D::from_vec2(pos).to_point_3d();
+                                course_info.name = String::from("NEW");
+                                self.current_mapdata.course_infos.push(course_info);
                             }
 
                             ObjectType::Enemy => {

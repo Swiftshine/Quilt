@@ -93,9 +93,11 @@ pub struct Zone {
 #[derive(Default)]
 pub struct CourseInfo {
     pub name: String,
-    pub unk_20: [u8; 0x20],
+    pub unk_20: String,
     pub params: Params,
-    pub position: Point3D
+    pub position: Point3D,
+
+    pub is_selected: bool,
 }
 
 #[derive(Default)]
@@ -798,7 +800,7 @@ impl CourseInfo {
         let mut info = Self::default();
 
         info.name = string_from_buffer(&input[..0x20]);
-        info.unk_20.copy_from_slice(&input[0x20..0x40]);
+        info.unk_20 = string_from_buffer(&input[0x20..0x40]);
         info.params = Params::from_bytes(&input[0x40..0x118]);
         info.position = Point3D::from_be_bytes(&input[0x118..]);
         
@@ -811,7 +813,7 @@ impl CourseInfo {
         out.extend(self.name.as_bytes());
         out.extend(vec![0; 0x20 - self.name.len()]);
 
-        out.extend(self.unk_20);
+        out.extend(self.unk_20.as_bytes());
         out.extend(vec![0; 0x20 - self.unk_20.len()]);
 
         out.extend(self.params.to_bytes());

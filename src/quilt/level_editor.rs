@@ -22,7 +22,7 @@ enum ObjectIndex {
     Gimmick(usize),
     // Path(usize),
     Zone(usize),
-    // CourseInfo(usize),
+    CourseInfo(usize),
     Enemy(usize)
 }
 
@@ -34,7 +34,7 @@ enum ObjectType {
     Gimmick,
     // Path,
     Zone,
-    // CourseInfo,
+    CourseInfo,
     Enemy
 }
 
@@ -207,6 +207,10 @@ impl LevelEditor {
                     self.current_add_object = Some(ObjectType::Zone);
                 }
 
+                if ui.button("Add Course Info").clicked() {
+                    self.current_add_object = Some(ObjectType::CourseInfo);
+                }
+
                 if ui.button("Add Enemy").clicked() {
                     self.current_add_object = Some(ObjectType::Enemy);
                 }
@@ -259,6 +263,10 @@ impl LevelEditor {
 
             ObjectIndex::Zone(index) => {
                 self.process_zone_attributes(ui, index);
+            }
+
+            ObjectIndex::CourseInfo(index) => {
+                self.process_course_info_attributes(ui, index);
             }
 
             ObjectIndex::Enemy(index) => {
