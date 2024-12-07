@@ -415,21 +415,101 @@ impl LevelEditor {
     pub fn update_paths(&mut self, ui: &mut egui::Ui, rect: Rect) {
         let painter = ui.painter_at(rect);
 
-        for path in self.current_mapdata.paths.iter() {
+        for (index, path) in self.current_mapdata.paths.iter_mut().enumerate() {
             if &path.name == "NONE" && !self.display_none {
                 continue;
             }
 
             for i in 0..path.points.len() - 1 {
-                let start = rect.min + 
+                let start_pos = rect.min + 
                     self.camera.to_camera(path.points[i].to_vec2());
-                let end = rect.min + 
+                let end_pos = rect.min + 
                     self.camera.to_camera(path.points[i + 1].to_vec2());
 
                 painter.line_segment(
-                    [start, end],
+                    [start_pos, end_pos],
                     egui::Stroke::new(1.0, PATH_COLOR)
                 );
+
+                if !matches!(self.path_edit_mode, EditMode::Edit) {
+                    continue;
+                }
+
+                let color = if path.is_selected {
+                    egui::Color32::GREEN
+                } else {
+                    egui::Color32::WHITE
+                };
+
+                painter.circle_filled(start_pos, CIRCLE_RADIUS * self.camera.zoom, color);
+                painter.circle_filled(end_pos, CIRCLE_RADIUS * self.camera.zoom, color);
+
+                let start_rect = egui::Rect::from_center_size(
+                    egui::Pos2::new(
+                        start_pos.x,
+                        start_pos.y - CIRCLE_RADIUS * 2.0
+                    ),
+    
+                    egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom)
+                );
+    
+                let end_rect = egui::Rect::from_center_size(
+                    egui::Pos2::new(
+                        end_pos.x,
+                        end_pos.y - CIRCLE_RADIUS * 2.0
+                    ),
+                    
+                    egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom)
+                );
+    
+                let start_resp = ui.interact(
+                    start_rect,
+                    egui::Id::new(
+                    &format!(
+                            "path-{}-{}-start-{}",
+                            index,
+                            i,
+                            i % 2,
+                        )
+                    ),
+                    egui::Sense::click_and_drag()
+                );
+    
+                let end_resp = ui.interact(
+                    end_rect,
+                    egui::Id::new(
+                        &format!(
+                            "path-{}-{}-end-{}",
+                            index,
+                            i,
+                            i % 2
+                        )
+                    ),
+                    egui::Sense::click_and_drag()
+                );
+
+                let mut clicked = false;
+                if start_resp.clicked() {
+                    clicked = true;
+                } else if start_resp.dragged() {
+                    let world_delta = start_resp.drag_delta() / self.camera.zoom;
+                    let start = &mut path.points[i];
+                    start.x += world_delta.x;
+                    start.y -= world_delta.y;
+                }
+                
+                if end_resp.clicked() {
+                    clicked = true;
+                } else if end_resp.dragged() {
+                    let world_delta = end_resp.drag_delta() / self.camera.zoom;
+                    let end = &mut path.points[i + 1];
+                    end.x += world_delta.x;
+                    end.y -= world_delta.y;
+                }
+                
+                if clicked {
+                    self.selected_object_indices.push(ObjectIndex::Path(index));
+                }
             }
         }
     }
@@ -455,9 +535,6 @@ impl LevelEditor {
                 egui::Id::new(zone as *const _),
                 egui::Sense::click_and_drag()
             );
-
-            
-            
             
             if zone.is_selected {
                 painter.rect_filled(
@@ -1498,6 +1575,124 @@ impl LevelEditor {
             });
         });
     }
+
+    pub fn process_path_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Delete)
+        }) {
+            self.current_mapdata.paths.remove(index);
+            self.selected_object_indices.clear();
+            return;
+        }
+
+        if ui.ctx().input(|i|{
+            i.key_pressed(egui::Key::Escape)
+        }) {
+            self.deselect_all();
+            return;
+        }
+
+        let path = &mut self.current_mapdata.paths[index];
+        path.is_selected = true;
+
+        egui::Area::new(egui::Id::from("le_path_attribute_editor"))
+        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        .show(ui.ctx(), |ui|{
+            egui::Frame::popup(ui.style())
+            .inner_margin(egui::Vec2::splat(8.0))
+            .show(ui, |ui|{
+                ui.label("Edit path attributes");
+
+                ui.label("Name");
+                ui.add(
+                    egui::TextEdit::singleline(&mut path.name).char_limit(0x20)
+                );
+
+                let data = self.object_data_json.get("paths")
+                .expect("couldn't find 'paths' in objectdata.json");
+
+                if let Some(path_data) = data.get(&path.name) {
+                    if let Some(desc) = path_data.get("description").and_then(|d| d.as_str()) {
+                        if !desc.is_empty() {
+                            ui.label(desc);
+                        }
+                    }
+
+                    if let Some(note) = path_data.get("note").and_then(|n| n.as_str()) {
+                        if !note.is_empty() {
+                            ui.label(format!("Note: {note}"));
+                        }
+                    }
+                }
+
+                ui.collapsing("Points", |ui| {
+                    let max_height = 200.0;
+                    let max_width = ui.available_width();
+                
+                    let mut to_remove = None;
+                    let mut to_insert = None;
+                    let num_points = path.points.len();
+                
+
+                    ui.allocate_ui_with_layout(
+                        egui::Vec2::new(max_width, max_height),
+                        egui::Layout::top_down(egui::Align::LEFT),
+                        |ui| {
+                            let scroll_area = egui::ScrollArea::vertical()
+                                .max_height(max_height)
+                                ;
+                
+                            scroll_area.show(ui, |ui| {
+                                for (index, point) in path.points.iter_mut().enumerate() {
+                                    ui.horizontal(|ui| {
+                                        if ui.button("+").clicked() {
+                                            to_insert = Some(index);
+                                        }
+                
+                                        if num_points > 2 && index != 0 {
+                                            if ui.button("-").clicked() {
+                                                to_remove = Some(index);
+                                            }
+                                        }
+                
+                                        ui.label(format!("{}", index + 1));
+                                        ui.add_space(3.0);
+                                        ui.label("X");
+                                        ui.add(egui::DragValue::new(&mut point.x).speed(0.5).range(f32::MIN..=f32::MAX));
+                                        ui.label("Y");
+                                        ui.add(egui::DragValue::new(&mut point.y).speed(0.5).range(f32::MIN..=f32::MAX));
+                                    });
+                                }
+                            });
+                
+                            if let Some(remove_index) = to_remove {
+                                path.points.remove(remove_index);
+                            }
+                
+                            if let Some(insert_index) = to_insert {
+                                let mut copy = path.points[insert_index].clone();
+                                copy.x += 5.0;
+                                copy.y += 5.0;
+                                path.points.insert(insert_index, copy);
+                            }
+                        },
+                    );
+                });
+                
+
+                Self::process_mapdata_parameters(
+                    &self.object_data_json,
+                    ui,
+                    &path.name,
+                    "paths",
+                    &mut path.params
+                );
+    
+            });
+        });
+
+    }
+
 
     pub fn process_zone_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
         if ui.ctx().input(|i|{

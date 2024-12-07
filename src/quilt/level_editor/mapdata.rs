@@ -75,7 +75,9 @@ pub struct Path {
     pub name: String,
     pub path_type: String,
     pub params: Params,
-    pub points: Vec<Point2D>
+    pub points: Vec<Point2D>,
+
+    pub is_selected: bool
 }
 
 #[derive(Default)]

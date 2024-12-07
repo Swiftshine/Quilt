@@ -12,7 +12,7 @@ use egui::{Pos2, Vec2};
 //     decoded.to_string()
 // }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct Point2D {
     pub x: f32,
     pub y: f32

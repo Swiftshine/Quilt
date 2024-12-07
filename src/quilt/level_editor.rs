@@ -20,7 +20,7 @@ enum ObjectIndex {
     LabeledWall(usize),
     CommonGimmick(usize), 
     Gimmick(usize),
-    // Path(usize),
+    Path(usize),
     Zone(usize),
     CourseInfo(usize),
     Enemy(usize)
@@ -32,7 +32,7 @@ enum ObjectType {
     LabeledWall,
     CommonGimmick(String), 
     Gimmick,
-    // Path,
+    Path,
     Zone,
     CourseInfo,
     Enemy
@@ -203,6 +203,10 @@ impl LevelEditor {
                     self.current_add_object = Some(ObjectType::Gimmick);
                 }
 
+                if ui.button("Add Path").clicked() {
+                    self.current_add_object = Some(ObjectType::Path);
+                }
+
                 if ui.button("Add Zone").clicked() {
                     self.current_add_object = Some(ObjectType::Zone);
                 }
@@ -259,6 +263,10 @@ impl LevelEditor {
 
             ObjectIndex::Gimmick(index) => {
                 self.process_gimmick_attributes(ui, index);
+            }
+
+            ObjectIndex::Path(index) => {
+                self.process_path_attributes(ui, index);
             }
 
             ObjectIndex::Zone(index) => {

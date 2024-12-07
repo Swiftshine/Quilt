@@ -6,7 +6,6 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 - [ ] Level editor
 #### Almost there!
 The following are what need to be completed for the level editor to be marked as complete.
-- Path editing
 - Open/Save as folder
 
 ### Planned
@@ -15,7 +14,6 @@ The following are what need to be completed for the level editor to be marked as
 - Collision editor
 - MNEB rendering
 - Potential <em>Kirby's Extra Epic Yarn</em> support.
-
 
 ## Capabilities
 ### Level Editor

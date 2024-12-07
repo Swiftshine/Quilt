@@ -93,6 +93,10 @@ impl LevelEditor {
                 ObjectIndex::Gimmick(index) => {
                     self.current_mapdata.gimmicks[*index].is_selected = false;
                 }
+
+                ObjectIndex::Path(index) => {
+                    self.current_mapdata.paths[*index].is_selected = false;
+                }
                 
                 ObjectIndex::Zone(index) => {
                     self.current_mapdata.zones[*index].is_selected = false;

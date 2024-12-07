@@ -227,6 +227,35 @@ impl LevelEditor {
                                 self.current_mapdata.gimmicks.push(gmk);
                             }
 
+                            ObjectType::Path => {
+                                /*
+                                let mut wall = Wall::default();
+                                wall.collision_type = String::from("NML");
+                                let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                                wall.start = Point2D::from_vec2(start);
+
+                                wall.end = Point2D {
+                                    x: wall.start.x + 5.0,
+                                    y: wall.start.y
+                                };
+                                 */
+                                let mut path = Path::default();
+                                
+                                let first = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                                path.points.push(Point2D {
+                                    x: first.x,
+                                    y: first.y
+                                });
+
+                                path.points.push(Point2D {
+                                    x: first.x + 5.0,
+                                    y: first.y,
+                                });
+
+                                path.name = String::from("NEW");
+                                self.current_mapdata.paths.push(path);
+                            }
+
                             ObjectType::Zone => {
                                 let mut zone = Zone::default();
                                 let start = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
