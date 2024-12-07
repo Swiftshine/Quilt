@@ -5,7 +5,7 @@ use egui::{
 };
 
 use super::{
-    EditMode, LevelEditor, ObjectIndex, COLLISION_TYPES
+    EditMode, LevelEditor, ObjectIndex, Params, COLLISION_TYPES
 };
 
 use super::{
@@ -438,13 +438,13 @@ impl LevelEditor {
                 continue;
             }
 
-            let min = rect.min +
-                self.camera.to_camera(zone.bounds_min.to_vec2());
+            let start = rect.min +
+                self.camera.to_camera(zone.bounds_start.to_vec2());
 
-            let max = rect.min + 
-                self.camera.to_camera(zone.bounds_max.to_vec2());
+            let end = rect.min + 
+                self.camera.to_camera(zone.bounds_end.to_vec2());
 
-            let square = egui::Rect::from_points(&[min, max]);
+            let square = egui::Rect::from_points(&[start, end]);
 
             let body_resp = ui.interact(
                 square,
@@ -461,12 +461,10 @@ impl LevelEditor {
             }
 
             painter.rect_stroke(
-                Rect::from_points(&[min, max]),
+                Rect::from_points(&[start, end]),
                 0.0,
                 egui::Stroke::new(1.0, ZONE_COLOR)
             );
-            
-            // todo - add response for bounds min and bounds max
 
             // if body_resp.hovered() {
             //     painter.text(
@@ -489,10 +487,67 @@ impl LevelEditor {
             } else if body_resp.dragged() {   
                 let world_delta = body_resp.drag_delta() / self.camera.zoom;
 
-                zone.bounds_min.x += world_delta.x;
-                zone.bounds_min.y -= world_delta.y;
-                zone.bounds_max.x += world_delta.x;
-                zone.bounds_max.y -= world_delta.y;
+                zone.bounds_start.x += world_delta.x;
+                zone.bounds_start.y -= world_delta.y;
+                zone.bounds_end.x += world_delta.x;
+                zone.bounds_end.y -= world_delta.y;
+            }
+
+            if !zone.is_selected {
+                continue;
+            }
+            
+            let start_rect = egui::Rect::from_center_size(
+                egui::Pos2::new(
+                    start.x,
+                    start.y - CIRCLE_RADIUS * 2.0
+                ),
+
+                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom)
+            );
+
+            let end_rect = egui::Rect::from_center_size(
+                egui::Pos2::new(
+                    end.x,
+                    end.y - CIRCLE_RADIUS * 2.0
+                ),
+
+                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom)
+            );
+
+            let color = egui::Color32::from_rgb(
+                0x00, 0x9F, 0xFD
+            );
+
+            let radius = CIRCLE_RADIUS * 2.0;
+
+            painter.circle_filled(start, radius * self.camera.zoom, color);
+            painter.circle_filled(end, radius * self.camera.zoom, color);
+
+            let start_resp = ui.interact(
+                start_rect,
+                egui::Id::new(&zone.bounds_start as *const _),
+                egui::Sense::click_and_drag()
+            );
+
+            let end_resp = ui.interact(
+                end_rect,
+                egui::Id::new(&zone.bounds_end as *const _),
+                egui::Sense::click_and_drag()
+            );
+            
+            if start_resp.dragged() {
+                let world_delta = start_resp.drag_delta() / self.camera.zoom;
+
+                zone.bounds_start.x += world_delta.x;
+                zone.bounds_start.y -= world_delta.y;
+            }
+
+            if end_resp.dragged() {
+                let world_delta = end_resp.drag_delta() / self.camera.zoom;
+
+                zone.bounds_end.x += world_delta.x;
+                zone.bounds_end.y -= world_delta.y;
             }
         }
     }
@@ -740,7 +795,7 @@ impl LevelEditor {
                 });
 
                 let data = self.object_data_json.get("common_gimmicks")
-                .expect("couldn't find 'common_gimmicks' inside objectdata.json");
+                .expect("couldn't find 'common_gimmicks' in objectdata.json");
 
                 if let Some(gmk_data) = data.get(&gmk.hex) {
                     if let Some(desc) = gmk_data.get("description").and_then(|d| d.as_str()) {
@@ -908,8 +963,8 @@ impl LevelEditor {
                         }
                     }
 
-                    // short parameters
-                    if let Some(params) = gmk_data.get("short_parameters").and_then(|p| p.as_object()) {
+                    // common parameters
+                    if let Some(params) = gmk_data.get("common_parameters").and_then(|p| p.as_object()) {
                         for (param_name, param_data) in params {
                             ui.collapsing(param_name, |ui|{
                                 if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
@@ -939,22 +994,22 @@ impl LevelEditor {
                                 match data_type {
                                     DataType::Int => {
                                         ui.add(
-                                            egui::DragValue::new(&mut gmk.params.short_int_params[slot])
+                                            egui::DragValue::new(&mut gmk.params.common_int_params[slot])
                                             .speed(1)
                                             .range(i32::MIN..=i32::MAX)
                                         );
                                     }
 
                                     DataType::Bool => {
-                                        let mut bool_value = gmk.params.short_int_params[slot] != 0;
+                                        let mut bool_value = gmk.params.common_int_params[slot] != 0;
                                         if ui.checkbox(&mut bool_value, "Value").changed() {
-                                            gmk.params.short_int_params[slot] = if bool_value { 1 } else { 0 }
+                                            gmk.params.common_int_params[slot] = if bool_value { 1 } else { 0 }
                                         }
                                     }
                                     
                                     DataType::Float => {
                                         ui.add(
-                                            egui::DragValue::new(&mut gmk.params.short_float_params[slot])
+                                            egui::DragValue::new(&mut gmk.params.common_float_params[slot])
                                             .speed(1.0)
                                             .range(f32::MIN..=f32::MAX)
                                         );
@@ -963,7 +1018,7 @@ impl LevelEditor {
                                     DataType::String => {
                                         ui.add(
                                             egui::TextEdit::singleline(
-                                                &mut gmk.params.short_string_param
+                                                &mut gmk.params.common_string_param
                                             ).char_limit(8)
                                         );
                                     }
@@ -977,7 +1032,7 @@ impl LevelEditor {
                                                 value_name.clone(), value.as_i64().unwrap() as i32
                                             ));
 
-                                            if gmk.params.short_int_params[slot] == value.as_i64().unwrap() as i32 {
+                                            if gmk.params.common_int_params[slot] == value.as_i64().unwrap() as i32 {
                                                 value_index = values.len() - 1;
                                             }
                                         }
@@ -988,7 +1043,7 @@ impl LevelEditor {
                                         ).show_ui(ui, |ui|{
                                             for (value_name, value) in values {
                                                 ui.selectable_value(
-                                                    &mut gmk.params.short_int_params[slot],
+                                                    &mut gmk.params.common_int_params[slot],
                                                     value,
                                                     value_name
                                                 );
@@ -1005,7 +1060,7 @@ impl LevelEditor {
                                                 value_name.clone(), value.as_f64().unwrap() as f32
                                             ));
 
-                                            if gmk.params.short_float_params[slot] == value.as_f64().unwrap() as f32 {
+                                            if gmk.params.common_float_params[slot] == value.as_f64().unwrap() as f32 {
                                                 value_index = values.len() - 1;
                                             }
                                         }
@@ -1016,7 +1071,7 @@ impl LevelEditor {
                                         ).show_ui(ui, |ui|{
                                             for (value_name, value) in values {
                                                 ui.selectable_value(
-                                                    &mut gmk.params.short_float_params[slot],
+                                                    &mut gmk.params.common_float_params[slot],
                                                     value,
                                                     value_name
                                                 );
@@ -1033,7 +1088,7 @@ impl LevelEditor {
                                                 value_name.clone(), value.as_str().unwrap().to_string()
                                             ));
 
-                                            if gmk.params.short_string_param == value.as_str().unwrap().to_string() {
+                                            if gmk.params.common_string_param == value.as_str().unwrap().to_string() {
                                                 value_index = values.len() - 1;
                                             }
                                         }
@@ -1044,7 +1099,7 @@ impl LevelEditor {
                                         ).show_ui(ui, |ui|{
                                             for (value_name, value) in values {
                                                 ui.selectable_value(
-                                                    &mut gmk.params.short_string_param,
+                                                    &mut gmk.params.common_string_param,
                                                     value,
                                                     value_name
                                                 );
@@ -1070,7 +1125,7 @@ impl LevelEditor {
                     ui.horizontal(|ui|{
                         for i in 0..2 {
                             ui.add(
-                                egui::DragValue::new(&mut gmk.params.short_int_params[i])
+                                egui::DragValue::new(&mut gmk.params.common_int_params[i])
                                 .speed(1)
                                 .range(i32::MIN..=i32::MAX)
                             );
@@ -1082,7 +1137,7 @@ impl LevelEditor {
                     ui.horizontal(|ui|{
                         for i in 0..2 {
                             ui.add(
-                                egui::DragValue::new(&mut gmk.params.short_float_params[i])
+                                egui::DragValue::new(&mut gmk.params.common_float_params[i])
                                 .speed(1)
                                 .range(f32::MIN..=f32::MAX)
                             );
@@ -1092,7 +1147,7 @@ impl LevelEditor {
                     ui.add_space(3.0);
                     ui.label("String value (common)");
                     ui.add(
-                        egui::TextEdit::singleline(&mut gmk.params.short_string_param)
+                        egui::TextEdit::singleline(&mut gmk.params.common_string_param)
                         .char_limit(8)
                     );
 
@@ -1133,6 +1188,223 @@ impl LevelEditor {
             });
         });
     }
+
+    // common function for those with mapdata parameters
+    fn process_mapdata_parameters(
+        object_data_json: &serde_json::Value,
+        ui: &mut egui::Ui,
+        object_name: &str,
+        object_category: &str,
+        object_params: &mut Params
+    ) {
+        let data = object_data_json
+        .get(object_category)
+        .expect(&format!("couldn't find '{object_category}' in objectdata.json"));
+
+        // paramter handling
+        if let Some(object_data) = data.get(object_name) {
+            if let Some(desc) = object_data.get("description").and_then(|d| d.as_str()) {
+                if !desc.is_empty() {
+                    ui.label(desc);
+                }
+            }
+        
+            if let Some(note) = object_data.get("note").and_then(|n| n.as_str()) {
+                if !note.is_empty() {
+                    ui.label(format!("Note: {note}"));
+                }
+            }
+
+            if let Some(params) = object_data.get("parameters").and_then(|p| p.as_object()) {
+                for (param_name, param_data) in params {
+                    ui.collapsing(param_name, |ui|{
+                        if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
+                            if !param_desc.is_empty() {
+                                ui.label(param_desc);
+                            }
+                        }
+                        if let Some(param_note) = param_data.get("note").and_then(|n| n.as_str()) {
+                            if !param_note.is_empty() {
+                                ui.label(format!("Note: {param_note}"));
+                            }
+                        }
+                        let slot = param_data.get("slot").and_then(|s| s.as_u64()).unwrap() as usize;
+                        let data_type = match param_data.get("data_type").and_then(|t| t.as_str()).unwrap() {
+                            "int" => DataType::Int,
+                            "bool" => DataType::Bool,
+                            "float" => DataType::Float,
+                            "string" => DataType::String,
+                            "dropdown_int" => DataType::DropdownInt,
+                            "dropdown_float" => DataType::DropdownFloat,
+                            "dropdown_string" => DataType::DropdownString,
+                            _ => DataType::None
+                        };
+
+                        match data_type {
+                            DataType::Int => {
+                                ui.add(
+                                    egui::DragValue::new(&mut object_params.int_params[slot])
+                                    .speed(1)
+                                    .range(i32::MIN..=i32::MAX)
+                                );
+                            }
+
+                            DataType::Bool => {
+                                let mut bool_value = object_params.int_params[slot] != 0;
+                                if ui.checkbox(&mut bool_value, "Value").changed() {
+                                    object_params.int_params[slot] = if bool_value { 1 } else { 0 }
+                                }
+                            }
+                            
+                            DataType::Float => {
+                                ui.add(
+                                    egui::DragValue::new(&mut object_params.float_params[slot])
+                                    .speed(1.0)
+                                    .range(f32::MIN..=f32::MAX)
+                                );
+                            }
+
+                            DataType::String => {
+                                ui.add(
+                                    egui::TextEdit::singleline(
+                                        &mut object_params.string_params[slot]
+                                    ).char_limit(0x40)
+                                );
+                            }
+
+                            DataType::DropdownInt => {
+                                let mut values: Vec<(String, i32)> = Vec::new();
+                                let mut value_index = 0;
+                                for (value_name, value) in param_data.get("values")
+                                .and_then(|v| v.as_object()).unwrap() {
+                                    values.push((
+                                        value_name.clone(), value.as_i64().unwrap() as i32
+                                    ));
+
+                                    if object_params.int_params[slot] == value.as_i64().unwrap() as i32 {
+                                        value_index = values.len() - 1;
+                                    }
+                                }
+
+                                egui::ComboBox::from_label("Value")
+                                .selected_text(
+                                    &values[value_index].0
+                                ).show_ui(ui, |ui|{
+                                    for (value_name, value) in values {
+                                        ui.selectable_value(
+                                            &mut object_params.int_params[slot],
+                                            value,
+                                            value_name
+                                        );
+                                    }
+                                });
+                            }
+
+                            DataType::DropdownFloat => {
+                                let mut values: Vec<(String, f32)> = Vec::new();
+                                let mut value_index = 0;
+                                for (value_name, value) in param_data.get("values")
+                                .and_then(|v| v.as_object()).unwrap() {
+                                    values.push((
+                                        value_name.clone(), value.as_f64().unwrap() as f32
+                                    ));
+
+                                    if object_params.float_params[slot] == value.as_f64().unwrap() as f32 {
+                                        value_index = values.len() - 1;
+                                    }
+                                }
+
+                                egui::ComboBox::from_label("Value")
+                                .selected_text(
+                                    &values[value_index].0
+                                ).show_ui(ui, |ui|{
+                                    for (value_name, value) in values {
+                                        ui.selectable_value(
+                                            &mut object_params.float_params[slot],
+                                            value,
+                                            value_name
+                                        );
+                                    }
+                                });
+                            }
+
+                            DataType::DropdownString => {
+                                let mut values: Vec<(String, String)> = Vec::new();
+                                let mut value_index = 0;
+                                for (value_name, value) in param_data.get("values")
+                                .and_then(|v| v.as_object()).unwrap() {
+                                    values.push((
+                                        value_name.clone(), value.as_str().unwrap().to_string()
+                                    ));
+
+                                    if object_params.string_params[slot] == value.as_str().unwrap().to_string() {
+                                        value_index = values.len() - 1;
+                                    }
+                                }
+
+                                egui::ComboBox::from_label("Value")
+                                .selected_text(
+                                    &values[value_index].0
+                                ).show_ui(ui, |ui|{
+                                    for (value_name, value) in values {
+                                        ui.selectable_value(
+                                            &mut object_params.string_params[slot],
+                                            value,
+                                            value_name
+                                        );
+                                    }
+                                });
+                            }
+
+
+                            DataType::None => {
+                                ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
+                            }
+                        };
+                    });
+                }
+            }
+        }
+
+        ui.collapsing("Raw data", |ui|{
+            ui.label("Edit fields regardless of documentation.");
+
+            ui.add_space(3.0);
+            ui.label("Int values");
+            ui.horizontal(|ui|{
+                for i in 0..3 {
+                    ui.add(
+                        egui::DragValue::new(&mut object_params.int_params[i])
+                        .speed(1)
+                        .range(i32::MIN..=i32::MAX)
+                    );
+                }
+            });
+
+            ui.add_space(3.0);
+            ui.label("Float values");
+            ui.horizontal(|ui|{
+                for i in 0..3 {
+                    ui.add(
+                        egui::DragValue::new(&mut object_params.float_params[i])
+                        .speed(1)
+                        .range(f32::MIN..=f32::MAX)
+                    );
+                }
+            });
+
+            ui.add_space(3.0);
+            ui.label("String values");
+            for i in 0..3 {
+                ui.add(
+                    egui::TextEdit::singleline(
+                        &mut object_params.string_params[i]
+                    ).char_limit(0x40)
+                );
+            }
+        });
+    }
+
 
     pub fn process_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
         if ui.ctx().input(|i|{
@@ -1181,211 +1453,13 @@ impl LevelEditor {
                     ui.add(egui::DragValue::new(&mut gmk.position.z).speed(0.5).range(f32::MIN..=f32::MAX));
                 });
 
-                let data = self.object_data_json.get("gimmicks").expect("couldn't find 'gimmicks' in objectdata.json");
-
-                // paramter handling
-                if let Some(gmk_data) = data.get(&gmk.name) {
-                    if let Some(desc) = gmk_data.get("description").and_then(|d| d.as_str()) {
-                        if !desc.is_empty() {
-                            ui.label(desc);
-                        }
-                    }
-                
-                    if let Some(note) = gmk_data.get("note").and_then(|n| n.as_str()) {
-                        if !note.is_empty() {
-                            ui.label(format!("Note: {note}"));
-                        }
-                    }
-
-                    if let Some(params) = gmk_data.get("parameters").and_then(|p| p.as_object()) {
-                        for (param_name, param_data) in params {
-                            ui.collapsing(param_name, |ui|{
-                                if let Some(param_desc) = param_data.get("description").and_then(|d| d.as_str()) {
-                                    if !param_desc.is_empty() {
-                                        ui.label(param_desc);
-                                    }
-                                }
-                                if let Some(param_note) = param_data.get("note").and_then(|n| n.as_str()) {
-                                    if !param_note.is_empty() {
-                                        ui.label(format!("Note: {param_note}"));
-                                    }
-                                }
-                                let slot = param_data.get("slot").and_then(|s| s.as_u64()).unwrap() as usize;
-                                let data_type = match param_data.get("data_type").and_then(|t| t.as_str()).unwrap() {
-                                    "int" => DataType::Int,
-                                    "bool" => DataType::Bool,
-                                    "float" => DataType::Float,
-                                    "string" => DataType::String,
-                                    "dropdown_int" => DataType::DropdownInt,
-                                    "dropdown_float" => DataType::DropdownFloat,
-                                    "dropdown_string" => DataType::DropdownString,
-                                    _ => DataType::None
-                                };
-
-                                match data_type {
-                                    DataType::Int => {
-                                        ui.add(
-                                            egui::DragValue::new(&mut gmk.params.int_params[slot])
-                                            .speed(1)
-                                            .range(i32::MIN..=i32::MAX)
-                                        );
-                                    }
-
-                                    DataType::Bool => {
-                                        let mut bool_value = gmk.params.int_params[slot] != 0;
-                                        if ui.checkbox(&mut bool_value, "Value").changed() {
-                                            gmk.params.int_params[slot] = if bool_value { 1 } else { 0 }
-                                        }
-                                    }
-                                    
-                                    DataType::Float => {
-                                        ui.add(
-                                            egui::DragValue::new(&mut gmk.params.float_params[slot])
-                                            .speed(1.0)
-                                            .range(f32::MIN..=f32::MAX)
-                                        );
-                                    }
-
-                                    DataType::String => {
-                                        ui.add(
-                                            egui::TextEdit::singleline(
-                                                &mut gmk.params.string_params[slot]
-                                            ).char_limit(0x40)
-                                        );
-                                    }
-
-                                    DataType::DropdownInt => {
-                                        let mut values: Vec<(String, i32)> = Vec::new();
-                                        let mut value_index = 0;
-                                        for (value_name, value) in param_data.get("values")
-                                        .and_then(|v| v.as_object()).unwrap() {
-                                            values.push((
-                                                value_name.clone(), value.as_i64().unwrap() as i32
-                                            ));
-
-                                            if gmk.params.int_params[slot] == value.as_i64().unwrap() as i32 {
-                                                value_index = values.len() - 1;
-                                            }
-                                        }
-
-                                        egui::ComboBox::from_label("Value")
-                                        .selected_text(
-                                            &values[value_index].0
-                                        ).show_ui(ui, |ui|{
-                                            for (value_name, value) in values {
-                                                ui.selectable_value(
-                                                    &mut gmk.params.int_params[slot],
-                                                    value,
-                                                    value_name
-                                                );
-                                            }
-                                        });
-                                    }
-
-                                    DataType::DropdownFloat => {
-                                        let mut values: Vec<(String, f32)> = Vec::new();
-                                        let mut value_index = 0;
-                                        for (value_name, value) in param_data.get("values")
-                                        .and_then(|v| v.as_object()).unwrap() {
-                                            values.push((
-                                                value_name.clone(), value.as_f64().unwrap() as f32
-                                            ));
-
-                                            if gmk.params.float_params[slot] == value.as_f64().unwrap() as f32 {
-                                                value_index = values.len() - 1;
-                                            }
-                                        }
-
-                                        egui::ComboBox::from_label("Value")
-                                        .selected_text(
-                                            &values[value_index].0
-                                        ).show_ui(ui, |ui|{
-                                            for (value_name, value) in values {
-                                                ui.selectable_value(
-                                                    &mut gmk.params.float_params[slot],
-                                                    value,
-                                                    value_name
-                                                );
-                                            }
-                                        });
-                                    }
-
-                                    DataType::DropdownString => {
-                                        let mut values: Vec<(String, String)> = Vec::new();
-                                        let mut value_index = 0;
-                                        for (value_name, value) in param_data.get("values")
-                                        .and_then(|v| v.as_object()).unwrap() {
-                                            values.push((
-                                                value_name.clone(), value.as_str().unwrap().to_string()
-                                            ));
-
-                                            if gmk.params.string_params[slot] == value.as_str().unwrap().to_string() {
-                                                value_index = values.len() - 1;
-                                            }
-                                        }
-
-                                        egui::ComboBox::from_label("Value")
-                                        .selected_text(
-                                            &values[value_index].0
-                                        ).show_ui(ui, |ui|{
-                                            for (value_name, value) in values {
-                                                ui.selectable_value(
-                                                    &mut gmk.params.string_params[slot],
-                                                    value,
-                                                    value_name
-                                                );
-                                            }
-                                        });
-                                    }
-
-
-                                    DataType::None => {
-                                        ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
-                                    }
-                                };
-                            });
-                        }
-                    }
-
-                }
-
-                ui.collapsing("Raw data", |ui|{
-                    ui.label("Edit fields regardless of documentation.");
-
-                    ui.add_space(3.0);
-                    ui.label("Int values");
-                    ui.horizontal(|ui|{
-                        for i in 0..3 {
-                            ui.add(
-                                egui::DragValue::new(&mut gmk.params.int_params[i])
-                                .speed(1)
-                                .range(i32::MIN..=i32::MAX)
-                            );
-                        }
-                    });
-
-                    ui.add_space(3.0);
-                    ui.label("Float values");
-                    ui.horizontal(|ui|{
-                        for i in 0..3 {
-                            ui.add(
-                                egui::DragValue::new(&mut gmk.params.float_params[i])
-                                .speed(1)
-                                .range(f32::MIN..=f32::MAX)
-                            );
-                        }
-                    });
-
-                    ui.add_space(3.0);
-                    ui.label("String values");
-                    for i in 0..3 {
-                        ui.add(
-                            egui::TextEdit::singleline(
-                                &mut gmk.params.string_params[i]
-                            ).char_limit(0x40)
-                        );
-                    }
-                });
+                Self::process_mapdata_parameters(
+                    &self.object_data_json,
+                    ui,
+                    &gmk.name,
+                    "gimmicks",
+                    &mut gmk.params
+                );
             });
         });
     }
@@ -1417,17 +1491,76 @@ impl LevelEditor {
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui|{
                 ui.label("Edit zone attributes");
-
+                
                 ui.label("Name");
                 ui.add(
                     egui::TextEdit::singleline(&mut zone.name).char_limit(0x20)
                 );
+
+                let data = self.object_data_json.get("zones")
+                .expect("couldn't find 'zones' in objectdata.json");
+
+                if let Some(zone_data) = data.get(&zone.name) {
+                    if let Some(desc) = zone_data.get("description").and_then(|d| d.as_str()) {
+                        if !desc.is_empty() {
+                            ui.label(desc);
+                        }
+                    }
+
+                    if let Some(note) = zone_data.get("note").and_then(|n| n.as_str()) {
+                        if !note.is_empty() {
+                            ui.label(format!("Note: {note}"));
+                        }
+                    }
+                }
+
          
                 ui.label("Unknown @ 0x20");
                 ui.add(
                     egui::TextEdit::singleline(&mut zone.unk_20).char_limit(0x20)
                 );
 
+                ui.label("Bounds Start");
+                ui.horizontal(|ui|{
+                    ui.label("X");
+                    ui.add(
+                        egui::DragValue::new(&mut zone.bounds_start.x)
+                        .speed(0.5)
+                        .range(f32::MIN..=f32::MAX)
+                    );
+
+                    ui.label("Y");
+                    ui.add(
+                        egui::DragValue::new(&mut zone.bounds_start.y)
+                        .speed(0.5)
+                        .range(f32::MIN..=f32::MAX)
+                    );
+                });
+
+                ui.label("Bounds End");
+                ui.horizontal(|ui|{
+                    ui.label("X");
+                    ui.add(
+                        egui::DragValue::new(&mut zone.bounds_end.x)
+                        .speed(0.5)
+                        .range(f32::MIN..=f32::MAX)
+                    );
+
+                    ui.label("Y");
+                    ui.add(
+                        egui::DragValue::new(&mut zone.bounds_end.y)
+                        .speed(0.5)
+                        .range(f32::MIN..=f32::MAX)
+                    );
+                });
+
+                Self::process_mapdata_parameters(
+                    &self.object_data_json,
+                    ui,
+                    &zone.name,
+                    "zones",
+                    &mut zone.params
+                );
             });
         });
     }

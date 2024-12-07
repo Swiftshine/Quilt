@@ -33,7 +33,7 @@ enum ObjectType {
     CommonGimmick(String), 
     Gimmick,
     // Path,
-    // Zone,
+    Zone,
     // CourseInfo,
     Enemy
 }
@@ -177,7 +177,7 @@ impl LevelEditor {
                         // iterate through common gimmick names
     
                         let data = self.object_data_json.get("common_gimmicks")
-                        .expect("couldn't find 'common_gimmicks' inside objectdata.json")
+                        .expect("couldn't find 'common_gimmicks' in objectdata.json")
                         .as_object().unwrap();
                         
                         for (hex, values) in data {
@@ -201,6 +201,10 @@ impl LevelEditor {
 
                 if ui.button("Add Gimmick").clicked() {
                     self.current_add_object = Some(ObjectType::Gimmick);
+                }
+
+                if ui.button("Add Zone").clicked() {
+                    self.current_add_object = Some(ObjectType::Zone);
                 }
 
                 if ui.button("Add Enemy").clicked() {

@@ -7,7 +7,6 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 #### Almost there!
 The following are what need to be completed for the level editor to be marked as complete.
 - Path editing
-- Zone editing
 - Race Course Info editing
 - Open/Save as folder
 

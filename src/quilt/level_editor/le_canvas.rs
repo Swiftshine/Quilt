@@ -198,15 +198,7 @@ impl LevelEditor {
                                 self.current_mapdata.labeled_walls.push(wall);
                             }
 
-                            ObjectType::Gimmick => {
-                                let mut gmk = Gimmick::default();
-
-                                let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
-
-                                gmk.position = Point2D::from_pos2(pos).to_point_3d();
-                                gmk.name = String::from("NEW");
-                                self.current_mapdata.gimmicks.push(gmk);
-                            }
+                            
 
                             ObjectType::CommonGimmick(hex) => {
                                 let mut gmk = CommonGimmick::default();
@@ -225,6 +217,27 @@ impl LevelEditor {
                                 }
 
                                 self.add_common_gimmick_texture(ui.ctx(), &hex_str);
+                            }
+
+                            ObjectType::Gimmick => {
+                                let mut gmk = Gimmick::default();
+
+                                let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
+
+                                gmk.position = Point2D::from_pos2(pos).to_point_3d();
+                                gmk.name = String::from("NEW");
+                                self.current_mapdata.gimmicks.push(gmk);
+                            }
+
+                            ObjectType::Zone => {
+                                let mut zone = Zone::default();
+                                let start = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
+                                let end = egui::Pos2::new(start.x + 10.0, start.y + 10.0);
+
+                                zone.bounds_start = Point2D::from_pos2(start);
+                                zone.bounds_end = Point2D::from_pos2(end);
+                                
+                                self.current_mapdata.zones.push(zone);
                             }
 
                             ObjectType::Enemy => {

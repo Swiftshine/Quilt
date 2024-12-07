@@ -43,9 +43,9 @@ pub struct Params {
 #[derive(Default)]
 /// Many fields are unknown.
 pub struct CommonGimmickParams {
-    pub short_int_params: [i32; 2],
-    pub short_float_params: [f32; 2],
-    pub short_string_param: String,
+    pub common_int_params: [i32; 2],
+    pub common_float_params: [f32; 2],
+    pub common_string_param: String,
     pub int_params: [i32; 5],
     pub float_params: [f32; 5],
     pub string_params: [String; 5]
@@ -83,8 +83,8 @@ pub struct Zone {
     pub name: String,
     pub unk_20: String,
     pub params: Params,
-    pub bounds_min: Point2D,
-    pub bounds_max: Point2D,
+    pub bounds_start: Point2D,
+    pub bounds_end: Point2D,
 
     pub is_selected: bool,
 }
@@ -583,16 +583,16 @@ impl CommonGimmickParams {
         for i in 0..2 {
             let start = i * 4;
             let end = start + 4;
-            params.short_int_params[i] = BigEndian::read_i32(&input[start..end]);
+            params.common_int_params[i] = BigEndian::read_i32(&input[start..end]);
         }
 
         for i in 0..2 {
             let start = 8 + (i * 4);
             let end = start + 4;
-            params.short_float_params[i] = BigEndian::read_f32(&input[start..end]);
+            params.common_float_params[i] = BigEndian::read_f32(&input[start..end]);
         }
         
-        params.short_string_param = string_from_buffer(&input[0x10..0x18]);
+        params.common_string_param = string_from_buffer(&input[0x10..0x18]);
 
         for i in 0..5 {
             let start = 0x18 + (i * 4);
@@ -618,20 +618,20 @@ impl CommonGimmickParams {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        for int in &self.short_int_params {
+        for int in &self.common_int_params {
             out.extend(int.to_be_bytes());
         }
 
 
-        for float in &self.short_float_params {
+        for float in &self.common_float_params {
             out.extend(float.to_be_bytes());
         }
 
-        let mut short_string_buffer = [0u8; 8];
-        let bytes = self.short_string_param.as_bytes();
+        let mut common_string_buffer = [0u8; 8];
+        let bytes = self.common_string_param.as_bytes();
         let len = bytes.len().min(8); // truncate if necessary
-        short_string_buffer[..len].copy_from_slice(&bytes[..len]);
-        out.extend(&short_string_buffer);
+        common_string_buffer[..len].copy_from_slice(&bytes[..len]);
+        out.extend(&common_string_buffer);
 
         for int in &self.int_params {
             out.extend(int.to_be_bytes());
@@ -768,8 +768,8 @@ impl Zone {
         zone.name = string_from_buffer(&input[..0x20]);
         zone.unk_20 = string_from_buffer(&input[0x20..0x40]);
         zone.params = Params::from_bytes(&input[0x40..0x118]);
-        zone.bounds_min = Point2D::from_be_bytes(&input[0x118..0x120]);
-        zone.bounds_max = Point2D::from_be_bytes(&input[0x120..0x128]);
+        zone.bounds_start = Point2D::from_be_bytes(&input[0x118..0x120]);
+        zone.bounds_end = Point2D::from_be_bytes(&input[0x120..0x128]);
 
         zone
     }
@@ -785,9 +785,9 @@ impl Zone {
 
         out.extend(self.params.to_bytes());
 
-        out.extend(self.bounds_min.to_be_bytes());
+        out.extend(self.bounds_start.to_be_bytes());
 
-        out.extend(self.bounds_max.to_be_bytes());
+        out.extend(self.bounds_end.to_be_bytes());
 
         out
     }
