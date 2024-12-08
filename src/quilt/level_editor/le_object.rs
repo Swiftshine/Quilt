@@ -1670,8 +1670,7 @@ impl LevelEditor {
                             }
                 
                             if let Some(insert_index) = to_insert {
-                                let mut copy = path.points[insert_index].clone();
-                                copy.x += 1.0;
+                                let copy = path.points[insert_index].clone();
                                 path.points.insert(insert_index + 1, copy);
                             }
                         },
