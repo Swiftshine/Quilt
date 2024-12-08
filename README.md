@@ -2,11 +2,7 @@
 A <em>Kirby's Epic Yarn</em> modding tool.
 
 ## Features
-### Work in progress
-- [ ] Level editor
-#### Almost there!
-The following are what need to be completed for the level editor to be marked as complete.
-- Open/Save as folder
+- [X] Level editor
 
 ### Planned
 - [ ] Level graphics editor
