@@ -1,4 +1,5 @@
 /target
-res/objectdata.json
+quilt_res/objectdata.json
 debug/
 .DS_Store
+quilt_res/

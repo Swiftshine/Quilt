@@ -93,9 +93,9 @@ pub struct LevelEditor {
 impl LevelEditor {
     pub fn new() -> Self {
         Self {
-            object_data_json: if let Ok(b) = fs::exists("res/objectdata.json") {
+            object_data_json: if let Ok(b) = fs::exists("quilt_res/objectdata.json") {
                 if b {
-                    let contents = fs::read_to_string("res/objectdata.json").unwrap_or_else(|_| String::new());
+                    let contents = fs::read_to_string("quilt_res/objectdata.json").unwrap_or_else(|_| String::new());
                     serde_json::from_str(&contents).expect("failed to parse json")
                 } else {
                     Default::default()

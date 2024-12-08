@@ -29,7 +29,7 @@ impl LevelEditor {
     }
 
     pub fn load_image_from_tex_folder(folder_name: &str, file_name: &str) -> Result<egui::ColorImage> {
-        let path = format!("res/tex/{folder_name}/{file_name}.png");
+        let path = format!("quilt_res/tex/{folder_name}/{file_name}.png");
         let image = image::open(&path)?.to_rgba8();
 
         let (width, height) = image.dimensions();
@@ -127,12 +127,12 @@ impl LevelEditor {
 
         let content = response.text()?;
 
-        if let Ok(b) = fs::exists("res/") {
+        if let Ok(b) = fs::exists("quilt_res/") {
             if !b {
                 fs::create_dir("res")?;
             }
 
-            fs::write("res/objectdata.json", &content)?;
+            fs::write("quilt_res/objectdata.json", &content)?;
             self.object_data_json = serde_json::from_str(&content).expect("failed to parse json");
         } else {
             bail!("failed to write objectdata.json");
@@ -149,7 +149,7 @@ impl LevelEditor {
     }
 
     pub fn refresh_object_data(&mut self) {
-        if let Ok(s) = fs::read_to_string("res/objectdata.json") {
+        if let Ok(s) = fs::read_to_string("quilt_res/objectdata.json") {
             self.object_data_json = serde_json::from_str(&s).expect("failed to read json");
         }
     }

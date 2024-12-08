@@ -329,7 +329,7 @@ impl LevelEditor {
 
             // handle attributes
             
-            let object_data_exists = if let Ok(b) = fs::exists("res/objectdata.json") {
+            let object_data_exists = if let Ok(b) = fs::exists("quilt_res/objectdata.json") {
                 b || !self.is_object_data_valid
             } else {
                 false

@@ -21,3 +21,19 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 ### Level Editor
 ![le_preview_1](assets/screenshots/LE_SS_1.png)
 ![le_preview_2](assets/screenshots/LE_SS_2.png)
+
+## Setup
+1. Download the latest release of Quilt or compile from source.
+2. Create a folder called `quilt_res` next to the Quilt app.
+3. Download the latest gimmick images for Quilt [here](https://github.com/Swiftshine/key-quilt-image). Put the `tex` folder within the `quilt_res` folder. Feel free to update your images by redownloading the repository.
+4. Download the latest `objectdata.json` from [here](https://github.com/Swiftshine/key-objectdb). This only needs to be done once, as afterwards, you can update within the app. Put this in the `quilt_res` folder.
+
+In the end, your folder structure should look like this:
+```
+[folder Quilt is in]
+    ├── quilt_res/
+    │    ├── tex/
+    │    │   ├└── [texture folders]
+    │    └── objectdata.json
+    └── [Quilt executable (Quilt.exe, etc.)]
+```
