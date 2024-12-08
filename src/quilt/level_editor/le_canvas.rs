@@ -55,7 +55,7 @@ impl LevelEditor {
                 if let Ok(_) = self.update_object_data() {
                     // println!("Succeeded.");
                 } else {
-                    println!("Failed.");
+                    eprintln!("Failed.");
                 }
             }
     
