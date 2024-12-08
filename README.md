@@ -13,9 +13,10 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 
 ## Capabilities
 ### Level Editor
-- Open and save levels as archives
-- Edit and add gimmicks, common gimmicks, and enemies
-- More planned...
+- Open and save levels
+- Edit level collisions, gimmicks, enemies, and more
+- Support for images for gimmicks
+
 ## Screenshots
 ### Level Editor
 ![le_preview_1](assets/screenshots/LE_SS_1.png)
