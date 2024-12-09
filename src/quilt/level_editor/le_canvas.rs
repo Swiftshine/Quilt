@@ -4,11 +4,11 @@ use super::{
 
 use std::fs;
 use super::mapdata::*;
-use crate::quilt::common::*;
+use crate::quilt::{bgst_renderer::BGSTRenderer, common::*};
 use egui;
 
 impl LevelEditor {
-    pub fn show_editor_ui(&mut self, ui: &mut egui::Ui) {
+    pub fn show_editor_ui(&mut self, ui: &mut egui::Ui, bgst_renderer: &BGSTRenderer) {
         ui.horizontal(|ui|{
             egui::ComboBox::from_label("Selected file")
             .selected_text(
@@ -320,6 +320,26 @@ impl LevelEditor {
             }
 
             self.update_enemies(ui, rect);
+
+            
+            // bgst rendering
+            if self.render_bgst {
+                let bg_base_index = self.current_mapdata.gimmicks.iter()
+                .position(|g| &g.name == "BG_BASE");
+            
+                if let Some(bg_base_index) = bg_base_index {
+                    let bg_base = &self.current_mapdata.gimmicks[bg_base_index];
+                    
+                    let pos = egui::Vec2::new(
+                        bg_base.position.x,
+                        bg_base.position.y
+                    );
+                    
+                    let pos = rect.min + self.camera.to_camera(pos);
+                    bgst_renderer.render(ui, rect, pos.to_vec2(), self.camera.zoom);
+                }
+            }
+            
 
             /* end rendering */
 

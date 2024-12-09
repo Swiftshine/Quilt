@@ -6,11 +6,11 @@ mod le_canvas;
 mod le_object;
 
 use std::{collections::HashMap, fs, path::PathBuf};
-use egui::{self, Button, TextureHandle};
+use egui::{self, Button, Checkbox, DragValue, TextureHandle};
 use gfarch::gfarch;
 use mapdata::*;
 use endata::*;
-use super::common::Camera;
+use super::{bgst_renderer::BGSTRenderer, common::Camera};
 use serde_json;
 
 #[derive(PartialEq)]
@@ -87,7 +87,8 @@ pub struct LevelEditor {
     common_gimmick_object_query: String,
 
     // graphics
-    object_textures: HashMap<String, TextureHandle>
+    object_textures: HashMap<String, TextureHandle>,
+    render_bgst: bool,
 }
 
 impl LevelEditor {
@@ -114,17 +115,21 @@ impl LevelEditor {
     }
 
 
-    pub fn show_ui(&mut self, ui: &mut egui::Ui) {
+    pub fn show_ui(&mut self, ui: &mut egui::Ui, bgst_renderer: &mut BGSTRenderer) {
         egui::TopBottomPanel::top("le_top_panel")
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
                 if ui.button("Open Archive").clicked() {
                     let _ = self.open_file(ui.ctx());
+                    bgst_renderer.bgst_file = None;
+                    self.render_bgst = false;
                     ui.close_menu();
                 }
-
+                
                 if ui.button("Open Folder").clicked() {
                     let _ = self.open_folder(ui.ctx());
+                    bgst_renderer.bgst_file = None;
+                    self.render_bgst = false;
                     ui.close_menu();
                 }
 
@@ -151,13 +156,39 @@ impl LevelEditor {
                     let _ = self.save_folder(true);
                     ui.close_menu();
                 }
+
+                if ui.add_enabled(self.file_open, Button::new("Open BGST"))
+                .clicked() {
+                    let _ = bgst_renderer.open_file(ui);
+                    ui.close_menu();
+                }
+
+                let bg_base_found = 
+                if self.file_open {
+                    // check mapdata
+                    self.current_mapdata.gimmicks.iter().position(|g| &g.name == "BG_BASE").is_some()
+                } else { 
+                    self.render_bgst = false;
+
+                    false 
+                };
+
+                ui.add_enabled(
+                    bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    Checkbox::new(&mut self.render_bgst, "Display background?")
+                );
+
+                ui.add_enabled(
+                    bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    DragValue::new(&mut bgst_renderer.dbg_image_size)
+                );
             });
         });
 
 
         egui::CentralPanel::default().show(ui.ctx(), |ui|{
             if self.file_open {
-                self.show_editor_ui(ui);
+                self.show_editor_ui(ui, &bgst_renderer);
             }
         });
     }

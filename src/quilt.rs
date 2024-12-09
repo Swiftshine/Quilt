@@ -1,9 +1,11 @@
 mod views;
 mod level_editor;
+mod bgst_renderer;
 mod common;
 
 use std::sync::Arc;
 
+use bgst_renderer::BGSTRenderer;
 use eframe::{egui, NativeOptions};
 use egui::IconData;
 use views::QuiltView;
@@ -12,6 +14,7 @@ use level_editor::LevelEditor;
 pub struct QuiltApp {
     current_view: QuiltView,
     level_editor: LevelEditor,
+    bgst_renderer: BGSTRenderer,
 }
 
 impl QuiltApp {
@@ -20,6 +23,7 @@ impl QuiltApp {
         Self {
             current_view: QuiltView::Home,
             level_editor: LevelEditor::new(),
+            bgst_renderer: BGSTRenderer::new()
         }
     }
 
@@ -99,7 +103,7 @@ impl eframe::App for QuiltApp {
                 }
     
                 QuiltView::LevelEditor => {
-                    self.level_editor.show_ui(ui);
+                    self.level_editor.show_ui(ui, &mut self.bgst_renderer);
                 }
             }
         });
