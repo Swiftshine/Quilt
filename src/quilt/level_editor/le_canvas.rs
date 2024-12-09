@@ -4,11 +4,11 @@ use super::{
 
 use std::fs;
 use super::mapdata::*;
-use crate::quilt::{bgst_renderer::BGSTRenderer, common::*};
+use crate::quilt::common::*;
 use egui;
 
 impl LevelEditor {
-    pub fn show_editor_ui(&mut self, ui: &mut egui::Ui, bgst_renderer: &BGSTRenderer) {
+    pub fn show_editor_ui(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui|{
             egui::ComboBox::from_label("Selected file")
             .selected_text(
@@ -336,7 +336,7 @@ impl LevelEditor {
                     );
                     
                     let pos = rect.min + self.camera.to_camera(pos);
-                    bgst_renderer.le_render(ui, rect, pos.to_vec2(), self.camera.zoom);
+                    self.bgst_renderer.le_render(ui, rect, pos.to_vec2(), self.camera.zoom);
                 }
             }
             

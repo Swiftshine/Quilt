@@ -89,6 +89,7 @@ pub struct LevelEditor {
     // graphics
     object_textures: HashMap<String, TextureHandle>,
     render_bgst: bool,
+    bgst_renderer: BGSTRenderer
 }
 
 impl LevelEditor {
@@ -109,26 +110,27 @@ impl LevelEditor {
             gimmick_edit_mode: EditMode::Edit,
             zone_edit_mode: EditMode::Edit,
             course_info_edit_mode: EditMode::Edit,
+            bgst_renderer: BGSTRenderer::new(),
 
             ..Default::default()
         }
     }
 
 
-    pub fn show_ui(&mut self, ui: &mut egui::Ui, bgst_renderer: &mut BGSTRenderer) {
+    pub fn show_ui(&mut self, ui: &mut egui::Ui) {
         egui::TopBottomPanel::top("le_top_panel")
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
                 if ui.button("Open Archive").clicked() {
                     let _ = self.open_file(ui.ctx());
-                    bgst_renderer.bgst_file = None;
+                    self.bgst_renderer.bgst_file = None;
                     self.render_bgst = false;
                     ui.close_menu();
                 }
                 
                 if ui.button("Open Folder").clicked() {
                     let _ = self.open_folder(ui.ctx());
-                    bgst_renderer.bgst_file = None;
+                    self.bgst_renderer.bgst_file = None;
                     self.render_bgst = false;
                     ui.close_menu();
                 }
@@ -159,7 +161,7 @@ impl LevelEditor {
 
                 if ui.add_enabled(self.file_open, Button::new("Open BGST"))
                 .clicked() {
-                    let _ = bgst_renderer.open_file(ui);
+                    let _ = self.bgst_renderer.open_file(ui);
                     ui.close_menu();
                 }
 
@@ -174,39 +176,39 @@ impl LevelEditor {
                 };
 
                 ui.add_enabled(
-                    bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
                     Checkbox::new(&mut self.render_bgst, "Display background?")
                 ).on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
 
                 ui.label("Tile size");
                 ui.add_enabled(
-                    bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut bgst_renderer.tile_size).speed(0.1)
+                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
                 );
 
                 ui.label("Tile X offset");
                 ui.add_enabled(
-                    bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut bgst_renderer.tile_offset.x).speed(0.1)
+                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
                 );
                 
                 ui.label("Tile Y offset");
                 ui.add_enabled(
-                    bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut bgst_renderer.tile_offset.y).speed(0.1)
+                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
                 );
 
                 
                 ui.label("Tile X scale");
                 ui.add_enabled(
-                    bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut bgst_renderer.tile_scale.x).speed(0.1)
+                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
                 );
                 
                 ui.label("Tile Y scale");
                 ui.add_enabled(
-                    bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut bgst_renderer.tile_scale.y).speed(0.1)
+                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
+                    DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
                 );
                 
             });
@@ -215,7 +217,7 @@ impl LevelEditor {
 
         egui::CentralPanel::default().show(ui.ctx(), |ui|{
             if self.file_open {
-                self.show_editor_ui(ui, &bgst_renderer);
+                self.show_editor_ui(ui);
             }
         });
     }
