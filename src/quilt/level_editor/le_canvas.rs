@@ -1,9 +1,14 @@
 use super::{
-    EditMode, Enemy, LevelEditor, ObjectType
+    EditMode, LevelEditor, ObjectType
+};
+
+use crate::quilt::game::{
+    endata::*,
+    mapdata::*
 };
 
 use std::fs;
-use super::mapdata::*;
+
 use crate::quilt::common::*;
 use egui;
 

@@ -5,8 +5,10 @@ use anyhow::{bail, Result};
 use ::gfarch::gfarch::FileContents;
 use rfd::FileDialog;
 use gfarch::gfarch;
-use super::endata::Endata;
-use super::mapdata::Mapdata;
+use crate::quilt::game::{
+    endata::*,
+    mapdata::*
+};
 
 impl LevelEditor {
     

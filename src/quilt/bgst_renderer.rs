@@ -1,8 +1,8 @@
-mod bgst;
-use bgst::BGSTFile;
 use anyhow::{bail, Result};
 use rfd::FileDialog;
 use std::fs;
+
+use crate::quilt::game::bgst::*;
 
 #[derive(Default)]
 pub struct BGSTRenderer {
@@ -11,7 +11,6 @@ pub struct BGSTRenderer {
     pub tile_size: f32,
     pub tile_offset: egui::Vec2,
     pub tile_scale: egui::Vec2,
-
 }
 
 

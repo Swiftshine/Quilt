@@ -3,6 +3,7 @@ mod level_editor;
 mod bgst_renderer;
 mod bgst_editor;
 mod common;
+mod game;
 
 use std::sync::Arc;
 

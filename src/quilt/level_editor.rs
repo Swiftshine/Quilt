@@ -1,17 +1,19 @@
-mod mapdata;
-mod endata;
 mod le_io;
 mod le_util;
 mod le_canvas;
 mod le_object;
 
+
 use std::{collections::HashMap, fs, path::PathBuf};
 use egui::{self, Button, Checkbox, DragValue, TextureHandle};
 use gfarch::gfarch;
-use mapdata::*;
-use endata::*;
 use super::{bgst_renderer::BGSTRenderer, common::Camera};
 use serde_json;
+
+use crate::quilt::game::{
+    endata::*,
+    mapdata::*,
+};
 
 #[derive(PartialEq)]
 // These are indices
