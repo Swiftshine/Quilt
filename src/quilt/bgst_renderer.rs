@@ -8,14 +8,19 @@ use std::fs;
 pub struct BGSTRenderer {
     pub bgst_file: Option<BGSTFile>,
     pub decoded_image_handles: Vec<egui::TextureHandle>,
-    pub dbg_image_size: f32, // debug, remove later
+    pub tile_size: f32,
+    pub tile_offset: egui::Vec2,
+    pub tile_scale: egui::Vec2,
+
 }
 
 
 impl BGSTRenderer {
     pub fn new() -> Self {
         Self {
-            dbg_image_size: 32.0,
+            tile_size: 11.9,
+            tile_scale: egui::Vec2::new(1.028, 1.019),
+            tile_offset: egui::Vec2::splat(0.0),
 
             ..Default::default()
         }
@@ -123,15 +128,38 @@ impl BGSTRenderer {
         ui.ctx().load_texture(format!("le_bgst_image-{}", index), texture, egui::TextureOptions::LINEAR)       
     }
 
-    pub fn render(&self, ui: &mut egui::Ui, rect: egui::Rect, position: egui::Vec2, zoom: f32) {
+    /// Rendering function for the level editor
+    pub fn le_render(
+        &self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        position: egui::Vec2,
+        zoom: f32,
+    ) {
         if self.bgst_file.is_none() {
             return;
         }
 
+        // let _x_mult = 1.028;
+        // let _y_mult = 1.019;
+        // let _image_size = 10.9;
+
         let bgst_file = self.bgst_file.as_ref().unwrap();
         let painter = ui.painter_at(rect);
-        let image_size = egui::Vec2::splat(self.dbg_image_size * zoom); // temp
-        let grid_origin = position;
+        let image_size_vec = self.tile_size * zoom * self.tile_scale;
+
+        // additionally, this offset also seems to
+        // align things well
+        // let x_offset = -0.8 * 2.0;
+
+        let grid_origin = egui::Vec2::new(
+            position.x - self.tile_offset.x,
+            position.y - (self.tile_size * zoom * bgst_file.grid_height as f32) - self.tile_offset.y
+        );
+        
+        // ultimately those values aren't perfect, nor do they seem
+        // universal, but they handle most cases relatively well
+
 
         let num_handles = self.decoded_image_handles.len();
         
@@ -147,11 +175,11 @@ impl BGSTRenderer {
                     entry.grid_y_position as f32,
                 );
 
-                let tile_pos = grid_origin + (grid_pos * image_size);
+                let tile_pos = grid_origin + (grid_pos * image_size_vec);
 
                 let tile_rect = egui::Rect::from_min_size(
                     tile_pos.to_pos2(),
-                    image_size
+                    image_size_vec
                 );
 
                 painter.image(
@@ -163,13 +191,14 @@ impl BGSTRenderer {
             }
 
             // if entry.mask_image_index > -1 &&
-            //     (entry.mask_image_index as usize) < num_handles
+            //     (entry.mask_image_index as usize) < num_handles &&
+            //     entry.enabled
             // {
             //     let tex_handle = &self.decoded_image_handles[entry.mask_image_index as usize]; 
                 
             //     let grid_pos = egui::Vec2::new(
             //         entry.grid_x_position as f32,
-            //         -entry.grid_y_position as f32,
+            //         entry.grid_y_position as f32,
             //     );
 
             //     let tile_pos = grid_origin + (grid_pos * image_size);
@@ -183,7 +212,7 @@ impl BGSTRenderer {
             //         tex_handle.id(),
             //         tile_rect,
             //         egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-            //         egui::Color32::WHITE
+            //         egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x20)
             //     );
             // }
         }

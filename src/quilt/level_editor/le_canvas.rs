@@ -336,7 +336,7 @@ impl LevelEditor {
                     );
                     
                     let pos = rect.min + self.camera.to_camera(pos);
-                    bgst_renderer.render(ui, rect, pos.to_vec2(), self.camera.zoom);
+                    bgst_renderer.le_render(ui, rect, pos.to_vec2(), self.camera.zoom);
                 }
             }
             
