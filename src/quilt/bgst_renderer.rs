@@ -137,7 +137,7 @@ impl BGSTRenderer {
             }
 
 
-            // determine whichi entries have masks
+            // determine which entries have masks
             let (masked, _): (Vec<BGSTEntry>, Vec<_>) = bgst_file
             .bgst_entries
             .iter()
