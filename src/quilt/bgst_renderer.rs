@@ -55,7 +55,7 @@ impl BGSTRenderer {
                     bgst_file.bgst_entries.iter()
                     .position(|entry| entry.mask_image_index > -1 && entry.mask_image_index as usize == index)
                     {
-                        gctex::TextureFormat::CMPR
+                        gctex::TextureFormat::I4
                     } else {
                         gctex::TextureFormat::CMPR
                     }
