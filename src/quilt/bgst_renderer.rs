@@ -44,11 +44,28 @@ impl BGSTRenderer {
             self.decoded_image_handles.clear();
 
             for (index, encoded) in bgst_file.compressed_images.iter().enumerate() {
+                // determine how to handle the texture
+                let tex_format = {
+                    if let Some(_) =
+                    bgst_file.bgst_entries.iter()
+                    .position(|entry| entry.main_image_index > -1 && entry.main_image_index as usize == index)
+                    {
+                        gctex::TextureFormat::CMPR
+                    } else if let Some(_) =
+                    bgst_file.bgst_entries.iter()
+                    .position(|entry| entry.mask_image_index > -1 && entry.mask_image_index as usize == index)
+                    {
+                        gctex::TextureFormat::CMPR
+                    } else {
+                        gctex::TextureFormat::CMPR
+                    }
+                };
+
                 let decoded = gctex::decode(
                     encoded,
                     bgst_file.image_width,
                     bgst_file.image_height,
-                    gctex::TextureFormat::CMPR,
+                    tex_format,
                     &Vec::new(),
                     0
                 );
@@ -62,50 +79,7 @@ impl BGSTRenderer {
                 );
 
                 self.decoded_image_handles.push(handle);
-            }            
-            // for entry in bgst_file.bgst_entries.iter() {
-            //     if entry.main_image_index > -1 {
-            //         let decoded = gctex::decode(
-            //             &bgst_file.compressed_images[entry.main_image_index as usize],
-            //             bgst_file.image_width,
-            //             bgst_file.image_height,
-            //             gctex::TextureFormat::CMPR,
-            //             &Vec::new(),
-            //             0,
-            //         );
-                    
-            //         let handle = self.get_texture_handle(
-            //             ui,
-            //             bgst_file.image_width as usize,
-            //             bgst_file.image_height as usize,
-            //             entry.main_image_index as usize,
-            //             &decoded
-            //         );
-
-            //         self.decoded_image_handles.push(handle);
-            //     }
-
-            //     if entry.mask_image_index > -1 {
-            //         let decoded = gctex::decode(
-            //             &bgst_file.compressed_images[entry.mask_image_index as usize],
-            //             bgst_file.image_width,
-            //             bgst_file.image_height,
-            //             gctex::TextureFormat::I4,
-            //             &Vec::new(),
-            //             0,
-            //         );
-                    
-            //         let handle = self.get_texture_handle(
-            //             ui,
-            //             bgst_file.image_width as usize,
-            //             bgst_file.image_height as usize,
-            //             entry.mask_image_index as usize,
-            //             &decoded
-            //         );
-
-            //         self.decoded_image_handles.push(handle);
-            //     }
-            // }
+            }
         }
 
         Ok(())
