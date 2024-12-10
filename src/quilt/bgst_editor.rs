@@ -1,10 +1,10 @@
 use super::bgst_renderer::BGSTRenderer;
 mod be_io;
+mod be_canvas;
 
 #[derive(Default)]
 pub struct BGSTEditor {
-    _bgst_renderer: BGSTRenderer,
-    file_open: bool,
+    bgst_renderer: BGSTRenderer,
 }
 
 impl BGSTEditor {
@@ -19,22 +19,29 @@ impl BGSTEditor {
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
                 if ui.button("Open").clicked() {
-                    // open file
+                    let _ = self.bgst_renderer.open_file(ui);
                     ui.close_menu();
                 }
 
-                if ui.add_enabled(self.file_open, egui::Button::new("Save"))
-                .clicked() {
-                    // save file
-                    ui.close_menu();
-                }
+                // if ui.add_enabled(self.file_open, egui::Button::new("Save"))
+                // .clicked() {
+                //     // save file
+                //     ui.close_menu();
+                // }
 
-                if ui.add_enabled(self.file_open, egui::Button::new("Save as"))
-                .clicked() {
-                    // save file as
-                    ui.close_menu();
-                }
+                // if ui.add_enabled(self.file_open, egui::Button::new("Save as"))
+                // .clicked() {
+                //     // save file as
+                //     ui.close_menu();
+                // }
             });
+        });
+        
+        egui::CentralPanel::default()
+        .show(ui.ctx(), |ui|{
+            if self.bgst_renderer.bgst_file.is_some() {
+                self.render_contents(ui);
+            }
         });
     }
 }
