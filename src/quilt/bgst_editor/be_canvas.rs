@@ -84,7 +84,7 @@ impl BGSTEditor {
             // get the entry that isn't invalid
             let index = std::cmp::max(entry.main_image_index, entry.mask_image_index);
             
-            if index < 0 {
+            if index < 0 || index as usize >= self.bgst_renderer.decoded_image_handles.len() {
                 // both are invalid
                 continue;
             }

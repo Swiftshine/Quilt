@@ -5,7 +5,7 @@ mod le_object;
 
 
 use std::{collections::HashMap, fs, path::PathBuf};
-use egui::{self, Button, Checkbox, DragValue, TextureHandle};
+use egui::{self, Button, DragValue, TextureHandle};
 use gfarch::gfarch;
 use super::{bgst_renderer::BGSTRenderer, common::Camera};
 use serde_json;
@@ -177,41 +177,45 @@ impl LevelEditor {
                     false 
                 };
 
-                ui.add_enabled(
-                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    Checkbox::new(&mut self.render_bgst, "Display background?")
-                ).on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
+                let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
 
-                ui.label("Tile size");
-                ui.add_enabled(
-                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
-                );
+                if bgst_valid {
+                    ui.checkbox(&mut self.render_bgst, "Display background?")
+                    .on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
 
-                ui.label("Tile X offset");
-                ui.add_enabled(
-                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
-                );
-                
-                ui.label("Tile Y offset");
-                ui.add_enabled(
-                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
-                );
+                    ui.label("Tile size");
+                    ui.add(
+                        DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
+                    );
 
+
+                    ui.label("Tile X offset");
+                    ui.add(
+                        DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
+                    );
+                    
+                    ui.label("Tile Y offset");
+                    ui.add(
+                        DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
+                    );
+    
+                    
+                    ui.label("Tile X scale");
+                    ui.add(
+                        DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
+                    );
+                    
+                    ui.label("Tile Y scale");
+                    ui.add(
+                        DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
+                    );
+
+                    ui.label("Tile opacity");
+                    ui.add(
+                        DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
+                    );
+                }
                 
-                ui.label("Tile X scale");
-                ui.add_enabled(
-                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
-                );
-                
-                ui.label("Tile Y scale");
-                ui.add_enabled(
-                    self.bgst_renderer.bgst_file.is_some() && bg_base_found,
-                    DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
-                );
                 
             });
         });
