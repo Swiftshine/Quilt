@@ -4,8 +4,9 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 ## Features
 - [X] Level editor
 
-### Planned
+### Work in Progress
 - [ ] Level graphics editor
+
 ### Roadmap
 - Collision editor
 - MNEB rendering
@@ -18,10 +19,19 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 - Support for images for gimmicks
 - Render backgrounds for ease of editing and alignment
 
+### Level Graphics Editor
+- Open `.bgst3` files
+- Render a grid
+
 ## Screenshots
 ### Level Editor
 ![le_preview_1](assets/screenshots/LE_SS_1.png)
 ![le_preview_2](assets/screenshots/LE_SS_2.png)
+
+### Level Graphics Editor
+![be_preview_1](assets/screenshots/BE_SS_1.png)
+![be_preview_2](assets/screenshots/BE_SS_2.png)
+
 
 ## Setup
 1. Download the latest release of Quilt or compile from source.
