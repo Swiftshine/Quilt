@@ -86,92 +86,16 @@ impl BGSTEditor {
         let painter = ui.painter_at(rect);
         let tile_size = 64.0;
 
+        let origin = egui::Vec2::splat(0.0);
+
         // render unmasked entries
         for entry in unmasked.iter() {
-            // get the entry that isn't invalid
-            let index = std::cmp::max(entry.main_image_index, entry.mask_image_index);
-            
-            if index < 0 || index as usize >= self.bgst_renderer.decoded_image_handles.len() {
-                // both are invalid
-                continue;
-            }
-
-            let tex_handle = &self.bgst_renderer.decoded_image_handles[index as usize];
-            let tile_pos = egui::Vec2::new(
-                entry.grid_x_position as f32,
-                entry.grid_y_position as f32,
-            );
-
-            let render_pos = tile_pos + (tile_pos * tile_size);
-            let tile_rect = egui::Rect::from_min_size(
-                render_pos.to_pos2(),
-                egui::Vec2::splat(tile_size)
-            );
-
-
-            
-            painter.image(
-                tex_handle.id(),
-                tile_rect,
-                egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-                egui::Color32::WHITE
-            );
-            
-            let resp = ui.interact(
-                tile_rect,
-                egui::Id::new(tex_handle as *const _),
-                egui::Sense::click()
-            );
-
-            if resp.hovered() {
-                painter.rect_filled(
-                    tile_rect,
-                    0.0,
-                    egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x8)
-                );
-            }
+            self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
         }
 
         // render masked entries
         for entry in masked.iter() {
-            let main_index = entry.main_image_index as usize;
-            let mask_index = entry.mask_image_index as usize;
-
-            let masked_texture = self.bgst_renderer.masked_textures.get(&(main_index, mask_index));
-
-            let tile_pos = egui::Vec2::new(
-                entry.grid_x_position as f32,
-                entry.grid_y_position as f32,
-            );
-
-            let render_pos = tile_pos + (tile_pos * tile_size);
-            let tile_rect = egui::Rect::from_min_size(
-                render_pos.to_pos2(),
-                egui::Vec2::splat(tile_size)
-            );
-
-            if let Some(tex) = masked_texture {
-                painter.image(
-                    tex.id(),
-                    tile_rect,
-                    egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-                    egui::Color32::WHITE
-                );
-
-                let resp = ui.interact(
-                    tile_rect,
-                    egui::Id::new(tex as *const _),
-                    egui::Sense::click()
-                );
-                
-                if resp.hovered() {
-                    painter.rect_filled(
-                        tile_rect,
-                        0.0,
-                        egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x8)
-                    );
-                }
-            }
+            self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
         }
 
         Ok(())
