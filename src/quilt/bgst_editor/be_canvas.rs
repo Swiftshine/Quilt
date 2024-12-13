@@ -198,12 +198,12 @@ impl BGSTEditor {
             .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
 
         
-        // masked
+        // unmasked
         for entry in unmasked {
             self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
         }
-
-        // unmasked
+        
+        // masked
         for entry in masked {
             self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
         }
