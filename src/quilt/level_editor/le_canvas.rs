@@ -1,5 +1,5 @@
 use super::{
-    EditMode, LevelEditor, ObjectType
+    le_object, EditMode, LevelEditor, ObjectType
 };
 
 use crate::quilt::game::{
@@ -329,19 +329,22 @@ impl LevelEditor {
             
             // bgst rendering
             if self.render_bgst {
+                self.bgst_renderer.zoom = self.camera.zoom;
+
                 let bg_base_index = self.current_mapdata.gimmicks.iter()
                 .position(|g| &g.name == "BG_BASE");
             
                 if let Some(bg_base_index) = bg_base_index {
                     let bg_base = &self.current_mapdata.gimmicks[bg_base_index];
-                    
+
+                    // ensure the bg starts at the bottom left of the gimmick's rendering square
                     let pos = egui::Vec2::new(
-                        bg_base.position.x,
+                        bg_base.position.x - le_object::SQUARE_SIZE / 2.0,
                         bg_base.position.y
                     );
                     
                     let pos = rect.min + self.camera.to_camera(pos);
-                    self.bgst_renderer.le_render(ui, rect, pos.to_vec2(), self.camera.zoom);
+                    self.bgst_renderer.le_render(ui, rect, pos.to_vec2());
                 }
             }
             

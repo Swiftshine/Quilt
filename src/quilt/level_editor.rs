@@ -125,15 +125,11 @@ impl LevelEditor {
             egui::menu::bar(ui, |ui|{
                 if ui.button("Open Archive").clicked() {
                     let _ = self.open_file(ui.ctx());
-                    self.bgst_renderer.bgst_file = None;
-                    self.render_bgst = false;
                     ui.close_menu();
                 }
                 
                 if ui.button("Open Folder").clicked() {
                     let _ = self.open_folder(ui.ctx());
-                    self.bgst_renderer.bgst_file = None;
-                    self.render_bgst = false;
                     ui.close_menu();
                 }
 

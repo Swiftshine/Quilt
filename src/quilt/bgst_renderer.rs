@@ -17,6 +17,7 @@ pub struct BGSTRenderer {
     pub tile_offset: egui::Vec2,
     pub tile_scale: egui::Vec2,
     pub opacity: u8,
+    pub zoom: f32,
 }
 
 
@@ -206,16 +207,13 @@ impl BGSTRenderer {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         position: egui::Vec2,
-        zoom: f32,
     ) {
         if self.bgst_file.is_none() {
             return;
         }
 
         let bgst_file = self.bgst_file.as_ref().unwrap();
-        let painter = ui.painter_at(rect);
-        let image_size_vec = self.tile_size * zoom * self.tile_scale;
-
+        
         // collect entries based on whether or not
         // a mask is applied
 
@@ -231,70 +229,94 @@ impl BGSTRenderer {
 
         let grid_origin = egui::Vec2::new(
             position.x - self.tile_offset.x,
-            position.y - (self.tile_size * zoom * bgst_file.grid_height as f32) - self.tile_offset.y
+            position.y - (self.tile_size * self.zoom * bgst_file.grid_height as f32) - self.tile_offset.y
         );
 
-
-        let num_handles = self.decoded_image_handles.len();
-        
         // render unmasked
         for entry in unmasked.iter() {
-            // get entry that isn't invalid
-            let index = std::cmp::max(entry.main_image_index, entry.mask_image_index);
-
-            if index < 0 || index as usize >= num_handles {
-                // both are invalid
-                continue;
-            }
-            
-            let tex_handle = &self.decoded_image_handles[index as usize];
-            let grid_pos = egui::Vec2::new(
-                entry.grid_x_position as f32,
-                entry.grid_y_position as f32,
-            );
-
-            let tile_pos = grid_origin + (grid_pos * image_size_vec);
-
-            let tile_rect = egui::Rect::from_min_size(
-                tile_pos.to_pos2(),
-                image_size_vec
-            );
-
-            painter.image(
-                tex_handle.id(),
-                tile_rect,
-                egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-                egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity)
-            );
+            self.render_unmasked_entry(ui, rect, entry, grid_origin);
         }
         
         // render masked
         for entry in masked.iter() {
-            let main_index = entry.main_image_index as usize;
-            let mask_index = entry.mask_image_index as usize;
+            self.render_masked_entry(ui, rect, entry, grid_origin);
+        }
+
+    }
+
+    pub fn render_unmasked_entry(
+        &self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        entry: &BGSTEntry,
+        origin: egui::Vec2
+    ) {
+        let num_handles = self.decoded_image_handles.len();
+
+        let index = std::cmp::max(entry.main_image_index, entry.mask_image_index);
+
+        if index < 0 || index as usize >= num_handles {
+            return;
+        }
+
+        let tex_handle = &self.decoded_image_handles[index as usize];
+        let grid_pos = egui::Vec2::new(
+            entry.grid_x_position as f32,
+            entry.grid_y_position as f32
+        );
+
+        let image_size_vec = self.tile_size * self.zoom * self.tile_scale;
+        let tile_pos = origin + (grid_pos * image_size_vec);
+
+        let tile_rect = egui::Rect::from_min_size(
+            tile_pos.to_pos2(),
+            image_size_vec
+        );
+
+        let painter = ui.painter_at(rect);
+        
+        painter.image(
+            tex_handle.id(),
+            tile_rect,
+            egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
+            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity)
+        );
+    }
+
+    pub fn render_masked_entry(
+        &self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        entry: &BGSTEntry,
+        origin: egui::Vec2
+    ) {
+        let painter = ui.painter_at(rect);
+
+        let main_index = entry.main_image_index as usize;
+        let mask_index = entry.mask_image_index as usize;
+
+        let masked_texture = self.masked_textures.get(&(main_index, mask_index));
+        let grid_pos = egui::Vec2::new(
+            entry.grid_x_position as f32,
+            entry.grid_y_position as f32,
+        );
+
+        let image_size_vec = self.tile_size * self.zoom * self.tile_scale;
+
+        let tile_pos = origin + (grid_pos * image_size_vec);
             
-            let masked_texture = self.masked_textures.get(&(main_index, mask_index));
-            
-            let grid_pos = egui::Vec2::new(
-                entry.grid_x_position as f32,
-                entry.grid_y_position as f32,
+        let tile_rect = egui::Rect::from_min_size(
+            tile_pos.to_pos2(),
+            image_size_vec
+        );
+
+        if let Some(tex) = masked_texture {
+            painter.image(
+                tex.id(),
+                tile_rect,
+                egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
+                egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity)
             );
-            
-            let tile_pos = grid_origin + (grid_pos * image_size_vec);
-            
-            let tile_rect = egui::Rect::from_min_size(
-                tile_pos.to_pos2(),
-                image_size_vec
-            );
-            
-            if let Some(tex) = masked_texture {
-                painter.image(
-                    tex.id(),
-                    tile_rect,
-                    egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-                    egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity)
-                );
-            }
         }
     }
 }

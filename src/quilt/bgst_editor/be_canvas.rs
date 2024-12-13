@@ -29,7 +29,14 @@ impl BGSTEditor {
                 });
 
                 // grid rendering
-                let _ = self.render_images(ui, rect);
+                
+                // all
+                let _ = self.render_all_images(ui, rect);
+
+                // layer-by-layer
+                for layer in 0..12 {
+                    self.render_by_layer(ui, rect, layer, egui::Vec2::splat(0.0));
+                }
             });
         });
     }
@@ -62,7 +69,7 @@ impl BGSTEditor {
         });
     }
 
-    pub fn render_images(&mut self, ui: &mut egui::Ui, rect: egui::Rect) -> Result<()> {
+    pub fn render_all_images(&mut self, ui: &mut egui::Ui, rect: egui::Rect) -> Result<()> {
         let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
         // before rendering, collect entries based on
         // whether or not a mask is applied
@@ -101,12 +108,28 @@ impl BGSTEditor {
                 egui::Vec2::splat(tile_size)
             );
 
+
+            
             painter.image(
                 tex_handle.id(),
                 tile_rect,
                 egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
                 egui::Color32::WHITE
             );
+            
+            let resp = ui.interact(
+                tile_rect,
+                egui::Id::new(tex_handle as *const _),
+                egui::Sense::click()
+            );
+
+            if resp.hovered() {
+                painter.rect_filled(
+                    tile_rect,
+                    0.0,
+                    egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x8)
+                );
+            }
         }
 
         // render masked entries
@@ -134,9 +157,55 @@ impl BGSTEditor {
                     egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
                     egui::Color32::WHITE
                 );
+
+                let resp = ui.interact(
+                    tile_rect,
+                    egui::Id::new(tex as *const _),
+                    egui::Sense::click()
+                );
+                
+                if resp.hovered() {
+                    painter.rect_filled(
+                        tile_rect,
+                        0.0,
+                        egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x8)
+                    );
+                }
             }
         }
 
         Ok(())
+    }
+
+    fn render_by_layer(
+        &mut self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        layer: usize,
+        origin: egui::Vec2
+    ) {
+        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+
+        let entries: Vec<&BGSTEntry> = Vec::from_iter(bgst_file.bgst_entries
+            .iter()
+            .filter(|entry| entry.layer as usize == layer));
+        
+        // separate by mask
+
+        let (masked, unmasked): (Vec<&BGSTEntry>, Vec<&BGSTEntry>) =
+            entries
+            .iter()
+            .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
+
+        
+        // masked
+        for entry in unmasked {
+            self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
+        }
+
+        // unmasked
+        for entry in masked {
+            self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
+        }
     }
 }

@@ -39,7 +39,7 @@ const COURSE_INFO_COLOR: Color32 = egui::Color32::from_rgb(
     0xEA, 0x8C, 0x55
 );
 
-const SQUARE_SIZE: f32 = 2.0;
+pub const SQUARE_SIZE: f32 = 2.0;
 const CIRCLE_RADIUS: f32 = 0.1;
 
 #[derive(PartialEq)]
