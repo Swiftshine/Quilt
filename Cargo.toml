@@ -10,7 +10,7 @@ eframe = "0.29.1"
 egui = "0.29.1"
 egui_extras = "0.29.1"
 gctex = "0.3.12"
-gfarch = "0.2.1"
+gfarch = "0.3.0"
 hex = "0.4.3"
 image = "0.25.5"
 reqwest = { version = "0.12.9", features = ["blocking"] }

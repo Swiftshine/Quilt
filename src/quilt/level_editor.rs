@@ -6,7 +6,6 @@ mod le_object;
 
 use std::{collections::HashMap, fs, path::PathBuf};
 use egui::{self, Button, DragValue, TextureHandle};
-use gfarch::gfarch;
 use super::{bgst_renderer::BGSTRenderer, common::Camera};
 use serde_json;
 
@@ -60,7 +59,7 @@ pub struct LevelEditor {
     file_path: PathBuf,
 
     // files
-    archive_contents: Vec<gfarch::FileContents>,
+    archive_contents: Vec<(String, Vec<u8>)>,
     selected_file_index: usize,
     selected_enbin_index: Option<usize>,
     selected_mapbin_index: Option<usize>,

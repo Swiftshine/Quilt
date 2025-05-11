@@ -17,14 +17,14 @@ impl LevelEditor {
         ui.horizontal(|ui|{
             egui::ComboBox::from_label("Selected file")
             .selected_text(
-                &self.archive_contents[self.selected_file_index].filename
+                &self.archive_contents[self.selected_file_index].0
             ).show_ui(ui, |ui|{
                 let mut index = self.selected_file_index;
                 for i in 0..self.archive_contents.len() {
                     ui.selectable_value(
                         &mut index,
                         i,
-                        &self.archive_contents[i].filename
+                        &self.archive_contents[i].0
                     );
                 }
     
@@ -33,7 +33,7 @@ impl LevelEditor {
 
                     // check if the index is that of an enbin
                     self.selected_enbin_index = 
-                    if self.archive_contents[index].filename.contains(".enbin") {
+                    if self.archive_contents[index].0.contains(".enbin") {
                         Some(index)    
                     } else {
                         None
@@ -41,9 +41,9 @@ impl LevelEditor {
                     
                     self.selected_mapbin_index =
                     if index % 2 == 0 &&
-                    self.archive_contents[index + 1].filename.contains(".mapbin") {
+                    self.archive_contents[index + 1].0.contains(".mapbin") {
                         Some(index + 1)
-                    } else if self.archive_contents[index].filename.contains(".mapbin") {
+                    } else if self.archive_contents[index].0.contains(".mapbin") {
                         Some(index)
                     } else {
                         None

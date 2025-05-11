@@ -2,7 +2,6 @@ use super::LevelEditor;
 use std::fs;
 use std::path::PathBuf;
 use anyhow::{bail, Result};
-use ::gfarch::gfarch::FileContents;
 use rfd::FileDialog;
 use gfarch::gfarch;
 use crate::quilt::game::{
@@ -15,7 +14,7 @@ impl LevelEditor {
     pub fn update_level_data(&mut self) {
         self.current_endata = if let Some(enbin_index) = self.selected_enbin_index {
             Endata::from_data(
-                &self.archive_contents[enbin_index].contents
+                &self.archive_contents[enbin_index].1
             )
         } else {
             Default::default()
@@ -23,7 +22,7 @@ impl LevelEditor {
 
         self.current_mapdata = if let Some(mapbin_index) = self.selected_mapbin_index {
             Mapdata::from_data(
-                &self.archive_contents[mapbin_index].contents
+                &self.archive_contents[mapbin_index].1
             )
         } else {
             Default::default()
@@ -46,7 +45,7 @@ impl LevelEditor {
 
 
             self.selected_enbin_index = 
-            if self.archive_contents[0].filename.contains(".enbin") {
+            if self.archive_contents[0].0.contains(".enbin") {
                 Some(0)
             } else {
                 None
@@ -54,7 +53,7 @@ impl LevelEditor {
 
 
             self.selected_mapbin_index = if self.archive_contents.len() > 1
-                && self.archive_contents[1].filename.contains(".mapbin")
+                && self.archive_contents[1].0.contains(".mapbin")
             {
                 Some(1)
             } else {
@@ -95,12 +94,7 @@ impl LevelEditor {
                             
                             let filename = filepath.file_name().unwrap().to_str().unwrap().to_string();
 
-                            let file = FileContents {
-                                contents,
-                                filename
-                            };
-
-                            files.push(file);
+                            files.push((filename, contents));
                         }
                     }
                 }
@@ -112,7 +106,7 @@ impl LevelEditor {
                 self.archive_contents = files;
                 
                 self.selected_enbin_index = 
-                if self.archive_contents[0].filename.contains(".enbin") {
+                if self.archive_contents[0].0.contains(".enbin") {
                     Some(0)
                 } else {
                     None
@@ -120,7 +114,7 @@ impl LevelEditor {
 
 
                 self.selected_mapbin_index = if self.archive_contents.len() > 1
-                    && self.archive_contents[1].filename.contains(".mapbin")
+                    && self.archive_contents[1].0.contains(".mapbin")
                 {
                     Some(1)
                 } else {
@@ -157,12 +151,12 @@ impl LevelEditor {
 
         // enbin
         if let Some(index) = self.selected_enbin_index {
-            self.archive_contents[index].contents = self.current_endata.to_bytes();
+            self.archive_contents[index].1 = self.current_endata.to_bytes();
         }
 
         // mapbin
         if let Some(index) = self.selected_mapbin_index {
-            self.archive_contents[index].contents = self.current_mapdata.to_bytes();
+            self.archive_contents[index].1 = self.current_mapdata.to_bytes();
         }
 
         let archive = gfarch::pack_from_files(
@@ -203,12 +197,12 @@ impl LevelEditor {
 
         // enbin
         if let Some(index) = self.selected_enbin_index {
-            self.archive_contents[index].contents = self.current_endata.to_bytes();
+            self.archive_contents[index].1 = self.current_endata.to_bytes();
         }
 
         // mapbin
         if let Some(index) = self.selected_mapbin_index {
-            self.archive_contents[index].contents = self.current_mapdata.to_bytes();
+            self.archive_contents[index].1 = self.current_mapdata.to_bytes();
         }
         for file in self.archive_contents.iter() {
             let filepath =
@@ -216,9 +210,9 @@ impl LevelEditor {
             "/" +
             stem.to_str().unwrap() +
             "/" +
-            &file.filename;
+            &file.0;
 
-            let _ = fs::write(filepath, &file.contents);
+            let _ = fs::write(filepath, &file.1);
         }
 
         Ok(())
