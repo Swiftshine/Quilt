@@ -74,6 +74,7 @@ impl BGSTRenderer {
             tile_scale: egui::Vec2::new(1.028, 1.019),
             tile_offset: egui::Vec2::splat(0.0),
             opacity: 128,
+            zoom: 1.0,
             
             ..Default::default()
         }
@@ -274,7 +275,7 @@ impl BGSTRenderer {
         );
 
         let painter = ui.painter_at(rect);
-        
+
         painter.image(
             tex_handle.id(),
             tile_rect,

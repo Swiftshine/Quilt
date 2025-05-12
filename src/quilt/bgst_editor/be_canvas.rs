@@ -1,4 +1,3 @@
-use anyhow::Result;
 
 use crate::quilt::game::bgst::BGSTEntry;
 
@@ -15,7 +14,7 @@ impl BGSTEditor {
                 let painter = ui.painter_at(rect);
                 painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
 
-                // image list list
+                // image list
                 egui::Area::new(egui::Id::from("be_image_list"))
                 .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
                 .show(ui.ctx(), |ui|{
@@ -29,13 +28,11 @@ impl BGSTEditor {
                 });
 
                 // grid rendering
-                
-                // all
-                let _ = self.render_all_images(ui, rect);
+                let origin = egui::Vec2::splat(8.0);
 
                 // layer-by-layer
                 for layer in 0..12 {
-                    self.render_by_layer(ui, rect, layer, egui::Vec2::splat(0.0));
+                    self.render_by_layer(ui, rect, layer, origin);
                 }
             });
         });
@@ -69,51 +66,21 @@ impl BGSTEditor {
         });
     }
 
-    pub fn render_all_images(&mut self, ui: &mut egui::Ui, rect: egui::Rect) -> Result<()> {
-        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
-        // before rendering, collect entries based on
-        // whether or not a mask is applied
-
-        let (mut masked, mut unmasked): (Vec<BGSTEntry>, Vec<BGSTEntry>) = bgst_file
-            .bgst_entries
-            .iter()
-            .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
-
-        // sort both vectors by entry layer
-        masked.sort_by(|a, b| a.layer.cmp(&b.layer));
-        unmasked.sort_by(|a, b| a.layer.cmp(&b.layer));
-
-        let painter = ui.painter_at(rect);
-        let tile_size = 64.0;
-
-        let origin = egui::Vec2::splat(0.0);
-
-        // render unmasked entries
-        for entry in unmasked.iter() {
-            self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
-        }
-
-        // render masked entries
-        for entry in masked.iter() {
-            self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
-        }
-
-        Ok(())
-    }
-
     fn render_by_layer(
         &mut self,
         ui: &mut egui::Ui,
         rect: egui::Rect,
-        layer: usize,
+        layer: i16,
         origin: egui::Vec2
     ) {
         let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
 
         let entries: Vec<&BGSTEntry> = Vec::from_iter(bgst_file.bgst_entries
             .iter()
-            .filter(|entry| entry.layer as usize == layer));
+            .filter(|entry| entry.layer == layer));
         
+        // let entries = Vec::from_iter(bgst_file.bgst_entries.iter());
+
         // separate by mask
 
         let (masked, unmasked): (Vec<&BGSTEntry>, Vec<&BGSTEntry>) =
