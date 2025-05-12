@@ -3,6 +3,7 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 
 ## Features
 - [X] Level editor
+- [X] GfArch utility
 
 ### Work in Progress
 - [ ] Level graphics editor
