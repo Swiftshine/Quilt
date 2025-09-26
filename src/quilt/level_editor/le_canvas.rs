@@ -233,17 +233,6 @@ impl LevelEditor {
                             }
 
                             ObjectType::Path => {
-                                /*
-                                let mut wall = Wall::default();
-                                wall.collision_type = String::from("NML");
-                                let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                                wall.start = Point2D::from_vec2(start);
-
-                                wall.end = Point2D {
-                                    x: wall.start.x + 5.0,
-                                    y: wall.start.y
-                                };
-                                 */
                                 let mut path = Path::default();
                                 
                                 let first = self.camera.convert_from_camera(pointer_pos.to_vec2());
@@ -313,6 +302,7 @@ impl LevelEditor {
                     );
                     
                     let pos = rect.min + self.camera.to_camera(pos);
+
                     self.bgst_renderer.le_render(ui, rect, pos.to_vec2());
                 }
             }
@@ -346,6 +336,7 @@ impl LevelEditor {
                 self.update_course_info(ui, rect);
             }
 
+            
             self.update_enemies(ui, rect);
             
 

@@ -1,4 +1,3 @@
-
 use crate::quilt::game::bgst::BGSTEntry;
 
 use super::BGSTEditor;
@@ -7,12 +6,37 @@ impl BGSTEditor {
     pub fn render_contents(&mut self, ui: &mut egui::Ui) {
         egui::Frame::canvas(ui.style())
         .show(ui, |ui|{
-            egui::ScrollArea::both().id_salt("be_image_render").show(ui, |ui|{
+            egui::ScrollArea::both().id_salt("be_image_render_scroll_area").show(ui, |ui|{
                 let desired_size = ui.available_size();
                 let (rect, _response) = ui.allocate_exact_size(desired_size, egui::Sense::drag());
 
                 let painter = ui.painter_at(rect);
                 painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
+                
+                // let origin = response.hover_pos().unwrap_or_default();
+
+                // TODO/NOTE:
+
+                // the origin is in the top left.
+
+                // let origin = egui::Vec2::splat(500.0);
+
+                let origin = egui::Vec2::new(30.0, 80.0);
+                
+
+                self.bgst_renderer.zoom = 5.0f32;
+
+                // grid rendering
+
+                // layer-by-layer
+
+                for layer in 0..12 {
+                    if self.layer_rendered[layer] {
+                        // self.render_by_layer(ui, rect, layer as i16, origin.to_vec2());
+                        self.render_by_layer(ui, rect, layer as i16, origin);
+                    }
+                }
+
 
                 // image list
                 egui::Area::new(egui::Id::from("be_image_list"))
@@ -27,13 +51,23 @@ impl BGSTEditor {
                     });
                 });
 
-                // grid rendering
-                let origin = egui::Vec2::splat(8.0);
+                // layer toggles
+                egui::Area::new(egui::Id::from("be_layer_toggle"))
+                .anchor(egui::Align2::LEFT_TOP, egui::Vec2::new(10.0, 10.0))
+                .show(ui.ctx(), |ui|{
+                    egui::Frame::popup(ui.style())
+                    .inner_margin(egui::Vec2::splat(8.0))
+                    .show(ui, |ui|{
+                        ui.collapsing("Toggle Layers", |ui|{
+                            for layer in 0..12 {
+                                let text = format!("Layer {}", layer + 1);
+                                ui.checkbox(&mut self.layer_rendered[layer], text);
+                            }
+                        });
+                    });
+                
+                });
 
-                // layer-by-layer
-                for layer in 0..12 {
-                    self.render_by_layer(ui, rect, layer, origin);
-                }
             });
         });
     }
@@ -78,8 +112,8 @@ impl BGSTEditor {
         let entries: Vec<&BGSTEntry> = Vec::from_iter(bgst_file.bgst_entries
             .iter()
             .filter(|entry| entry.layer == layer));
-        
-        // let entries = Vec::from_iter(bgst_file.bgst_entries.iter());
+
+        println!("BGSTEditor::render_by_layer - origin: {}", origin);
 
         // separate by mask
 

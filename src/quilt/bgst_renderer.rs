@@ -233,6 +233,8 @@ impl BGSTRenderer {
             position.y - (self.tile_size * self.zoom * bgst_file.grid_height as f32) - self.tile_offset.y
         );
 
+        println!("BGSTRenderer::le_render - grid_origin: {}", grid_origin);
+
         // render unmasked
         for entry in unmasked.iter() {
             self.render_unmasked_entry(ui, rect, entry, grid_origin);

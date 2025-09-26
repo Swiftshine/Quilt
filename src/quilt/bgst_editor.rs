@@ -5,12 +5,14 @@ mod be_canvas;
 #[derive(Default)]
 pub struct BGSTEditor {
     bgst_renderer: BGSTRenderer,
+    layer_rendered: [bool; 12],
 }
 
 impl BGSTEditor {
     pub fn new() -> Self {
         Self {
-            ..Default::default()
+            bgst_renderer: BGSTRenderer::new(),
+            layer_rendered: [true; 12],
         }
     }
 
