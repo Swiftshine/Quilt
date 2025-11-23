@@ -143,44 +143,68 @@ impl EnemyParams {
 }
 
 impl Enemy {
-    pub fn new() -> Self {
-        let mut enemy = Self::default();
-        
-        enemy.name = String::from("ENEMY00");
-        enemy.behavior = String::from("STAND");
-        enemy.bead_type = String::from("BEAD_KIND_00");
-        enemy.bead_color = String::from("RANDOM");
-        enemy.direction = String::from("LEFT");
-        enemy.orientation = String::from("NONE");
+    pub fn new() -> Self {        
+        let name = String::from("ENEMY00");
+        let behavior = String::from("STAND");
+        let bead_type = String::from("BEAD_KIND_00");
+        let bead_color = String::from("RANDOM");
+        let direction = String::from("LEFT");
+        let orientation = String::from("NONE");
 
-        enemy
+        Self {
+            name,
+            behavior,
+            bead_type,
+            bead_color,
+            direction,
+            orientation,
+            ..Default::default()
+        }
     }
 
+    #[allow(non_snake_case)]
     fn from_bytes(input: &[u8]) -> Self {
-        let mut enemy = Self::default();
+        let name = string_from_buffer(&input[..0x20]);
+        let behavior = string_from_buffer(&input[0x20..0x40]);
+        let path_name = string_from_buffer(&input[0x40..0x60]);
+        let bead_type = string_from_buffer(&input[0x60..0x70]);
+        let bead_color = string_from_buffer(&input[0x70..0x80]);
+        let direction = string_from_buffer(&input[0x80..0x88]);
+        let unk_88 = string_from_buffer(&input[0x88..0x90]);
+        let orientation = string_from_buffer(&input[0x90..0xA0]);
+        let position_1 = Point3D::from_be_bytes(&input[0xA0..0xAC]);
+        let position_2 = Point3D::from_be_bytes(&input[0xAC..0xB8]);
+        let position_3 = Point3D::from_be_bytes(&input[0xB8..0xC4]);
 
-        enemy.name = string_from_buffer(&input[..0x20]);
-        enemy.behavior = string_from_buffer(&input[0x20..0x40]);
-        enemy.path_name = string_from_buffer(&input[0x40..0x60]);
-        enemy.bead_type = string_from_buffer(&input[0x60..0x70]);
-        enemy.bead_color = string_from_buffer(&input[0x70..0x80]);
-        enemy.direction = string_from_buffer(&input[0x80..0x88]);
-        enemy.unk_88 = string_from_buffer(&input[0x88..0x90]);
-        enemy.orientation = string_from_buffer(&input[0x90..0xA0]);
-        enemy.position_1 = Point3D::from_be_bytes(&input[0xA0..0xAC]);
-        enemy.position_2 = Point3D::from_be_bytes(&input[0xAC..0xB8]);
-        enemy.position_3 = Point3D::from_be_bytes(&input[0xB8..0xC4]);
+        let mut params: [EnemyParams; 7] = Default::default();
 
-        for i in 0..7 {
+        for (i, param) in params.iter_mut().enumerate() {
             let start = 0xC4 + (i * ENEMY_PARAMS_SIZE);
             let end = start + ENEMY_PARAMS_SIZE;
-            enemy.params[i] = EnemyParams::from_bytes(&input[start..end]);
+            *param = EnemyParams::from_bytes(&input[start..end]);
         }
 
-        enemy.unk_16C = BigEndian::read_u32(&input[0x16C..0x170]);
-        enemy.unk_170 = BigEndian::read_u32(&input[0x170..0x174]);
+        let unk_16C = BigEndian::read_u32(&input[0x16C..0x170]);
+        let unk_170 = BigEndian::read_u32(&input[0x170..0x174]);
 
-        enemy
+        Enemy {
+            name,
+            behavior,
+            path_name,
+            bead_type,
+            bead_color,
+            direction,
+            unk_88,
+            orientation,
+            position_1,
+            position_2,
+            position_3,
+            params,
+            unk_16C,
+            unk_170,
+            
+            ..Default::default()
+        }
     }
 
     fn to_bytes(&self) -> Vec<u8> {
@@ -377,5 +401,5 @@ pub fn enemy_id_to_name(enemy_id: &str) -> String {
         }
     }
 
-    return "raw: ".to_string() + enemy_id;
+    "raw: ".to_string() + enemy_id
 }

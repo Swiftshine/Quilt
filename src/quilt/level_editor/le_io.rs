@@ -39,7 +39,7 @@ impl LevelEditor {
             let data = fs::read(&self.file_path)?;
             self.archive_contents = gfarch::extract(&data)?;
 
-            if self.archive_contents.len() == 0 {
+            if self.archive_contents.is_empty() {
                 bail!("archive is invalid");
             }
 
@@ -71,7 +71,7 @@ impl LevelEditor {
 
             self.load_object_textures(ctx);
 
-            self.bgst_renderer.bgst_file = None;
+            // self.bgst_renderer.bgst_file = None;
             self.render_bgst = false;
         }
 
@@ -85,21 +85,19 @@ impl LevelEditor {
             if let Ok(entries) = fs::read_dir(&path) {
                 let mut files = Vec::new();
 
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        let filepath = entry.path();
-                        let filepath_str = filepath.to_str().unwrap();
-                        if filepath_str.contains(".enbin") || filepath_str.contains(".mapbin") {
-                            let contents = fs::read(&filepath).unwrap();
-                            
-                            let filename = filepath.file_name().unwrap().to_str().unwrap().to_string();
+                for entry in entries.flatten() {
+                    let filepath = entry.path();
+                    let filepath_str = filepath.to_str().unwrap();
+                    if filepath_str.contains(".enbin") || filepath_str.contains(".mapbin") {
+                        let contents = fs::read(&filepath).unwrap();
 
-                            files.push((filename, contents));
-                        }
+                        let filename = filepath.file_name().unwrap().to_str().unwrap().to_string();
+
+                        files.push((filename, contents));
                     }
                 }
 
-                if files.len() == 0 {
+                if files.is_empty() {
                     bail!("no files found in the folder");
                 }
 
@@ -127,7 +125,7 @@ impl LevelEditor {
                 self.file_open = true;
                 self.object_textures.clear();
                 self.load_object_textures(ctx);
-                self.bgst_renderer.bgst_file = None;
+                // self.bgst_renderer.bgst_file = None;
                 self.render_bgst = false;
             }
         }
@@ -156,7 +154,7 @@ impl LevelEditor {
 
         // mapbin
         if let Some(index) = self.selected_mapbin_index {
-            self.archive_contents[index].1 = self.current_mapdata.to_bytes();
+            self.archive_contents[index].1 = self.current_mapdata.get_bytes();
         }
 
         let archive = gfarch::pack_from_files(
@@ -202,7 +200,7 @@ impl LevelEditor {
 
         // mapbin
         if let Some(index) = self.selected_mapbin_index {
-            self.archive_contents[index].1 = self.current_mapdata.to_bytes();
+            self.archive_contents[index].1 = self.current_mapdata.get_bytes();
         }
         for file in self.archive_contents.iter() {
             let filepath =

@@ -1,5 +1,8 @@
+// use super::{
+//     le_object, EditMode, LevelEditor, ObjectType
+// };
 use super::{
-    le_object, EditMode, LevelEditor, ObjectType
+    EditMode, LevelEditor, ObjectType
 };
 
 use crate::quilt::game::{
@@ -10,7 +13,6 @@ use crate::quilt::game::{
 use std::fs;
 
 use crate::quilt::common::*;
-use egui;
 
 impl LevelEditor {
     pub fn show_editor_ui(&mut self, ui: &mut egui::Ui) {
@@ -40,7 +42,7 @@ impl LevelEditor {
                     };
                     
                     self.selected_mapbin_index =
-                    if index % 2 == 0 &&
+                    if index.is_multiple_of(2) &&
                     self.archive_contents[index + 1].0.contains(".mapbin") {
                         Some(index + 1)
                     } else if self.archive_contents[index].0.contains(".mapbin") {
@@ -56,12 +58,8 @@ impl LevelEditor {
     
             if ui.button("Update data")
             .on_hover_text("Updates 'objectdata.json' from the internet.")
-            .clicked() {
-                if let Ok(_) = self.update_object_data() {
-                    // println!("Succeeded.");
-                } else {
-                    eprintln!("Failed.");
-                }
+            .clicked() && self.update_object_data().is_err() {
+                eprintln!("Failed.");
             }
     
             if ui.button("Refresh data")
@@ -116,7 +114,7 @@ impl LevelEditor {
                 ui.label(text);
                 
                 egui::ComboBox::from_id_salt(format!("le_edit_mode_change_{}", text))
-                .selected_text(Self::edit_mode_to_string(mode.clone()))
+                .selected_text(Self::edit_mode_to_string(*mode))
                 .show_ui(ui, |ui|{
                     let edit_modes = [
                         EditMode::Hide,
@@ -125,7 +123,7 @@ impl LevelEditor {
                     ];
 
                     for edit_mode in edit_modes {
-                        ui.selectable_value(mode, edit_mode, Self::edit_mode_to_string(edit_mode.clone()));
+                        ui.selectable_value(mode, edit_mode, Self::edit_mode_to_string(edit_mode));
                     }
                 });
             }
@@ -176,30 +174,40 @@ impl LevelEditor {
 
                         match object_type {
                             ObjectType::Wall => {
-                                let mut wall = Wall::default();
-                                wall.collision_type = String::from("NML");
+                                let collision_type = String::from("NML");
                                 let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                                wall.start = Point2D::from_vec2(start);
+                                let start = Point2D::from_vec2(start);
+                                let end = Point2D {
+                                    x: start.x + 5.0,
+                                    y: start.y
+                                };
 
-                                wall.end = Point2D {
-                                    x: wall.start.x + 5.0,
-                                    y: wall.start.y
+                                let wall = Wall {
+                                    collision_type,
+                                    start,
+                                    end,
+                                    ..Default::default()
                                 };
 
                                 self.current_mapdata.walls.push(wall);
                             }
 
                             ObjectType::LabeledWall => {
-                                let mut wall = LabeledWall::default();
-                                wall.collision_type = String::from("NML");
+                                let collision_type = String::from("NML");
                                 let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                                wall.start = Point2D::from_vec2(start);
-
-                                wall.end = Point2D {
-                                    x: wall.start.x + 5.0,
-                                    y: wall.start.y
+                                let start = Point2D::from_vec2(start);
+                                let end = Point2D {
+                                    x: start.x + 5.0,
+                                    y: start.y
                                 };
 
+                                let wall = LabeledWall {
+                                    collision_type,
+                                    start,
+                                    end,
+                                    ..Default::default()
+                                };
+       
                                 self.current_mapdata.labeled_walls.push(wall);
                             }
 
@@ -207,15 +215,13 @@ impl LevelEditor {
                                 let mut gmk = CommonGimmick::default();
 
                                 let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
-                                gmk.position = Point2D::from_pos2(pos).to_point_3d();
+                                gmk.position = Point2D::from_pos2(pos).get_point3d();
                                 gmk.hex = hex.to_owned();
                                 self.current_mapdata.common_gimmicks.push(gmk);
 
                                 let hex_str = hex.to_owned();
-                                if self.current_mapdata.common_gimmick_names.hex_names
-                                .iter()
-                                .position(|g| g.as_str() == &hex_str)
-                                .is_none() {
+                                if !self.current_mapdata.common_gimmick_names.hex_names
+                                .iter().any(|g| g.as_str() == hex_str) {
                                     self.current_mapdata.common_gimmick_names.hex_names.push(hex.to_owned());
                                 }
 
@@ -227,7 +233,7 @@ impl LevelEditor {
 
                                 let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
 
-                                gmk.position = Point2D::from_pos2(pos).to_point_3d();
+                                gmk.position = Point2D::from_pos2(pos).get_point3d();
                                 gmk.name = String::from("NEW");
                                 self.current_mapdata.gimmicks.push(gmk);
                             }
@@ -264,7 +270,7 @@ impl LevelEditor {
                             ObjectType::CourseInfo => {
                                 let mut course_info = CourseInfo::default();
                                 let pos = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                                course_info.position = Point2D::from_vec2(pos).to_point_3d();
+                                course_info.position = Point2D::from_vec2(pos).get_point3d();
                                 course_info.name = String::from("NEW");
                                 self.current_mapdata.course_infos.push(course_info);
                             }
@@ -272,7 +278,7 @@ impl LevelEditor {
                             ObjectType::Enemy => {
                                 let mut enemy = Enemy::new();
                                 let pos = self.camera.convert_from_camera(pointer_pos.to_vec2()).to_pos2();
-                                enemy.position_1 = Point2D::from_pos2(pos).to_point_3d();
+                                enemy.position_1 = Point2D::from_pos2(pos).get_point3d();
                                 self.current_endata.enemies.push(enemy);
                             }
 
@@ -286,26 +292,26 @@ impl LevelEditor {
             /* rendering */
 
             // bgst rendering
-            if self.render_bgst {
-                self.bgst_renderer.zoom = self.camera.zoom;
+            // if self.render_bgst {
+            //     self.bgst_renderer.zoom = self.camera.zoom;
 
-                let bg_base_index = self.current_mapdata.gimmicks.iter()
-                .position(|g| &g.name == "BG_BASE");
+            //     let bg_base_index = self.current_mapdata.gimmicks.iter()
+            //     .position(|g| &g.name == "BG_BASE");
             
-                if let Some(bg_base_index) = bg_base_index {
-                    let bg_base = &self.current_mapdata.gimmicks[bg_base_index];
+            //     if let Some(bg_base_index) = bg_base_index {
+            //         let bg_base = &self.current_mapdata.gimmicks[bg_base_index];
 
-                    // ensure the bg starts at the bottom left of the gimmick's rendering square
-                    let pos = egui::Vec2::new(
-                        bg_base.position.x - le_object::SQUARE_SIZE / 2.0,
-                        bg_base.position.y
-                    );
+            //         // ensure the bg starts at the bottom left of the gimmick's rendering square
+            //         let pos = egui::Vec2::new(
+            //             bg_base.position.x - le_object::SQUARE_SIZE / 2.0,
+            //             bg_base.position.y
+            //         );
                     
-                    let pos = rect.min + self.camera.to_camera(pos);
+            //         let pos = rect.min + self.camera.to_camera(pos);
 
-                    self.bgst_renderer.le_render(ui, rect, pos.to_vec2());
-                }
-            }
+            //         self.bgst_renderer.le_render(ui, rect, pos.to_vec2());
+            //     }
+            // }
 
             
             if !matches!(self.wall_edit_mode, EditMode::Hide) {

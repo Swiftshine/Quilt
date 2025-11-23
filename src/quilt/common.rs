@@ -20,15 +20,13 @@ pub struct Point2D {
 
 impl Point2D {
     pub fn from_be_bytes(input: &[u8]) -> Self {
-        let mut point = Self::default();
+        let x = BigEndian::read_f32(&input[..4]);
+        let y = BigEndian::read_f32(&input[4..8]);
 
-        point.x = BigEndian::read_f32(&input[..4]);
-        point.y = BigEndian::read_f32(&input[4..8]);
-
-        point
+        Point2D { x, y }
     }
 
-    pub fn to_be_bytes(&self) -> [u8; 8] {
+    pub fn get_be_bytes(&self) -> [u8; 8] {
         let mut bytes = [0u8; 8];
         BigEndian::write_f32(&mut bytes[0..4], self.x);
         BigEndian::write_f32(&mut bytes[4..8], self.y);
@@ -49,15 +47,11 @@ impl Point2D {
         }
     }
 
-    // pub fn to_pos2(&self) -> Pos2 {
-    //     Pos2 { x: self.x, y: self.y }
-    // }
-
-    pub fn to_vec2(&self) -> Vec2 {
+    pub fn get_vec2(&self) -> Vec2 {
         Vec2 { x: self.x, y: self.y }
     }
 
-    pub fn to_point_3d(&self) -> Point3D {
+    pub fn get_point3d(&self) -> Point3D {
         Point3D {
             x: self.x,
             y: self.y,
@@ -74,14 +68,12 @@ pub struct Point3D {
 }
 
 impl Point3D {
-    pub fn from_be_bytes(input: &[u8]) -> Self {
-        let mut point = Self::default();
-    
-        point.x = BigEndian::read_f32(&input[..4]);
-        point.y = BigEndian::read_f32(&input[4..8]);
-        point.z = BigEndian::read_f32(&input[8..0xC]);
+    pub fn from_be_bytes(input: &[u8]) -> Self {    
+        let x = BigEndian::read_f32(&input[..4]);
+        let y = BigEndian::read_f32(&input[4..8]);
+        let z = BigEndian::read_f32(&input[8..0xC]);
 
-        point
+        Self { x, y, z }
     }
 
     pub fn to_be_bytes(&self) -> [u8; 0xC] {
@@ -92,7 +84,7 @@ impl Point3D {
         bytes
     }
 
-    pub fn to_point_2d(&self) -> Point2D {
+    pub fn get_point2d(&self) -> Point2D {
         Point2D {
             x: self.x,
             y: self.y
@@ -172,7 +164,7 @@ impl HexMap {
                 .unwrap_or(size);
 
             let name = &name_bytes[..null_terminator_pos];
-            self.hex_names.push(hex::encode(&name).to_string().to_uppercase());
+            self.hex_names.push(hex::encode(name).to_string().to_uppercase());
         }
     }
 }

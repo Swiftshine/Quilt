@@ -5,7 +5,6 @@ use super::{
 use std::fs;
 use anyhow::{bail, Result};
 use reqwest::blocking::Client;
-use serde_json;
 
 impl LevelEditor {
     pub fn edit_mode_to_string(edit_mode: EditMode) -> String {
@@ -18,12 +17,12 @@ impl LevelEditor {
 
     pub fn add_common_gimmick_texture(&mut self, ctx: &egui::Context, hex: &str) {
         let key = format!("common_gimmick-{}", hex);
-        if !self.object_textures.contains_key(&key) {
-                if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
+            if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex) {
                 let texture = ctx.load_texture(
                     &key, image_data, egui::TextureOptions::LINEAR
                 );
-                self.object_textures.insert(key, texture);
+                e.insert(texture);
             }
         }
     }
@@ -50,26 +49,25 @@ impl LevelEditor {
 
         for gmk in self.current_mapdata.gimmicks.iter() {
             let key = format!("gimmick-{}", &gmk.name);
-            if !self.object_textures.contains_key(&key) {
+            if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
                 if let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
                     let texture = ctx.load_texture(
                         &key, image_data, egui::TextureOptions::LINEAR
                     );
 
-                    self.object_textures.insert(key, texture);
+                    e.insert(texture);
                 }
             }
         }
 
         for gmk in self.current_mapdata.common_gimmicks.iter() {
             let key = format!("common_gimmick-{}", &gmk.hex);
-            if !self.object_textures.contains_key(&key) {
+            if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
                 if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", &gmk.hex) {
                     let texture = ctx.load_texture(
                         &key, image_data, egui::TextureOptions::LINEAR
                     );
-
-                    self.object_textures.insert(key, texture);
+                    e.insert(texture);
                 }
             }
         }

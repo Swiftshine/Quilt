@@ -65,9 +65,9 @@ impl LevelEditor {
         let painter = ui.painter_at(rect);
         for (index, wall) in self.current_mapdata.walls.iter_mut().enumerate() {
             let start = rect.min + 
-                self.camera.to_camera(wall.start.to_vec2());
+                self.camera.to_camera(wall.start.get_vec2());
             let end = rect.min + 
-                self.camera.to_camera(wall.end.to_vec2());
+                self.camera.to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
                 egui::Pos2::new(
@@ -153,9 +153,9 @@ impl LevelEditor {
         let painter = ui.painter_at(rect);
         for (index, wall) in self.current_mapdata.labeled_walls.iter_mut().enumerate() {
             let start = rect.min + 
-                self.camera.to_camera(wall.start.to_vec2());
+                self.camera.to_camera(wall.start.get_vec2());
             let end = rect.min + 
-                self.camera.to_camera(wall.end.to_vec2());
+                self.camera.to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
                 egui::Pos2::new(
@@ -244,9 +244,9 @@ impl LevelEditor {
                 continue;
             }
 
-            let pos = gmk.position.to_point_2d();
+            let pos = gmk.position.get_point2d();
             let screen_pos = rect.min.to_vec2() +
-                self.camera.to_camera(pos.to_vec2());
+                self.camera.to_camera(pos.get_vec2());
 
             let square = egui::Rect::from_center_size(
                 {
@@ -337,17 +337,18 @@ impl LevelEditor {
 
             // add texture if not in current level's texture cache
             let key = format!("gimmick-{}", &gmk.name);
-            if !self.object_textures.contains_key(&key) {
+            if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
                 if let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
                     let texture = ui.ctx().load_texture(
                         &key, image_data, egui::TextureOptions::LINEAR
                     );
-                    self.object_textures.insert(key, texture);
+
+                    e.insert(texture);
                 }
             }
 
-            let pos = gmk.position.to_point_2d();
-            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
+            let pos = gmk.position.get_point2d();
+            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
             let square = egui::Rect::from_center_size(
 
                 {
@@ -427,9 +428,9 @@ impl LevelEditor {
 
             for i in 0..path.points.len() - 1 {
                 let start_pos = rect.min + 
-                    self.camera.to_camera(path.points[i].to_vec2());
+                    self.camera.to_camera(path.points[i].get_vec2());
                 let end_pos = rect.min + 
-                    self.camera.to_camera(path.points[i + 1].to_vec2());
+                    self.camera.to_camera(path.points[i + 1].get_vec2());
 
                 painter.line_segment(
                     [start_pos, end_pos],
@@ -470,7 +471,7 @@ impl LevelEditor {
                 let start_resp = ui.interact(
                     start_rect,
                     egui::Id::new(
-                    &format!(
+                    format!(
                             "path-{}-{}-start-{}",
                             index,
                             i,
@@ -483,7 +484,7 @@ impl LevelEditor {
                 let end_resp = ui.interact(
                     end_rect,
                     egui::Id::new(
-                        &format!(
+                        format!(
                             "path-{}-{}-end-{}",
                             index,
                             i,
@@ -528,10 +529,10 @@ impl LevelEditor {
             }
 
             let start = rect.min +
-                self.camera.to_camera(zone.bounds_start.to_vec2());
+                self.camera.to_camera(zone.bounds_start.get_vec2());
 
             let end = rect.min + 
-                self.camera.to_camera(zone.bounds_end.to_vec2());
+                self.camera.to_camera(zone.bounds_end.get_vec2());
 
             let square = egui::Rect::from_points(&[start, end]);
 
@@ -638,7 +639,7 @@ impl LevelEditor {
             }
 
             let pos = rect.min +
-                self.camera.to_camera(info.position.to_point_2d().to_vec2());
+                self.camera.to_camera(info.position.get_point2d().get_vec2());
 
             let square = egui::Rect::from_center_size(
                 egui::Pos2::new(
@@ -692,8 +693,8 @@ impl LevelEditor {
         let painter = ui.painter_at(rect);
         
         for (index, enemy) in self.current_endata.enemies.iter_mut().enumerate() {
-            let pos = enemy.position_1.to_point_2d();
-            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.to_vec2());
+            let pos = enemy.position_1.get_point2d();
+            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
             let square = egui::Rect::from_center_size(
                 {
                     let pos = screen_pos.to_pos2();
@@ -859,15 +860,13 @@ impl LevelEditor {
 
     fn process_copy_raw_bytes_context_menu(response: egui::Response, bytes: &[u8], is_string: bool) {
         // if the bytes are from a string and the string is empty then do nothing
-        if bytes.len() == 0 {
+        if bytes.is_empty() {
             return;
         }
 
         // if the bytes are from an int or a float but they're all zero then do nothing
-        if !is_string {
-            if bytes.iter().all(|&byte| byte == 0) {
-                return;
-            }
+        if !is_string && bytes.iter().all(|&byte| byte == 0) {
+            return;
         }
 
         response.context_menu(|ui|{
@@ -1131,7 +1130,7 @@ impl LevelEditor {
                                                 value_name.clone(), value.as_str().unwrap().to_string()
                                             ));
 
-                                            if gmk.params.string_params[slot] == value.as_str().unwrap().to_string() {
+                                            if gmk.params.string_params[slot] == value.as_str().unwrap() {
                                                 value_index = values.len() - 1;
                                             }
                                         }
@@ -1284,7 +1283,7 @@ impl LevelEditor {
                                                 value_name.clone(), value.as_str().unwrap().to_string()
                                             ));
 
-                                            if gmk.params.common_string_param == value.as_str().unwrap().to_string() {
+                                            if gmk.params.common_string_param == value.as_str().unwrap() {
                                                 value_index = values.len() - 1;
                                             }
                                         }
@@ -1372,7 +1371,7 @@ impl LevelEditor {
     ) {
         let data = object_data_json
         .get(object_category)
-        .expect(&format!("couldn't find '{object_category}' in objectdata.json"));
+        .unwrap_or_else(|| panic!("couldn't find '{object_category}' in objectdatajson"));
 
         // paramter handling
         if let Some(object_data) = data.get(object_name) {
@@ -1510,7 +1509,7 @@ impl LevelEditor {
                                         value_name.clone(), value.as_str().unwrap().to_string()
                                     ));
 
-                                    if object_params.string_params[slot] == value.as_str().unwrap().to_string() {
+                                    if object_params.string_params[slot] == value.as_str().unwrap() {
                                         value_index = values.len() - 1;
                                     }
                                 }
@@ -1698,10 +1697,8 @@ impl LevelEditor {
                                             to_insert = Some(index);
                                         }
                 
-                                        if num_points > 2 && index != 0 {
-                                            if ui.button("-").clicked() {
-                                                to_remove = Some(index);
-                                            }
+                                        if num_points > 2 && index != 0 && ui.button("-").clicked() {
+                                            to_remove = Some(index);
                                         }
                 
                                         ui.label(format!("{}", index + 1));
@@ -1719,8 +1716,7 @@ impl LevelEditor {
                             }
                 
                             if let Some(insert_index) = to_insert {
-                                let copy = path.points[insert_index].clone();
-                                path.points.insert(insert_index + 1, copy);
+                                path.points.insert(insert_index + 1, path.points[insert_index]);
                             }
                         },
                     );

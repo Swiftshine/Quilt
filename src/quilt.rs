@@ -12,13 +12,13 @@ use eframe::{egui, NativeOptions};
 use egui::IconData;
 use views::QuiltView;
 use level_editor::LevelEditor;
-use bgst_editor::BGSTEditor;
+// use bgst_editor::BGSTEditor;
 use gfarch_utility::GfArchUtility;
 
 pub struct QuiltApp {
     current_view: QuiltView,
     level_editor: LevelEditor,
-    bgst_editor: BGSTEditor,
+    // bgst_editor: BGSTEditor,
     gfarch_utility: GfArchUtility,
 }
 
@@ -28,7 +28,7 @@ impl QuiltApp {
         Self {
             current_view: QuiltView::Home,
             level_editor: LevelEditor::new(),
-            bgst_editor: BGSTEditor::new(),
+            // bgst_editor: BGSTEditor::new(),
             gfarch_utility: GfArchUtility::new(),
         }
     }
@@ -96,7 +96,7 @@ impl eframe::App for QuiltApp {
                 ui.horizontal(|ui|{
                     ui.selectable_value(&mut self.current_view, QuiltView::Home, "Quilt");
                     ui.selectable_value(&mut self.current_view, QuiltView::LevelEditor, "Level Editor");
-                    ui.selectable_value(&mut self.current_view, QuiltView::BGSTEditor, "BGST Editor");
+                    // ui.selectable_value(&mut self.current_view, QuiltView::BGSTEditor, "BGST Editor");
                     ui.selectable_value(&mut self.current_view, QuiltView::GfArchUtility, "GfArch Utility");
                 });
             });
@@ -114,9 +114,9 @@ impl eframe::App for QuiltApp {
                     self.level_editor.show_ui(ui);
                 }
 
-                QuiltView::BGSTEditor => {
-                    self.bgst_editor.show_ui(ui);
-                }
+                // QuiltView::BGSTEditor => {
+                //     self.bgst_editor.show_ui(ui);
+                // }
 
                 QuiltView::GfArchUtility => {
                     self.gfarch_utility.show_ui(ui);

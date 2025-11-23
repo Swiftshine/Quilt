@@ -5,9 +5,10 @@ mod le_object;
 
 
 use std::{collections::HashMap, fs, path::PathBuf};
-use egui::{self, Button, DragValue, TextureHandle};
-use super::{bgst_renderer::BGSTRenderer, common::Camera};
-use serde_json;
+// use egui::{self, Button, DragValue, TextureHandle};
+use egui::{self, Button, TextureHandle};
+// use super::{bgst_renderer::BGSTRenderer, common::Camera};
+use super::common::Camera;
 
 use crate::quilt::game::{
     endata::*,
@@ -39,17 +40,12 @@ enum ObjectType {
     Enemy
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Default)]
 pub enum EditMode {
     Hide,
+    #[default]
     View,
     Edit
-}
-
-impl Default for EditMode {
-    fn default() -> Self {
-        Self::View
-    }
 }
 
 #[derive(Default)]
@@ -90,7 +86,7 @@ pub struct LevelEditor {
     // graphics
     object_textures: HashMap<String, TextureHandle>,
     render_bgst: bool,
-    bgst_renderer: BGSTRenderer
+    // bgst_renderer: BGSTRenderer
 }
 
 impl LevelEditor {
@@ -111,7 +107,7 @@ impl LevelEditor {
             gimmick_edit_mode: EditMode::Edit,
             zone_edit_mode: EditMode::Edit,
             course_info_edit_mode: EditMode::Edit,
-            bgst_renderer: BGSTRenderer::new(),
+            // bgst_renderer: BGSTRenderer::new(),
 
             ..Default::default()
         }
@@ -156,60 +152,60 @@ impl LevelEditor {
                     ui.close_menu();
                 }
 
-                if ui.add_enabled(self.file_open, Button::new("Open BGST"))
-                .clicked() {
-                    let _ = self.bgst_renderer.open_file(ui);
-                    ui.close_menu();
-                }
+                // if ui.add_enabled(self.file_open, Button::new("Open BGST"))
+                // .clicked() {
+                //     let _ = self.bgst_renderer.open_file(ui);
+                //     ui.close_menu();
+                // }
 
-                let bg_base_found = 
-                if self.file_open {
-                    // check mapdata
-                    self.current_mapdata.gimmicks.iter().position(|g| &g.name == "BG_BASE").is_some()
-                } else { 
-                    self.render_bgst = false;
+                // let bg_base_found = 
+                // if self.file_open {
+                //     // check mapdata
+                //     self.current_mapdata.gimmicks.iter().any(|g| &g.name == "BG_BASE")
+                // } else { 
+                //     self.render_bgst = false;
 
-                    false 
-                };
+                //     false 
+                // };
 
-                let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
+                // let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
 
-                if bgst_valid {
-                    ui.checkbox(&mut self.render_bgst, "Display background?")
-                    .on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
+                // if bgst_valid {
+                //     ui.checkbox(&mut self.render_bgst, "Display background?")
+                //     .on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
 
-                    ui.label("Tile size");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
-                    );
+                //     ui.label("Tile size");
+                //     ui.add(
+                //         DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
+                //     );
 
 
-                    ui.label("Tile X offset");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
-                    );
+                //     ui.label("Tile X offset");
+                //     ui.add(
+                //         DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
+                //     );
                     
-                    ui.label("Tile Y offset");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
-                    );
+                //     ui.label("Tile Y offset");
+                //     ui.add(
+                //         DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
+                //     );
     
                     
-                    ui.label("Tile X scale");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
-                    );
+                //     ui.label("Tile X scale");
+                //     ui.add(
+                //         DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
+                //     );
                     
-                    ui.label("Tile Y scale");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
-                    );
+                //     ui.label("Tile Y scale");
+                //     ui.add(
+                //         DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
+                //     );
 
-                    ui.label("Tile opacity");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
-                    );
-                }
+                //     ui.label("Tile opacity");
+                //     ui.add(
+                //         DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
+                //     );
+                // }
                 
                 
             });

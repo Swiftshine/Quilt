@@ -74,8 +74,8 @@ impl GfArchUtility {
                 let mut files: Vec<(String, Vec<u8>)> = Vec::new();
 
                 for entry in fs::read_dir(input_folder_path)? {
-                    let entry = if entry.is_ok() {
-                        entry.unwrap()
+                    let entry = if let Ok(entry) = entry{
+                        entry
                     } else {
                         num_failed += 1;
                         continue;

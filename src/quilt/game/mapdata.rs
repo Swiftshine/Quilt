@@ -123,13 +123,17 @@ pub struct Mapdata {
 
 impl Mapdata {
     pub fn from_data(input: &[u8]) -> Self {
-        let mut mapdata = Mapdata::default();
+        let unk_0 = BigEndian::read_f32(&input[..4]);
 
-        mapdata.unk_0 = BigEndian::read_f32(&input[..4]);
-        mapdata.bounds_min.x = BigEndian::read_f32(&input[4..8]);
-        mapdata.bounds_min.y = BigEndian::read_f32(&input[8..0xC]);
-        mapdata.bounds_max.x = BigEndian::read_f32(&input[0xC..0x10]);
-        mapdata.bounds_max.y = BigEndian::read_f32(&input[0x10..0x14]);
+        let bounds_min = Point2D::from_be_bytes(&input[4..0xC]);
+        let bounds_max = Point2D::from_be_bytes(&input[0xC..0x14]);
+        
+        let mut mapdata = Mapdata {
+            unk_0,
+            bounds_min,
+            bounds_max,
+            ..Default::default()
+        };
 
         // names and labels
         let num_common_gimmick_names_offs = BigEndian::read_u32(&input[0x4C..0x50]) as usize;
@@ -281,7 +285,7 @@ impl Mapdata {
         mapdata
     }
 
-    pub fn to_bytes(&mut self) -> Vec<u8> {
+    pub fn get_bytes(&mut self) -> Vec<u8> {
         // preparations
 
         // determine if any names haven't been added to the maps
@@ -328,8 +332,8 @@ impl Mapdata {
 
         // header
         out.extend(self.unk_0.to_be_bytes());
-        out.extend(self.bounds_min.to_be_bytes());
-        out.extend(self.bounds_max.to_be_bytes());
+        out.extend(self.bounds_min.get_be_bytes());
+        out.extend(self.bounds_max.get_be_bytes());
         out.extend((self.walls.len() as u32).to_be_bytes());
         out.extend((wall_offset as u32).to_be_bytes());
         out.extend((self.labeled_walls.len() as u32).to_be_bytes());
@@ -350,7 +354,7 @@ impl Mapdata {
 
         // walls
         for (i, w) in self.walls.iter().enumerate() {
-            out.extend(w.to_bytes(i, &self.colbin_types));
+            out.extend(w.get_bytes(i, &self.colbin_types));
         }
 
         // labeled walls
@@ -398,14 +402,14 @@ impl Mapdata {
         // colbin collision types
         out.extend((self.colbin_types.names.len() as u32).to_be_bytes());
         for col_type in self.colbin_types.names.iter() {
-            out.extend(string_to_buffer(&col_type, 0x20));
+            out.extend(string_to_buffer(col_type, 0x20));
         }
         
         
         // labeled wall labels
         out.extend((self.wall_labels.names.len() as u32).to_be_bytes());
         for label in self.wall_labels.names.iter() {
-            out.extend(string_to_buffer(&label, 0x20));
+            out.extend(string_to_buffer(label, 0x20));
         }
 
         // alignment
@@ -418,25 +422,27 @@ impl Mapdata {
 
 impl Wall {
     fn from_bytes(input: &[u8], name_map: &NameMap) -> Self {
-        let mut wall = Self::default();
-
-        wall.start = Point2D::from_be_bytes(&input[..8]);
-        wall.end = Point2D::from_be_bytes(&input[8..0x10]);
-        wall.normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
-        
+        let start = Point2D::from_be_bytes(&input[..8]);
+        let end = Point2D::from_be_bytes(&input[8..0x10]);
+        let normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
         let type_index = BigEndian::read_u32(&input[0x1C..0x20]) as usize;
+        let collision_type = name_map.names[type_index].clone();
 
-        wall.collision_type = name_map.names[type_index].clone();
-
-        wall
+        Wall {
+            start,
+            end,
+            normalized_vector,
+            collision_type,
+            ..Default::default()
+        }
     }
 
-    pub fn to_bytes(&self, wall_index: usize, name_map: &NameMap) -> Vec<u8> {
+    pub fn get_bytes(&self, wall_index: usize, name_map: &NameMap) -> Vec<u8> {
         let mut out = Vec::new();
 
-        out.extend(self.start.to_be_bytes());
-        out.extend(self.end.to_be_bytes());
-        out.extend(self.normalized_vector.to_be_bytes());
+        out.extend(self.start.get_be_bytes());
+        out.extend(self.end.get_be_bytes());
+        out.extend(self.normalized_vector.get_be_bytes());
 
         out.extend((wall_index as u32).to_be_bytes());
 
@@ -467,21 +473,22 @@ impl Wall {
 
 impl LabeledWall {
     fn from_bytes(input: &[u8], collision_type_map: &NameMap, label_map: &NameMap) -> Self {
-        let mut wall = Self::default();
-
-        wall.start = Point2D::from_be_bytes(&input[..8]);
-        wall.end = Point2D::from_be_bytes(&input[8..0x10]);
-        wall.normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
-        
+        let start = Point2D::from_be_bytes(&input[..8]);
+        let end = Point2D::from_be_bytes(&input[8..0x10]);
+        let normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
         let type_index = BigEndian::read_u32(&input[0x1C..0x20]) as usize;
-
-        wall.collision_type = collision_type_map.names[type_index].clone();
-
+        let collision_type = collision_type_map.names[type_index].clone();
         let label_index = BigEndian::read_u32(&input[0x20..0x24]) as usize;
+        let label = label_map.names[label_index].clone();
 
-        wall.label = label_map.names[label_index].clone();
-
-        wall
+        LabeledWall {
+            start,
+            end,
+            normalized_vector,
+            collision_type,
+            label,
+            ..Default::default()
+        }
     }
 
     pub fn to_bytes(
@@ -492,11 +499,11 @@ impl LabeledWall {
     ) -> Vec<u8> {
         let mut out = Vec::new();
 
-        out.extend(self.start.to_be_bytes());
+        out.extend(self.start.get_be_bytes());
 
-        out.extend(self.end.to_be_bytes());
+        out.extend(self.end.get_be_bytes());
 
-        out.extend(self.normalized_vector.to_be_bytes());
+        out.extend(self.normalized_vector.get_be_bytes());
 
         out.extend((index as u32).to_be_bytes());
 
@@ -692,15 +699,20 @@ impl CommonGimmick {
 
 impl Gimmick {
     fn from_bytes(input: &[u8]) -> Self {
-        let mut gmk = Self::default();
+        let name = string_from_buffer(&input[..0x30]);
+        let position = Point3D::from_be_bytes(&input[0x40..0x4C]);
+        let params = Params::from_bytes(&input[0x4C..]);
 
-        gmk.name = string_from_buffer(&input[..0x30]);
+        
+        let mut gmk = Gimmick {
+            name,
+            position,
+            params,
+            ..Default::default()
+        };
 
         gmk.unk_30.copy_from_slice(&input[0x30..0x40]);
-        gmk.position = Point3D::from_be_bytes(&input[0x40..0x4C]);
-        gmk.params = Params::from_bytes(&input[0x4C..]);
-        
-
+ 
         gmk
     }
 
@@ -723,12 +735,18 @@ impl Gimmick {
 
 impl Path {
     fn from_bytes(input: &[u8]) -> Self {
-        let mut path = Self::default();
+        let name = string_from_buffer(&input[..0x20]);
+        let path_type = string_from_buffer(&input[0x20..0x40]);
+        let params = Params::from_bytes(&input[0x40..0x118]);
 
-        path.name = string_from_buffer(&input[..0x20]);
-        path.path_type = string_from_buffer(&input[0x20..0x40]);
-        path.params = Params::from_bytes(&input[0x40..0x118]);
-
+        
+        let mut path = Path {
+            name,
+            path_type,
+            params,
+            ..Default::default()
+        };
+        
         let num_points = BigEndian::read_u32(&input[0x118..0x11C]) as usize;
 
         for i in 0..num_points {
@@ -738,7 +756,6 @@ impl Path {
                 &input[start..end]
             ));
         }
-
 
         path
     }
@@ -757,7 +774,7 @@ impl Path {
         out.extend((self.points.len() as u32).to_be_bytes());
 
         for point in &self.points {
-            out.extend(point.to_be_bytes());
+            out.extend(point.get_be_bytes());
         }
 
         out
@@ -767,15 +784,20 @@ impl Path {
 
 impl Zone {
     fn from_bytes(input: &[u8]) -> Self {
-        let mut zone = Self::default();
+        let name = string_from_buffer(&input[..0x20]);
+        let unk_20 = string_from_buffer(&input[0x20..0x40]);
+        let params = Params::from_bytes(&input[0x40..0x118]);
+        let bounds_start = Point2D::from_be_bytes(&input[0x118..0x120]);
+        let bounds_end = Point2D::from_be_bytes(&input[0x120..0x128]);
 
-        zone.name = string_from_buffer(&input[..0x20]);
-        zone.unk_20 = string_from_buffer(&input[0x20..0x40]);
-        zone.params = Params::from_bytes(&input[0x40..0x118]);
-        zone.bounds_start = Point2D::from_be_bytes(&input[0x118..0x120]);
-        zone.bounds_end = Point2D::from_be_bytes(&input[0x120..0x128]);
-
-        zone
+        Zone {
+            name,
+            unk_20,
+            params,
+            bounds_start,
+            bounds_end,
+            ..Default::default()
+        }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -789,9 +811,9 @@ impl Zone {
 
         out.extend(self.params.to_bytes());
 
-        out.extend(self.bounds_start.to_be_bytes());
+        out.extend(self.bounds_start.get_be_bytes());
 
-        out.extend(self.bounds_end.to_be_bytes());
+        out.extend(self.bounds_end.get_be_bytes());
 
         out
     }
@@ -799,14 +821,18 @@ impl Zone {
 
 impl CourseInfo {
     fn from_bytes(input: &[u8]) -> Self {
-        let mut info = Self::default();
-
-        info.name = string_from_buffer(&input[..0x20]);
-        info.unk_20 = string_from_buffer(&input[0x20..0x40]);
-        info.params = Params::from_bytes(&input[0x40..0x118]);
-        info.position = Point3D::from_be_bytes(&input[0x118..]);
+        let name = string_from_buffer(&input[..0x20]);
+        let unk_20 = string_from_buffer(&input[0x20..0x40]);
+        let params = Params::from_bytes(&input[0x40..0x118]);
+        let position = Point3D::from_be_bytes(&input[0x118..]);
         
-        info
+        CourseInfo {
+            name,
+            unk_20,
+            params,
+            position,
+            ..Default::default()
+        }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
