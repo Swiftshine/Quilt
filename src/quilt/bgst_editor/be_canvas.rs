@@ -21,7 +21,12 @@ impl BGSTEditor {
 
                 // let origin = egui::Vec2::splat(500.0);
 
-                let origin = egui::Vec2::new(30.0, 80.0);
+
+                // get grid origin
+                
+                let origin = self.find_grid_origin();
+
+                // let origin = egui::Vec2::new(30.0, 80.0);
                 
 
                 self.bgst_renderer.zoom = 5.0f32;
@@ -133,4 +138,20 @@ impl BGSTEditor {
             self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
         }
     }
+
+    fn find_grid_origin(&self) -> egui::Vec2 {
+        // origin is the top left corner of the grid
+
+        let bgst_file = &self.bgst_renderer.bgst_file.as_ref().unwrap();
+
+        let _grid_height = bgst_file.grid_height;
+        let _grid_width = bgst_file.grid_width;
+
+        let _image_height = bgst_file.image_height;
+        let _image_width = bgst_file.image_width;
+
+        
+        egui::Vec2::new(0.0f32, 0.0f32)
+    }
+    
 }
