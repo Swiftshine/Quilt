@@ -54,6 +54,11 @@ enum DataType {
     DropdownString, // with a limit of 64 characters
 }
 
+enum ByteOrder {
+    Big,
+    Little
+}
+
 impl LevelEditor {
     /* object rendering */
     pub fn update_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
@@ -852,6 +857,85 @@ impl LevelEditor {
         });
     }
 
+    fn process_copy_raw_bytes_context_menu(response: egui::Response, bytes: &[u8], is_string: bool) {
+        // if the bytes are from a string and the string is empty then do nothing
+        if bytes.len() == 0 {
+            return;
+        }
+
+        // if the bytes are from an int or a float but they're all zero then do nothing
+        if !is_string {
+            if bytes.iter().all(|&byte| byte == 0) {
+                return;
+            }
+        }
+
+        response.context_menu(|ui|{
+            if is_string {
+                // dealing with a string
+                if ui.button("Copy raw bytes").clicked() {
+                    let byte_string: String = bytes.iter()
+                    .map(|byte| format!("{:02X}", byte))
+                    .collect();
+                
+                    ui.ctx().copy_text(format!("0x{}", byte_string));
+                    ui.close_menu();
+                }
+            } else {
+                // allow for big- or little-endian copying
+                let mut endian = None;
+
+                if ui.button("Copy big-endian bytes").clicked() {
+                    endian = Some(ByteOrder::Big);
+                }
+
+                if ui.button("Copy little-endian bytes").clicked() {
+                    endian = Some(ByteOrder::Little);
+                }
+
+                if let Some(endian) = endian {
+                    let byte_string = match endian {
+                        ByteOrder::Big => bytes.iter().rev().map(|byte| format!("{:02X}", byte)).collect::<String>(),
+                        ByteOrder::Little => bytes.iter().map(|byte| format!("{:02X}", byte)).collect::<String>(),
+                    };
+
+                    ui.ctx().copy_text(format!("0x{}", byte_string));
+                    ui.close_menu();
+                }
+            }
+        });
+    }
+
+    fn process_raw_int_param(ui: &mut egui::Ui, value: &mut i32) {
+        let response = ui.add(
+            egui::DragValue::new(value)
+            .speed(1)
+            .range(i32::MIN..=i32::MAX)
+        );
+
+        Self::process_copy_raw_bytes_context_menu(response, &value.to_le_bytes(), false);
+    }
+
+    fn process_raw_float_param(ui: &mut egui::Ui, value: &mut f32) {
+        let response = ui.add(
+            egui::DragValue::new(value)
+            .speed(1)
+            .range(f32::MIN..=f32::MAX)
+        );
+
+        Self::process_copy_raw_bytes_context_menu(response, &value.to_le_bytes(), false);
+    }
+
+    fn process_raw_string_param(ui: &mut egui::Ui, value: &mut String, char_limit: usize) {
+        let response = ui.add(
+            egui::TextEdit::singleline(
+                value
+            ).char_limit(char_limit)
+        );
+
+        Self::process_copy_raw_bytes_context_menu(response, value.as_bytes(), true);
+    }
+
     pub fn process_common_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
         if ui.ctx().input(|i|{
             i.key_pressed(egui::Key::Delete)
@@ -1236,11 +1320,7 @@ impl LevelEditor {
                     ui.label("Int values (common)");
                     ui.horizontal(|ui|{
                         for i in 0..2 {
-                            ui.add(
-                                egui::DragValue::new(&mut gmk.params.common_int_params[i])
-                                .speed(1)
-                                .range(i32::MIN..=i32::MAX)
-                            );
+                            Self::process_raw_int_param(ui, &mut gmk.params.common_int_params[i]);
                         }
                     });
 
@@ -1248,30 +1328,19 @@ impl LevelEditor {
                     ui.label("Float values (common)");
                     ui.horizontal(|ui|{
                         for i in 0..2 {
-                            ui.add(
-                                egui::DragValue::new(&mut gmk.params.common_float_params[i])
-                                .speed(1)
-                                .range(f32::MIN..=f32::MAX)
-                            );
+                            Self::process_raw_float_param(ui, &mut gmk.params.common_float_params[i]);
                         }
                     });
 
                     ui.add_space(3.0);
                     ui.label("String value (common)");
-                    ui.add(
-                        egui::TextEdit::singleline(&mut gmk.params.common_string_param)
-                        .char_limit(8)
-                    );
+                    Self::process_raw_string_param(ui, &mut gmk.params.common_string_param, 8);
 
                     ui.add_space(3.0);
                     ui.label("Int values");
                     ui.horizontal(|ui|{
                         for i in 0..5 {
-                            ui.add(
-                                egui::DragValue::new(&mut gmk.params.int_params[i])
-                                .speed(1)
-                                .range(i32::MIN..=i32::MAX)
-                            );
+                            Self::process_raw_int_param(ui, &mut gmk.params.int_params[i]);
                         }
                     });
 
@@ -1279,22 +1348,14 @@ impl LevelEditor {
                     ui.label("Float values");
                     ui.horizontal(|ui|{
                         for i in 0..5 {
-                            ui.add(
-                                egui::DragValue::new(&mut gmk.params.float_params[i])
-                                .speed(1)
-                                .range(f32::MIN..=f32::MAX)
-                            );
+                            Self::process_raw_float_param(ui, &mut gmk.params.float_params[i]);
                         }
                     });
 
                     ui.add_space(3.0);
                     ui.label("String values");
                     for i in 0..5 {
-                        ui.add(
-                            egui::TextEdit::singleline(
-                                &mut gmk.params.string_params[i]
-                            ).char_limit(0x40)
-                        );
+                        Self::process_raw_string_param(ui, &mut gmk.params.string_params[i], 0x40);
                     }
                 });
             });
@@ -1485,11 +1546,7 @@ impl LevelEditor {
             ui.label("Int values");
             ui.horizontal(|ui|{
                 for i in 0..3 {
-                    ui.add(
-                        egui::DragValue::new(&mut object_params.int_params[i])
-                        .speed(1)
-                        .range(i32::MIN..=i32::MAX)
-                    );
+                    Self::process_raw_int_param(ui, &mut object_params.int_params[i]);
                 }
             });
 
@@ -1497,22 +1554,14 @@ impl LevelEditor {
             ui.label("Float values");
             ui.horizontal(|ui|{
                 for i in 0..3 {
-                    ui.add(
-                        egui::DragValue::new(&mut object_params.float_params[i])
-                        .speed(1)
-                        .range(f32::MIN..=f32::MAX)
-                    );
+                    Self::process_raw_float_param(ui, &mut object_params.float_params[i]);
                 }
             });
 
             ui.add_space(3.0);
             ui.label("String values");
             for i in 0..3 {
-                ui.add(
-                    egui::TextEdit::singleline(
-                        &mut object_params.string_params[i]
-                    ).char_limit(0x40)
-                );
+                Self::process_raw_string_param(ui, &mut object_params.string_params[i], 0x40);
             }
         });
     }
