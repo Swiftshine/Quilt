@@ -297,8 +297,7 @@ impl LevelEditor {
     }
 
     fn handle_inputs(&mut self, ui: &mut egui::Ui, response: &egui::Response) {
-        
-        if ui.ctx().input(|i| i.pointer.secondary_clicked()) {
+        if response.clicked_by(egui::PointerButton::Secondary) {
             self.show_object_context_menu = !self.show_object_context_menu;
         }
         
@@ -310,7 +309,6 @@ impl LevelEditor {
             let delta = response.drag_delta();
             self.camera.pan(delta / self.camera.zoom);
         }
-
 
         if ui.ctx().input(|i| i.key_pressed(egui::Key::Escape)) {
             self.deselect_all();
