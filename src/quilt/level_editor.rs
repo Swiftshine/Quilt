@@ -177,6 +177,20 @@ impl LevelEditor {
                     // };
                 });
 
+                ui.menu_button("Object Data", |ui|{
+                    if ui.button("Update")
+                    .on_hover_text("Updates 'objectdata.json' from the internet.")
+                    .clicked() && self.update_object_data().is_err() {
+                        eprintln!("Failed.");
+                    }
+            
+                    if ui.button("Refresh")
+                    .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
+                    .clicked() {
+                        self.refresh_object_data();
+                    }
+                });
+
                 // let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
 
                 // if bgst_valid {

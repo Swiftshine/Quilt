@@ -55,19 +55,6 @@ impl LevelEditor {
                 }
             });
 
-    
-            if ui.button("Update data")
-            .on_hover_text("Updates 'objectdata.json' from the internet.")
-            .clicked() && self.update_object_data().is_err() {
-                eprintln!("Failed.");
-            }
-    
-            if ui.button("Refresh data")
-            .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
-            .clicked() {
-                self.refresh_object_data();
-            }
-
             ui.checkbox(&mut self.display_none, "Display 'NONE'?")
             .on_hover_text("Indicates whether or not to display entities with a name of 'NONE'.");
 
