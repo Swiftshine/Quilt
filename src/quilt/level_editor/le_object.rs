@@ -1,3 +1,5 @@
+use anyhow::{Result, Context};
+
 use egui::{
     self,
     Color32,
@@ -237,7 +239,7 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_common_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) {
+    pub fn update_common_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) -> Result<()> {
         let painter = ui.painter_at(rect);
         for (index, gmk) in self.current_mapdata.common_gimmicks.iter_mut().enumerate() {
             if &gmk.hex == "NONE" && !self.display_none {
@@ -305,7 +307,7 @@ impl LevelEditor {
                         let hex_name = gmk.hex.clone();
 
                         if let Some(name) =
-                            Self::get_translated_common_gimmick_name(&self.object_data_json, &hex_name)
+                            Self::get_translated_common_gimmick_name(self.object_data_json.as_ref().context("object_data_json is None")?, &hex_name)
                         {
                             name
                         } else {
@@ -326,6 +328,8 @@ impl LevelEditor {
                 gmk.position.y -= world_delta.y;
             }
         }
+
+        Ok(())
     }
 
     pub fn update_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) {
@@ -935,20 +939,20 @@ impl LevelEditor {
         Self::process_copy_raw_bytes_context_menu(response, value.as_bytes(), true);
     }
 
-    pub fn process_common_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+    pub fn process_common_gimmick_attributes(&mut self, ui: &mut egui::Ui, index: usize) -> Result<()> {
         if ui.ctx().input(|i|{
             i.key_pressed(egui::Key::Delete)
         }) {
             self.current_mapdata.common_gimmicks.remove(index);
             self.selected_object_indices.clear();
-            return;
+            return Ok(());
         }
 
         if ui.ctx().input(|i|{
             i.key_pressed(egui::Key::Escape)
         }) {
             self.deselect_all();
-            return;
+            return Ok(());
         }
 
         
@@ -957,7 +961,7 @@ impl LevelEditor {
         gmk.is_selected = true;
 
         let (name, is_hex) = if let Some(n) = Self::get_translated_common_gimmick_name(
-            &self.object_data_json, &gmk.hex
+            self.object_data_json.as_ref().context("object_data_json is None")?, &gmk.hex
         ) {
             (n, false)
         } else {
@@ -967,7 +971,7 @@ impl LevelEditor {
 
         egui::Area::new(egui::Id::from("le_common_gimmick_attribute_editor"))
         .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
-        .show(ui.ctx(), |ui|{
+        .show(ui.ctx(), |ui| {
             egui::Frame::popup(ui.style())
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui|{
@@ -989,7 +993,7 @@ impl LevelEditor {
                     ui.add(egui::DragValue::new(&mut gmk.position.z).speed(0.5).range(f32::MIN..=f32::MAX));
                 });
 
-                let data = self.object_data_json.get("common_gimmicks")
+                let data = self.object_data_json.as_ref().context("object_data_json is None")?.get("common_gimmicks")
                 .expect("couldn't find 'common_gimmicks' in objectdata.json");
 
                 if let Some(gmk_data) = data.get(&gmk.hex) {
@@ -1357,8 +1361,12 @@ impl LevelEditor {
                         Self::process_raw_string_param(ui, &mut gmk.params.string_params[i], 0x40);
                     }
                 });
+
+                Ok::<(), anyhow::Error>(())
             });
         });
+
+        Ok(())
     }
 
     // common function for those with mapdata parameters
@@ -1614,12 +1622,14 @@ impl LevelEditor {
                 });
 
                 Self::process_mapdata_parameters(
-                    &self.object_data_json,
+                    self.object_data_json.as_ref().context("object_data_json is None")?,
                     ui,
                     &gmk.name,
                     "gimmicks",
                     &mut gmk.params
                 );
+
+                Ok::<(), anyhow::Error>(())
             });
         });
     }
@@ -1656,7 +1666,7 @@ impl LevelEditor {
                     egui::TextEdit::singleline(&mut path.name).char_limit(0x20)
                 );
 
-                let data = self.object_data_json.get("paths")
+                let data = self.object_data_json.as_ref().context("object_data_json is None")?.get("paths")
                 .expect("couldn't find 'paths' in objectdata.json");
 
                 if let Some(path_data) = data.get(&path.name) {
@@ -1724,13 +1734,14 @@ impl LevelEditor {
                 
 
                 Self::process_mapdata_parameters(
-                    &self.object_data_json,
+                    self.object_data_json.as_ref().context("object_data_json is None")?,
                     ui,
                     &path.name,
                     "paths",
                     &mut path.params
                 );
-    
+                
+                Ok::<(), anyhow::Error>(())
             });
         });
 
@@ -1770,7 +1781,7 @@ impl LevelEditor {
                     egui::TextEdit::singleline(&mut zone.name).char_limit(0x20)
                 );
 
-                let data = self.object_data_json.get("zones")
+                let data = self.object_data_json.as_ref().context("object_data_json is None")?.get("zones")
                 .expect("couldn't find 'zones' in objectdata.json");
 
                 if let Some(zone_data) = data.get(&zone.name) {
@@ -1827,12 +1838,14 @@ impl LevelEditor {
                 });
 
                 Self::process_mapdata_parameters(
-                    &self.object_data_json,
+                    self.object_data_json.as_ref().context("object_data_json is None")?,
                     ui,
                     &zone.name,
                     "zones",
                     &mut zone.params
                 );
+
+                Ok::<(), anyhow::Error>(())
             });
         });
     }
@@ -1869,7 +1882,7 @@ impl LevelEditor {
                     egui::TextEdit::singleline(&mut info.name).char_limit(0x20)
                 );
 
-                let data = self.object_data_json.get("course_infos")
+                let data = self.object_data_json.as_ref().context("object_data_json is None")?.get("course_infos")
                 .expect("couldn't find 'course_infos' in objectdata.json");
 
                 if let Some(course_info_data) = data.get(&info.name) {
@@ -1892,12 +1905,14 @@ impl LevelEditor {
                 );
 
                 Self::process_mapdata_parameters(
-                    &self.object_data_json,
+                    self.object_data_json.as_ref().context("object_data_json is None")?,
                     ui,
                     &info.name,
                     "course_infos",
                     &mut info.params
                 );
+
+                Ok::<(), anyhow::Error>(())
             });
         });
     }

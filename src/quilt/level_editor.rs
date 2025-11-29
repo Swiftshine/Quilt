@@ -3,6 +3,7 @@ mod le_util;
 mod le_canvas;
 mod le_object;
 
+use anyhow::Context;
 
 use std::{collections::HashMap, fs, path::PathBuf};
 // use egui::{self, Button, DragValue, TextureHandle};
@@ -67,7 +68,7 @@ pub struct LevelEditor {
     camera: Camera,
     selected_object_indices: Vec<ObjectIndex>,
     current_add_object: Option<ObjectType>,
-    object_data_json: serde_json::Value,
+    object_data_json: Option<serde_json::Value>,
     is_object_data_valid: bool,
 
     // editing modes
@@ -244,8 +245,8 @@ impl LevelEditor {
 
     
 
-    fn object_context_menu(&mut self, ui: &mut egui::Ui) {
-        egui::Area::new(egui::Id::from("le_object_context_menu"))
+    fn add_object_context_menu(&mut self, ui: &mut egui::Ui) {
+        egui::Area::new(egui::Id::from("le_add_object_context_menu"))
         .anchor(
             egui::Align2::RIGHT_BOTTOM,
             egui::Vec2::splat(1.0)
@@ -273,7 +274,7 @@ impl LevelEditor {
                     .show(ui, |ui|{
                         // iterate through common gimmick names
     
-                        let data = self.object_data_json.get("common_gimmicks")
+                        let data = self.object_data_json.as_ref().context("object_data_json is None")?.get("common_gimmicks")
                         .expect("couldn't find 'common_gimmicks' in objectdata.json")
                         .as_object().unwrap();
                         
@@ -293,6 +294,7 @@ impl LevelEditor {
                             }
                         }
 
+                        Ok::<(), anyhow::Error>(())
                     });
                 });
 
@@ -325,7 +327,7 @@ impl LevelEditor {
         }
         
         if self.show_object_context_menu {
-            self.object_context_menu(ui);
+            self.add_object_context_menu(ui);
         }
 
         if response.dragged_by(egui::PointerButton::Primary) {
@@ -353,7 +355,7 @@ impl LevelEditor {
             }
             
             ObjectIndex::CommonGimmick(index) => {
-                self.process_common_gimmick_attributes(ui, index);   
+                let _ = self.process_common_gimmick_attributes(ui, index);   
             }
 
             ObjectIndex::Gimmick(index) => {

@@ -166,7 +166,7 @@ impl LevelEditor {
             }
 
             if !matches!(self.common_gimmick_edit_mode, EditMode::Hide) {
-                self.update_common_gimmicks(ui, rect);
+                let _ = self.update_common_gimmicks(ui, rect);
             }
             
             if !matches!(self.gimmick_edit_mode, EditMode::Hide) {
