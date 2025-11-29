@@ -118,39 +118,45 @@ impl LevelEditor {
         egui::TopBottomPanel::top("le_top_panel")
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
-                if ui.button("Open Archive").clicked() {
-                    let _ = self.open_file(ui.ctx());
-                    ui.close_menu();
-                }
-                
-                if ui.button("Open Folder").clicked() {
-                    let _ = self.open_folder(ui.ctx());
-                    ui.close_menu();
-                }
 
-                if ui.add_enabled(self.file_open, Button::new("Save Archive"))
-                .clicked() {
-                    let _ = self.save_file(false);
-                    ui.close_menu();
-                }
+                // file submenu
+                ui.menu_button("File", |ui|{
+                    if ui.button("Open Archive").clicked() {
+                        let _ = self.open_file(ui.ctx());
+                        ui.close_menu();
+                    }
+                    
+                    if ui.button("Open Folder").clicked() {
+                        let _ = self.open_folder(ui.ctx());
+                        ui.close_menu();
+                    }
+    
+                    if ui.add_enabled(self.file_open, Button::new("Save Archive"))
+                    .clicked() {
+                        let _ = self.save_file(false);
+                        ui.close_menu();
+                    }
+    
+                    if ui.add_enabled(self.file_open, Button::new("Save Archive as"))
+                    .clicked() {
+                        let _ = self.save_file(true);
+                        ui.close_menu();
+                    }
+    
+                    if ui.add_enabled(self.file_open, Button::new("Save Folder"))
+                    .clicked() {
+                        let _ = self.save_folder(false);
+                        ui.close_menu();
+                    }
+    
+                    if ui.add_enabled(self.file_open, Button::new("Save Folder as"))
+                    .clicked() {
+                        let _ = self.save_folder(true);
+                        ui.close_menu();
+                    }
+                });
 
-                if ui.add_enabled(self.file_open, Button::new("Save Archive as"))
-                .clicked() {
-                    let _ = self.save_file(true);
-                    ui.close_menu();
-                }
 
-                if ui.add_enabled(self.file_open, Button::new("Save Folder"))
-                .clicked() {
-                    let _ = self.save_folder(false);
-                    ui.close_menu();
-                }
-
-                if ui.add_enabled(self.file_open, Button::new("Save Folder as"))
-                .clicked() {
-                    let _ = self.save_folder(true);
-                    ui.close_menu();
-                }
 
                 // if ui.add_enabled(self.file_open, Button::new("Open BGST"))
                 // .clicked() {
