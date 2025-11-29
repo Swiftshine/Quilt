@@ -66,7 +66,7 @@ impl GfArchUtility {
         // ask user to open a folder to collect files from
         if let Some(input_folder_path) = FileDialog::new().pick_folder() {
             // ask user to pick an archive name
-            if let Some(archive_name) = FileDialog::new().add_filter("GfArchive", &["gfa"]).save_file() {
+            if let Some(archive_name) = FileDialog::new().add_filter("Good-Feel Archive", &["gfa"]).save_file() {
                 // read contents of the folder
 
                 let mut num_failed = 0;

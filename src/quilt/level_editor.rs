@@ -52,7 +52,7 @@ pub enum EditMode {
 pub struct LevelEditor {
     // i/o
     file_open: bool,
-    file_path: PathBuf,
+    file_path: Option<PathBuf>,
 
     // files
     archive_contents: Vec<(String, Vec<u8>)>,
@@ -121,6 +121,11 @@ impl LevelEditor {
 
                 // file submenu
                 ui.menu_button("File", |ui|{
+                    if ui.button("New").clicked() {
+                        self.make_new();
+                        ui.close_menu();
+                    }
+
                     if ui.button("Open Archive").clicked() {
                         let _ = self.open_file(ui.ctx());
                         ui.close_menu();
@@ -131,7 +136,7 @@ impl LevelEditor {
                         ui.close_menu();
                     }
     
-                    if ui.add_enabled(self.file_open, Button::new("Save Archive"))
+                    if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Archive"))
                     .clicked() {
                         let _ = self.save_file(false);
                         ui.close_menu();
@@ -143,7 +148,7 @@ impl LevelEditor {
                         ui.close_menu();
                     }
     
-                    if ui.add_enabled(self.file_open, Button::new("Save Folder"))
+                    if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Folder"))
                     .clicked() {
                         let _ = self.save_folder(false);
                         ui.close_menu();
@@ -154,25 +159,23 @@ impl LevelEditor {
                         let _ = self.save_folder(true);
                         ui.close_menu();
                     }
+
+                    // if ui.add_enabled(self.file_open, Button::new("Open BGST"))
+                    // .clicked() {
+                    //     let _ = self.bgst_renderer.open_file(ui);
+                    //     ui.close_menu();
+                    // }
+    
+                    // let bg_base_found = 
+                    // if self.file_open {
+                    //     // check mapdata
+                    //     self.current_mapdata.gimmicks.iter().any(|g| &g.name == "BG_BASE")
+                    // } else { 
+                    //     self.render_bgst = false;
+    
+                    //     false 
+                    // };
                 });
-
-
-
-                // if ui.add_enabled(self.file_open, Button::new("Open BGST"))
-                // .clicked() {
-                //     let _ = self.bgst_renderer.open_file(ui);
-                //     ui.close_menu();
-                // }
-
-                // let bg_base_found = 
-                // if self.file_open {
-                //     // check mapdata
-                //     self.current_mapdata.gimmicks.iter().any(|g| &g.name == "BG_BASE")
-                // } else { 
-                //     self.render_bgst = false;
-
-                //     false 
-                // };
 
                 // let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
 
