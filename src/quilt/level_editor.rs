@@ -179,10 +179,13 @@ impl LevelEditor {
                 });
 
                 ui.menu_button("Object Data", |ui|{
+                    
                     if ui.button("Update")
                     .on_hover_text("Updates 'objectdata.json' from the internet.")
-                    .clicked() && self.update_object_data().is_err() {
-                        eprintln!("Failed.");
+                    .clicked() {
+                        if let Err(e) = self.update_object_data() {
+                            eprintln!("Failed to update object data. Reason: {:?}", e);
+                        }
                     }
             
                     if ui.button("Refresh")

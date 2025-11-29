@@ -112,7 +112,7 @@ impl LevelEditor {
         self.selected_object_indices.clear();
     }
 
-    pub fn update_object_data(&mut self) -> Result<()> {
+    pub fn update_object_data(&mut self) -> Result<(), anyhow::Error> {
         let client = Client::new();
 
         let response = client
@@ -127,7 +127,7 @@ impl LevelEditor {
 
         if let Ok(b) = fs::exists("quilt_res/") {
             if !b {
-                fs::create_dir("res")?;
+                fs::create_dir("quilt_res")?;
             }
 
             fs::write("quilt_res/objectdata.json", &content)?;
