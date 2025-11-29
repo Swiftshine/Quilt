@@ -32,4 +32,4 @@ jobs:
         with:
           name: Quilt-${{ matrix.os }}
           path: target/release/quilt*
-        if-no-files-found: error
+          if-no-files-found: error
