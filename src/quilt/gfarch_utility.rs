@@ -34,7 +34,7 @@ impl GfArchUtility {
     fn extract_archive(&self) -> Result<()> {
         // ask the user to open an archive to extract
         if let Some(archive_path) = FileDialog::new()
-        .add_filter("GfArch archive", &["gfa"])
+        .add_filter("Good-Feel Archive", &["gfa"])
         .pick_file() { 
             // ask user to pick a folder to extract to
             if let Some(output_folder_path) = FileDialog::new().pick_folder() {

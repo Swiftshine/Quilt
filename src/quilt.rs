@@ -97,7 +97,7 @@ impl eframe::App for QuiltApp {
                     ui.selectable_value(&mut self.current_view, QuiltView::Home, "Quilt");
                     ui.selectable_value(&mut self.current_view, QuiltView::LevelEditor, "Level Editor");
                     // ui.selectable_value(&mut self.current_view, QuiltView::BGSTEditor, "BGST Editor");
-                    ui.selectable_value(&mut self.current_view, QuiltView::GfArchUtility, "GfArch Utility");
+                    ui.selectable_value(&mut self.current_view, QuiltView::GfArchUtility, "Good-Feel Archive Utility");
                 });
             });
         });
