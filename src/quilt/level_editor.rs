@@ -92,7 +92,8 @@ pub struct LevelEditor {
 
 impl LevelEditor {
     pub fn new() -> Self {
-        let current_dir = env::current_dir().expect("failed to get current directory");
+        let current_exe = env::current_exe().expect("failed to get current executable path");
+        let current_dir = current_exe.parent().expect("failed to get parent directory");
         let file_path = current_dir.join("quilt_res").join("objectdata.json");
 
         Self {

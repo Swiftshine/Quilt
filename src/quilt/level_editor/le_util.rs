@@ -3,7 +3,7 @@ use super::{
 };
 
 use std::{env, fs};
-use anyhow::{bail, Result};
+use anyhow::{bail, Result, Context};
 use reqwest::blocking::Client;
 
 impl LevelEditor {
@@ -125,7 +125,10 @@ impl LevelEditor {
 
         let content = response.text()?;
 
-        let quilt_res_path = env::current_dir()?.join("quilt_res");
+        let current_exe = env::current_exe()?;
+        let current_dir = current_exe.parent().context("failed to get parent directory")?;
+
+        let quilt_res_path = current_dir.join("quilt_res");
 
         if let Ok(b) = fs::exists(&quilt_res_path) {
             if !b {
@@ -149,7 +152,9 @@ impl LevelEditor {
     }
 
     pub fn refresh_object_data(&mut self) -> Result<()> {
-        let file_path = env::current_dir()?.join("quilt_res").join("objectdata.json");
+        let current_exe = env::current_exe()?;
+        let current_dir = current_exe.parent().context("failed to get parent directory")?;
+        let file_path = current_dir.join("quilt_res").join("objectdata.json");
         if let Ok(s) = fs::read_to_string(file_path) {
             self.object_data_json = serde_json::from_str(&s).expect("failed to read json");
         }
