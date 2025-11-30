@@ -2,7 +2,7 @@ use super::{
     EditMode, LevelEditor, ObjectIndex
 };
 
-use std::fs;
+use std::{env, fs};
 use anyhow::{bail, Result};
 use reqwest::blocking::Client;
 
@@ -125,12 +125,14 @@ impl LevelEditor {
 
         let content = response.text()?;
 
-        if let Ok(b) = fs::exists("quilt_res/") {
-            if !b {
-                fs::create_dir("quilt_res")?;
-            }
+        let quilt_res_path = env::current_dir()?.join("quilt_res");
 
-            fs::write("quilt_res/objectdata.json", &content)?;
+        if let Ok(b) = fs::exists(&quilt_res_path) {
+            if !b {
+                fs::create_dir(&quilt_res_path)?;
+            }
+            
+            fs::write(quilt_res_path.join("objectdata.json"), &content)?;
             self.object_data_json = serde_json::from_str(&content).expect("failed to parse json");
         } else {
             bail!("failed to write objectdata.json");
@@ -146,9 +148,12 @@ impl LevelEditor {
         Some(translation.to_string())
     }
 
-    pub fn refresh_object_data(&mut self) {
-        if let Ok(s) = fs::read_to_string("quilt_res/objectdata.json") {
+    pub fn refresh_object_data(&mut self) -> Result<()> {
+        let file_path = env::current_dir()?.join("quilt_res").join("objectdata.json");
+        if let Ok(s) = fs::read_to_string(file_path) {
             self.object_data_json = serde_json::from_str(&s).expect("failed to read json");
         }
+
+        Ok(())
     }
 }

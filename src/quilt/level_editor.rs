@@ -5,7 +5,7 @@ mod le_object;
 
 use anyhow::Context;
 
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf, env};
 // use egui::{self, Button, DragValue, TextureHandle};
 use egui::{self, Button, TextureHandle};
 // use super::{bgst_renderer::BGSTRenderer, common::Camera};
@@ -92,10 +92,13 @@ pub struct LevelEditor {
 
 impl LevelEditor {
     pub fn new() -> Self {
+        let current_dir = env::current_dir().expect("failed to get current directory");
+        let file_path = current_dir.join("quilt_res").join("objectdata.json");
+
         Self {
-            object_data_json: if let Ok(b) = fs::exists("quilt_res/objectdata.json") {
+            object_data_json: if let Ok(b) = fs::exists(&file_path) {
                 if b {
-                    let contents = fs::read_to_string("quilt_res/objectdata.json").unwrap_or_else(|_| String::new());
+                    let contents = fs::read_to_string(file_path).unwrap_or_else(|_| String::new());
                     serde_json::from_str(&contents).expect("failed to parse json")
                 } else {
                     Default::default()
@@ -191,7 +194,7 @@ impl LevelEditor {
                     if ui.button("Refresh")
                     .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
                     .clicked() {
-                        self.refresh_object_data();
+                        let _ = self.refresh_object_data();
                     }
                 });
 
