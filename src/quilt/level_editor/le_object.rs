@@ -63,12 +63,12 @@ enum ByteOrder {
 
 impl LevelEditor {
     /* object rendering */
-    pub fn update_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_walls(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
         for (index, wall) in self.current_mapdata.walls.iter_mut().enumerate() {
-            let start = rect.min + 
+            let start = canvas_rect.min + 
                 self.camera.to_camera(wall.start.get_vec2());
-            let end = rect.min + 
+            let end = canvas_rect.min + 
                 self.camera.to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
@@ -90,13 +90,13 @@ impl LevelEditor {
             );
 
             let start_resp = ui.interact(
-                start_rect,
+                canvas_rect.intersect(start_rect),
                 egui::Id::new(&wall.start as *const _),
                 egui::Sense::click_and_drag()
             );
 
             let end_resp = ui.interact(
-                end_rect,
+                canvas_rect.intersect(end_rect),
                 egui::Id::new(&wall.end as *const _),
                 egui::Sense::click_and_drag()
             );
@@ -151,12 +151,12 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_labeled_walls(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_labeled_walls(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
         for (index, wall) in self.current_mapdata.labeled_walls.iter_mut().enumerate() {
-            let start = rect.min + 
+            let start = canvas_rect.min + 
                 self.camera.to_camera(wall.start.get_vec2());
-            let end = rect.min + 
+            let end = canvas_rect.min + 
                 self.camera.to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
@@ -178,13 +178,13 @@ impl LevelEditor {
             );
 
             let start_resp = ui.interact(
-                start_rect,
+                canvas_rect.intersect(start_rect),
                 egui::Id::new(&wall.start as *const _),
                 egui::Sense::click_and_drag()
             );
 
             let end_resp = ui.interact(
-                end_rect,
+                canvas_rect.intersect(end_rect),
                 egui::Id::new(&wall.end as *const _),
                 egui::Sense::click_and_drag()
             );
@@ -239,15 +239,15 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_common_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) -> Result<()> {
-        let painter = ui.painter_at(rect);
+    pub fn update_common_gimmicks(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) -> Result<()> {
+        let painter = ui.painter_at(canvas_rect);
         for (index, gmk) in self.current_mapdata.common_gimmicks.iter_mut().enumerate() {
             if &gmk.hex == "NONE" && !self.display_none {
                 continue;
             }
 
             let pos = gmk.position.get_point2d();
-            let screen_pos = rect.min.to_vec2() +
+            let screen_pos = canvas_rect.min.to_vec2() +
                 self.camera.to_camera(pos.get_vec2());
 
             let square = egui::Rect::from_center_size(
@@ -264,7 +264,7 @@ impl LevelEditor {
             );
 
             let resp = ui.interact(
-                square,
+                canvas_rect.intersect(square),
                 egui::Id::new(gmk as *const _),
                 egui::Sense::click_and_drag()
             );
@@ -332,8 +332,8 @@ impl LevelEditor {
         Ok(())
     }
 
-    pub fn update_gimmicks(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_gimmicks(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
         for (index, gmk) in self.current_mapdata.gimmicks.iter_mut().enumerate() {
             if &gmk.name == "NONE" && !self.display_none {
                 continue;
@@ -352,7 +352,7 @@ impl LevelEditor {
             }
 
             let pos = gmk.position.get_point2d();
-            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
+            let screen_pos = canvas_rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
             let square = egui::Rect::from_center_size(
 
                 {
@@ -367,7 +367,7 @@ impl LevelEditor {
             );
 
             let resp = ui.interact(
-                square,
+                canvas_rect.intersect(square),
                 egui::Id::new(gmk as *const _),
                 egui::Sense::click_and_drag()
             );
@@ -422,8 +422,8 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_paths(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_paths(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
 
         for (index, path) in self.current_mapdata.paths.iter_mut().enumerate() {
             if &path.name == "NONE" && !self.display_none {
@@ -431,9 +431,9 @@ impl LevelEditor {
             }
 
             for i in 0..path.points.len() - 1 {
-                let start_pos = rect.min + 
+                let start_pos = canvas_rect.min + 
                     self.camera.to_camera(path.points[i].get_vec2());
-                let end_pos = rect.min + 
+                let end_pos = canvas_rect.min + 
                     self.camera.to_camera(path.points[i + 1].get_vec2());
 
                 painter.line_segment(
@@ -473,7 +473,7 @@ impl LevelEditor {
                 );
     
                 let start_resp = ui.interact(
-                    start_rect,
+                    canvas_rect.intersect(start_rect),
                     egui::Id::new(
                     format!(
                             "path-{}-{}-start-{}",
@@ -486,7 +486,7 @@ impl LevelEditor {
                 );
     
                 let end_resp = ui.interact(
-                    end_rect,
+                    canvas_rect.intersect(end_rect),
                     egui::Id::new(
                         format!(
                             "path-{}-{}-end-{}",
@@ -524,24 +524,24 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_zones(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_zones(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
 
         for (index, zone) in self.current_mapdata.zones.iter_mut().enumerate() {
             if &zone.name == "NONE" && !self.display_none {
                 continue;
             }
 
-            let start = rect.min +
+            let start = canvas_rect.min +
                 self.camera.to_camera(zone.bounds_start.get_vec2());
 
-            let end = rect.min + 
+            let end = canvas_rect.min + 
                 self.camera.to_camera(zone.bounds_end.get_vec2());
 
             let square = egui::Rect::from_points(&[start, end]);
 
             let body_resp = ui.interact(
-                square,
+                canvas_rect.intersect(square),
                 egui::Id::new(zone as *const _),
                 egui::Sense::click_and_drag()
             );
@@ -634,15 +634,15 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_course_info(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_course_info(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
 
         for (index, info) in self.current_mapdata.course_infos.iter_mut().enumerate() {
             if &info.name == "NONE" && !self.display_none {
                 continue;
             }
 
-            let pos = rect.min +
+            let pos = canvas_rect.min +
                 self.camera.to_camera(info.position.get_point2d().get_vec2());
 
             let square = egui::Rect::from_center_size(
@@ -667,7 +667,7 @@ impl LevelEditor {
             }
 
             let resp = ui.interact(
-                square,
+                canvas_rect.intersect(square),
                 egui::Id::new(info as *const _),
                 egui::Sense::click_and_drag()
             );
@@ -693,12 +693,12 @@ impl LevelEditor {
         }
     }
 
-    pub fn update_enemies(&mut self, ui: &mut egui::Ui, rect: Rect) {
-        let painter = ui.painter_at(rect);
+    pub fn update_enemies(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
         
         for (index, enemy) in self.current_endata.enemies.iter_mut().enumerate() {
             let pos = enemy.position_1.get_point2d();
-            let screen_pos = rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
+            let screen_pos = canvas_rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
             let square = egui::Rect::from_center_size(
                 {
                     let pos = screen_pos.to_pos2();
@@ -712,7 +712,7 @@ impl LevelEditor {
             );
 
             let resp = ui.interact(
-                square,
+                canvas_rect.intersect(square),
                 egui::Id::new(enemy as *const _),
                 egui::Sense::click_and_drag()
             );
