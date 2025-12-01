@@ -72,7 +72,7 @@ impl LevelEditor {
 
             self.load_object_textures(ctx);
 
-            // self.bgst_renderer.bgst_file = None;
+            self.bgst_renderer.bgst_file = None;
             self.render_bgst = false;
         }
 
@@ -126,7 +126,7 @@ impl LevelEditor {
                 self.file_open = true;
                 self.object_textures.clear();
                 self.load_object_textures(ctx);
-                // self.bgst_renderer.bgst_file = None;
+                self.bgst_renderer.bgst_file = None;
                 self.render_bgst = false;
             }
         }

@@ -96,8 +96,8 @@ impl eframe::App for QuiltApp {
                 ui.horizontal(|ui|{
                     ui.selectable_value(&mut self.current_view, QuiltView::Home, "Quilt");
                     ui.selectable_value(&mut self.current_view, QuiltView::LevelEditor, "Level Editor");
-                    // ui.selectable_value(&mut self.current_view, QuiltView::BGSTEditor, "BGST Editor");
                     ui.selectable_value(&mut self.current_view, QuiltView::GfArchUtility, "Good-Feel Archive Utility");
+                    // ui.selectable_value(&mut self.current_view, QuiltView::BGSTEditor, "BGST Editor");
                 });
             });
         });
@@ -114,13 +114,13 @@ impl eframe::App for QuiltApp {
                     self.level_editor.show_ui(ui);
                 }
 
-                // QuiltView::BGSTEditor => {
-                //     self.bgst_editor.show_ui(ui);
-                // }
-
                 QuiltView::GfArchUtility => {
                     self.gfarch_utility.show_ui(ui);
                 }
+
+                // QuiltView::BGSTEditor => {
+                //     self.bgst_editor.show_ui(ui);
+                // }
             }
         });
     }

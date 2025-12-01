@@ -1,4 +1,4 @@
-// use super::BGSTEditor;
+use super::BGSTEditor;
 // use std::{
 //     fs,
 //     path::PathBuf
@@ -8,6 +8,6 @@
 // use rfd::FileDialog;
 // use crate::quilt::game::bgst::*;
 
-// impl BGSTEditor {
+impl BGSTEditor {
 
-// }
+}

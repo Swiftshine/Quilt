@@ -3350,6 +3350,7 @@ dependencies = [
  "gfarch",
  "hex",
  "image",
+ "rayon",
  "reqwest",
  "rfd",
  "serde_json",

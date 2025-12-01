@@ -118,7 +118,7 @@ impl BGSTEditor {
             .iter()
             .filter(|entry| entry.layer == layer));
 
-        println!("BGSTEditor::render_by_layer - origin: {}", origin);
+        // println!("BGSTEditor::render_by_layer - origin: {}", origin);
 
         // separate by mask
 
