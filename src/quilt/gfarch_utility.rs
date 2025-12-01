@@ -45,7 +45,7 @@ impl GfArchUtility {
 
                 let output_folder_path = output_folder_path.to_str().unwrap().to_string();
                 
-                println!("{}", output_folder_path);
+                // println!("{}", output_folder_path);
 
                 for file in archive_contents {
                     if fs::write(output_folder_path.clone() + "/" + &file.0, &file.1).is_err() {
