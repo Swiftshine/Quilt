@@ -21,21 +21,21 @@ pub struct BGSTEntry {
 
 #[derive(Default)]
 pub struct BGSTFile {
-    pub _unk_4: u32,
+    pub _flags: u32,
     pub image_width: u32,
     pub image_height: u32,
     pub _grid_width: u32,
     pub grid_height: u32,
     pub _show_layer: [bool; 0xC],
     pub bgst_entries: Vec<BGSTEntry>,
-    pub _y_offset: f32,
+    pub _scale_modifier: f32,
     pub compressed_images: Vec<Vec<u8>>,
 }
 
 impl BGSTFile {
     pub fn from_bytes(input: &[u8]) -> Self {        
         // read header
-        let unk_4 = BigEndian::read_u32(&input[4..8]);
+        let flags = BigEndian::read_u32(&input[4..8]);
         let image_width = BigEndian::read_u32(&input[8..0xC]);
         let image_height = BigEndian::read_u32(&input[0xC..0x10]);
         let grid_width = BigEndian::read_u32(&input[0x10..0x14]);
@@ -51,7 +51,7 @@ impl BGSTFile {
 
         let info_offset = BigEndian::read_u32(&input[0x28..0x2C]) as usize;
         let image_data_offset = BigEndian::read_u32(&input[0x2C..0x30]) as usize;
-        let y_offset = BigEndian::read_f32(&input[0x30..0x34]);
+        let scale_modifier = BigEndian::read_f32(&input[0x30..0x34]);
         
         // read entries
         let mut current_offset = info_offset;
@@ -75,14 +75,14 @@ impl BGSTFile {
         assert_eq!(image_count, compressed_images.len());
 
         BGSTFile {
-            _unk_4: unk_4,
+            _flags: flags,
             image_width,
             image_height,
             _grid_width: grid_width,
             grid_height,
             _show_layer: show_layer,
             bgst_entries,
-            _y_offset: y_offset,
+            _scale_modifier: scale_modifier,
             compressed_images
         }
     }
