@@ -250,142 +250,144 @@ impl LevelEditor {
                 );
             }
 
-            if response.hovered() && ui.ctx().input(|i| i.pointer.any_released())
-                && let Some(mut pointer_pos) = response.hover_pos() {
-                    pointer_pos -= rect.min.to_vec2();
+            if response.hovered()
+                && ui.ctx().input(|i| i.pointer.any_released())
+                && let Some(mut pointer_pos) = response.hover_pos()
+            {
+                pointer_pos -= rect.min.to_vec2();
 
-                    match object_type {
-                        ObjectType::Wall => {
-                            let collision_type = String::from("NML");
-                            let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                            let start = Point2D::from_vec2(start);
-                            let end = Point2D {
-                                x: start.x + 5.0,
-                                y: start.y,
-                            };
+                match object_type {
+                    ObjectType::Wall => {
+                        let collision_type = String::from("NML");
+                        let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                        let start = Point2D::from_vec2(start);
+                        let end = Point2D {
+                            x: start.x + 5.0,
+                            y: start.y,
+                        };
 
-                            let wall = Wall {
-                                collision_type,
-                                start,
-                                end,
-                                ..Default::default()
-                            };
+                        let wall = Wall {
+                            collision_type,
+                            start,
+                            end,
+                            ..Default::default()
+                        };
 
-                            self.current_mapdata.walls.push(wall);
-                        }
+                        self.current_mapdata.walls.push(wall);
+                    }
 
-                        ObjectType::LabeledWall => {
-                            let collision_type = String::from("NML");
-                            let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                            let start = Point2D::from_vec2(start);
-                            let end = Point2D {
-                                x: start.x + 5.0,
-                                y: start.y,
-                            };
+                    ObjectType::LabeledWall => {
+                        let collision_type = String::from("NML");
+                        let start = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                        let start = Point2D::from_vec2(start);
+                        let end = Point2D {
+                            x: start.x + 5.0,
+                            y: start.y,
+                        };
 
-                            let wall = LabeledWall {
-                                collision_type,
-                                start,
-                                end,
-                                ..Default::default()
-                            };
+                        let wall = LabeledWall {
+                            collision_type,
+                            start,
+                            end,
+                            ..Default::default()
+                        };
 
-                            self.current_mapdata.labeled_walls.push(wall);
-                        }
+                        self.current_mapdata.labeled_walls.push(wall);
+                    }
 
-                        ObjectType::CommonGimmick(hex) => {
-                            let mut gmk = CommonGimmick::default();
+                    ObjectType::CommonGimmick(hex) => {
+                        let mut gmk = CommonGimmick::default();
 
-                            let pos = self
-                                .camera
-                                .convert_from_camera(pointer_pos.to_vec2())
-                                .to_pos2();
-                            gmk.position = Point2D::from_pos2(pos).get_point3d();
-                            gmk.hex = hex.to_owned();
-                            self.current_mapdata.common_gimmicks.push(gmk);
+                        let pos = self
+                            .camera
+                            .convert_from_camera(pointer_pos.to_vec2())
+                            .to_pos2();
+                        gmk.position = Point2D::from_pos2(pos).get_point3d();
+                        gmk.hex = hex.to_owned();
+                        self.current_mapdata.common_gimmicks.push(gmk);
 
-                            let hex_str = hex.to_owned();
-                            if !self
-                                .current_mapdata
+                        let hex_str = hex.to_owned();
+                        if !self
+                            .current_mapdata
+                            .common_gimmick_names
+                            .hex_names
+                            .iter()
+                            .any(|g| g.as_str() == hex_str)
+                        {
+                            self.current_mapdata
                                 .common_gimmick_names
                                 .hex_names
-                                .iter()
-                                .any(|g| g.as_str() == hex_str)
-                            {
-                                self.current_mapdata
-                                    .common_gimmick_names
-                                    .hex_names
-                                    .push(hex.to_owned());
-                            }
-
-                            self.add_common_gimmick_texture(ui.ctx(), &hex_str);
+                                .push(hex.to_owned());
                         }
 
-                        ObjectType::Gimmick => {
-                            let mut gmk = Gimmick::default();
-
-                            let pos = self
-                                .camera
-                                .convert_from_camera(pointer_pos.to_vec2())
-                                .to_pos2();
-
-                            gmk.position = Point2D::from_pos2(pos).get_point3d();
-                            gmk.name = String::from("NEW");
-                            self.current_mapdata.gimmicks.push(gmk);
-                        }
-
-                        ObjectType::Path => {
-                            let mut path = Path::default();
-
-                            let first = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                            path.points.push(Point2D {
-                                x: first.x,
-                                y: first.y,
-                            });
-
-                            path.points.push(Point2D {
-                                x: first.x + 5.0,
-                                y: first.y,
-                            });
-
-                            path.name = String::from("NEW");
-                            self.current_mapdata.paths.push(path);
-                        }
-
-                        ObjectType::Zone => {
-                            let mut zone = Zone::default();
-                            let start = self
-                                .camera
-                                .convert_from_camera(pointer_pos.to_vec2())
-                                .to_pos2();
-                            let end = start + egui::Vec2::splat(5.0);
-
-                            zone.bounds_start = Point2D::from_pos2(start);
-                            zone.bounds_end = Point2D::from_pos2(end);
-                            zone.name = String::from("NEW");
-                            self.current_mapdata.zones.push(zone);
-                        }
-
-                        ObjectType::CourseInfo => {
-                            let mut course_info = CourseInfo::default();
-                            let pos = self.camera.convert_from_camera(pointer_pos.to_vec2());
-                            course_info.position = Point2D::from_vec2(pos).get_point3d();
-                            course_info.name = String::from("NEW");
-                            self.current_mapdata.course_infos.push(course_info);
-                        }
-
-                        ObjectType::Enemy => {
-                            let mut enemy = Enemy::new();
-                            let pos = self
-                                .camera
-                                .convert_from_camera(pointer_pos.to_vec2())
-                                .to_pos2();
-                            enemy.position_1 = Point2D::from_pos2(pos).get_point3d();
-                            self.current_endata.enemies.push(enemy);
-                        } // _ => {}
+                        self.add_common_gimmick_texture(ui.ctx(), &hex_str);
                     }
-                    self.current_add_object = None;
+
+                    ObjectType::Gimmick => {
+                        let mut gmk = Gimmick::default();
+
+                        let pos = self
+                            .camera
+                            .convert_from_camera(pointer_pos.to_vec2())
+                            .to_pos2();
+
+                        gmk.position = Point2D::from_pos2(pos).get_point3d();
+                        gmk.name = String::from("NEW");
+                        self.current_mapdata.gimmicks.push(gmk);
+                    }
+
+                    ObjectType::Path => {
+                        let mut path = Path::default();
+
+                        let first = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                        path.points.push(Point2D {
+                            x: first.x,
+                            y: first.y,
+                        });
+
+                        path.points.push(Point2D {
+                            x: first.x + 5.0,
+                            y: first.y,
+                        });
+
+                        path.name = String::from("NEW");
+                        self.current_mapdata.paths.push(path);
+                    }
+
+                    ObjectType::Zone => {
+                        let mut zone = Zone::default();
+                        let start = self
+                            .camera
+                            .convert_from_camera(pointer_pos.to_vec2())
+                            .to_pos2();
+                        let end = start + egui::Vec2::splat(5.0);
+
+                        zone.bounds_start = Point2D::from_pos2(start);
+                        zone.bounds_end = Point2D::from_pos2(end);
+                        zone.name = String::from("NEW");
+                        self.current_mapdata.zones.push(zone);
+                    }
+
+                    ObjectType::CourseInfo => {
+                        let mut course_info = CourseInfo::default();
+                        let pos = self.camera.convert_from_camera(pointer_pos.to_vec2());
+                        course_info.position = Point2D::from_vec2(pos).get_point3d();
+                        course_info.name = String::from("NEW");
+                        self.current_mapdata.course_infos.push(course_info);
+                    }
+
+                    ObjectType::Enemy => {
+                        let mut enemy = Enemy::new();
+                        let pos = self
+                            .camera
+                            .convert_from_camera(pointer_pos.to_vec2())
+                            .to_pos2();
+                        enemy.position_1 = Point2D::from_pos2(pos).get_point3d();
+                        self.current_endata.enemies.push(enemy);
+                    } // _ => {}
                 }
+                self.current_add_object = None;
+            }
         }
     }
 }

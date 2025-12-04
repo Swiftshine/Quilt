@@ -18,10 +18,11 @@ impl LevelEditor {
         let key = format!("common_gimmick-{}", hex);
         if let std::collections::hash_map::Entry::Vacant(e) =
             self.object_textures.entry(key.clone())
-            && let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex) {
-                let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
-                e.insert(texture);
-            }
+            && let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex)
+        {
+            let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
+            e.insert(texture);
+        }
     }
 
     pub fn load_image_from_tex_folder(
@@ -50,11 +51,12 @@ impl LevelEditor {
             let key = format!("gimmick-{}", &gmk.name);
             if let std::collections::hash_map::Entry::Vacant(e) =
                 self.object_textures.entry(key.clone())
-                && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
-                    let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
+                && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name)
+            {
+                let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
 
-                    e.insert(texture);
-                }
+                e.insert(texture);
+            }
         }
 
         for gmk in self.current_mapdata.common_gimmicks.iter() {
@@ -62,10 +64,10 @@ impl LevelEditor {
             if let std::collections::hash_map::Entry::Vacant(e) =
                 self.object_textures.entry(key.clone())
                 && let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", &gmk.hex)
-                {
-                    let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
-                    e.insert(texture);
-                }
+            {
+                let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
+                e.insert(texture);
+            }
         }
     }
 

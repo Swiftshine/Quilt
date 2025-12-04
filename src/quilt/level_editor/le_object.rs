@@ -301,13 +301,14 @@ impl LevelEditor {
             let key = format!("gimmick-{}", &gmk.name);
             if let std::collections::hash_map::Entry::Vacant(e) =
                 self.object_textures.entry(key.clone())
-                && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
-                    let texture =
-                        ui.ctx()
-                            .load_texture(&key, image_data, egui::TextureOptions::LINEAR);
+                && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name)
+            {
+                let texture = ui
+                    .ctx()
+                    .load_texture(&key, image_data, egui::TextureOptions::LINEAR);
 
-                    e.insert(texture);
-                }
+                e.insert(texture);
+            }
 
             let pos = gmk.position.get_point2d();
             let screen_pos = canvas_rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
@@ -1329,14 +1330,16 @@ impl LevelEditor {
         // paramter handling
         if let Some(object_data) = data.get(object_name) {
             if let Some(desc) = object_data.get("description").and_then(|d| d.as_str())
-                && !desc.is_empty() {
-                    ui.label(desc);
-                }
+                && !desc.is_empty()
+            {
+                ui.label(desc);
+            }
 
             if let Some(note) = object_data.get("note").and_then(|n| n.as_str())
-                && !note.is_empty() {
-                    ui.label(format!("Note: {note}"));
-                }
+                && !note.is_empty()
+            {
+                ui.label(format!("Note: {note}"));
+            }
 
             if let Some(params) = object_data.get("parameters").and_then(|p| p.as_object()) {
                 for (param_name, param_data) in params {
@@ -1615,14 +1618,16 @@ impl LevelEditor {
                         if let Some(path_data) = data.get(&path.name) {
                             if let Some(desc) =
                                 path_data.get("description").and_then(|d| d.as_str())
-                                && !desc.is_empty() {
-                                    ui.label(desc);
-                                }
+                                && !desc.is_empty()
+                            {
+                                ui.label(desc);
+                            }
 
                             if let Some(note) = path_data.get("note").and_then(|n| n.as_str())
-                                && !note.is_empty() {
-                                    ui.label(format!("Note: {note}"));
-                                }
+                                && !note.is_empty()
+                            {
+                                ui.label(format!("Note: {note}"));
+                            }
                         }
 
                         ui.collapsing("Points", |ui| {
@@ -1736,14 +1741,16 @@ impl LevelEditor {
                         if let Some(zone_data) = data.get(&zone.name) {
                             if let Some(desc) =
                                 zone_data.get("description").and_then(|d| d.as_str())
-                                && !desc.is_empty() {
-                                    ui.label(desc);
-                                }
+                                && !desc.is_empty()
+                            {
+                                ui.label(desc);
+                            }
 
                             if let Some(note) = zone_data.get("note").and_then(|n| n.as_str())
-                                && !note.is_empty() {
-                                    ui.label(format!("Note: {note}"));
-                                }
+                                && !note.is_empty()
+                            {
+                                ui.label(format!("Note: {note}"));
+                            }
                         }
 
                         ui.label("Unknown @ 0x20");
@@ -1834,15 +1841,17 @@ impl LevelEditor {
                         if let Some(course_info_data) = data.get(&info.name) {
                             if let Some(desc) =
                                 course_info_data.get("description").and_then(|d| d.as_str())
-                                && !desc.is_empty() {
-                                    ui.label(desc);
-                                }
+                                && !desc.is_empty()
+                            {
+                                ui.label(desc);
+                            }
 
                             if let Some(note) =
                                 course_info_data.get("note").and_then(|n| n.as_str())
-                                && !note.is_empty() {
-                                    ui.label(format!("Note: {note}"));
-                                }
+                                && !note.is_empty()
+                            {
+                                ui.label(format!("Note: {note}"));
+                            }
                         }
 
                         ui.label("Unknown @ 0x20");
