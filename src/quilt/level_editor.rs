@@ -1,44 +1,41 @@
-mod le_io;
-mod le_util;
 mod le_canvas;
+mod le_io;
 mod le_object;
+mod le_util;
 
 use anyhow::Context;
 
-use std::{collections::HashMap, fs, path::PathBuf, env};
 use egui::{self, Button, DragValue, TextureHandle};
+use std::{collections::HashMap, env, fs, path::PathBuf};
 // use egui::{self, Button, TextureHandle};
 use super::{bgst_renderer::BGSTRenderer, common::Camera};
 // use super::common::Camera;
 
-use crate::quilt::game::{
-    endata::*,
-    mapdata::*,
-};
+use crate::quilt::game::{endata::*, mapdata::*};
 
 #[derive(PartialEq)]
 // These are indices
 enum ObjectIndex {
     Wall(usize),
     LabeledWall(usize),
-    CommonGimmick(usize), 
+    CommonGimmick(usize),
     Gimmick(usize),
     Path(usize),
     Zone(usize),
     CourseInfo(usize),
-    Enemy(usize)
+    Enemy(usize),
 }
 
 #[derive(PartialEq)]
 enum ObjectType {
     Wall,
     LabeledWall,
-    CommonGimmick(String), 
+    CommonGimmick(String),
     Gimmick,
     Path,
     Zone,
     CourseInfo,
-    Enemy
+    Enemy,
 }
 
 #[derive(PartialEq, Clone, Copy, Default)]
@@ -46,7 +43,7 @@ pub enum EditMode {
     Hide,
     #[default]
     View,
-    Edit
+    Edit,
 }
 
 #[derive(Default)]
@@ -87,13 +84,15 @@ pub struct LevelEditor {
     // graphics
     object_textures: HashMap<String, TextureHandle>,
     render_bgst: bool,
-    bgst_renderer: BGSTRenderer
+    bgst_renderer: BGSTRenderer,
 }
 
 impl LevelEditor {
     pub fn new() -> Self {
         let current_exe = env::current_exe().expect("failed to get current executable path");
-        let current_dir = current_exe.parent().expect("failed to get parent directory");
+        let current_dir = current_exe
+            .parent()
+            .expect("failed to get parent directory");
         let file_path = current_dir.join("quilt_res").join("objectdata.json");
 
         Self {
@@ -117,7 +116,6 @@ impl LevelEditor {
             ..Default::default()
         }
     }
-
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
         egui::TopBottomPanel::top("le_top_panel")
@@ -242,97 +240,100 @@ impl LevelEditor {
             });
         });
 
-
-        egui::CentralPanel::default().show(ui.ctx(), |ui|{
+        egui::CentralPanel::default().show(ui.ctx(), |ui| {
             if self.file_open {
                 self.show_editor_ui(ui);
             }
         });
     }
 
-    
-
     fn add_object_context_menu(&mut self, ui: &mut egui::Ui) {
         egui::Area::new(egui::Id::from("le_add_object_context_menu"))
-        .anchor(
-            egui::Align2::RIGHT_BOTTOM,
-            egui::Vec2::splat(1.0)
-        )
-        .show(ui.ctx(), |ui|{
-            egui::Frame::popup(ui.style())
-            .inner_margin(egui::Vec2::splat(8.0))
-            .show(ui, |ui|{
-                ui.label("Add object");
-                
-                if ui.button("Add Wall").clicked() {
-                    self.current_add_object = Some(ObjectType::Wall);
-                }
+            .anchor(egui::Align2::RIGHT_BOTTOM, egui::Vec2::splat(1.0))
+            .show(ui.ctx(), |ui| {
+                egui::Frame::popup(ui.style())
+                    .inner_margin(egui::Vec2::splat(8.0))
+                    .show(ui, |ui| {
+                        ui.label("Add object");
 
-                if ui.button("Add Labeled Wall").clicked() {
-                    self.current_add_object = Some(ObjectType::LabeledWall);
-                }
-
-                ui.collapsing("Add Common Gimmick", |ui|{
-                    ui.label("Search");
-                    ui.text_edit_singleline(&mut self.common_gimmick_object_query);
-                    egui::ScrollArea::vertical()
-                    .id_salt("le_add_common_gimmick")
-                    .max_height(150.0)
-                    .show(ui, |ui|{
-                        // iterate through common gimmick names
-    
-                        let data = self.object_data_json.as_ref().context("object_data_json is None")?.get("common_gimmicks")
-                        .expect("couldn't find 'common_gimmicks' in objectdata.json")
-                        .as_object().unwrap();
-                        
-                        for (hex, values) in data {
-                            let name = values.get("name").and_then(|s| s.as_str()).unwrap();
-
-                            
-                            if name.to_lowercase()
-                            .contains(&self.common_gimmick_object_query.to_lowercase()) {
-                                let mut selected = false;
-
-                                ui.selectable_value(&mut selected, true, name);
-
-                                if selected {
-                                    self.current_add_object = Some(ObjectType::CommonGimmick(hex.to_owned()))
-                                }
-                            }
+                        if ui.button("Add Wall").clicked() {
+                            self.current_add_object = Some(ObjectType::Wall);
                         }
 
-                        Ok::<(), anyhow::Error>(())
+                        if ui.button("Add Labeled Wall").clicked() {
+                            self.current_add_object = Some(ObjectType::LabeledWall);
+                        }
+
+                        ui.collapsing("Add Common Gimmick", |ui| {
+                            ui.label("Search");
+                            ui.text_edit_singleline(&mut self.common_gimmick_object_query);
+                            egui::ScrollArea::vertical()
+                                .id_salt("le_add_common_gimmick")
+                                .max_height(150.0)
+                                .show(ui, |ui| {
+                                    // iterate through common gimmick names
+
+                                    let data = self
+                                        .object_data_json
+                                        .as_ref()
+                                        .context("object_data_json is None")?
+                                        .get("common_gimmicks")
+                                        .expect(
+                                            "couldn't find 'common_gimmicks' in objectdata.json",
+                                        )
+                                        .as_object()
+                                        .unwrap();
+
+                                    for (hex, values) in data {
+                                        let name =
+                                            values.get("name").and_then(|s| s.as_str()).unwrap();
+
+                                        if name.to_lowercase().contains(
+                                            &self.common_gimmick_object_query.to_lowercase(),
+                                        ) {
+                                            let mut selected = false;
+
+                                            ui.selectable_value(&mut selected, true, name);
+
+                                            if selected {
+                                                self.current_add_object =
+                                                    Some(ObjectType::CommonGimmick(hex.to_owned()))
+                                            }
+                                        }
+                                    }
+
+                                    Ok::<(), anyhow::Error>(())
+                                });
+                        });
+
+                        if ui.button("Add Gimmick").clicked() {
+                            self.current_add_object = Some(ObjectType::Gimmick);
+                        }
+
+                        if ui.button("Add Path").clicked() {
+                            self.current_add_object = Some(ObjectType::Path);
+                        }
+
+                        if ui.button("Add Zone").clicked() {
+                            self.current_add_object = Some(ObjectType::Zone);
+                        }
+
+                        if ui.button("Add Course Info").clicked() {
+                            self.current_add_object = Some(ObjectType::CourseInfo);
+                        }
+
+                        if ui.button("Add Enemy").clicked() {
+                            self.current_add_object = Some(ObjectType::Enemy);
+                        }
                     });
-                });
-
-                if ui.button("Add Gimmick").clicked() {
-                    self.current_add_object = Some(ObjectType::Gimmick);
-                }
-
-                if ui.button("Add Path").clicked() {
-                    self.current_add_object = Some(ObjectType::Path);
-                }
-
-                if ui.button("Add Zone").clicked() {
-                    self.current_add_object = Some(ObjectType::Zone);
-                }
-
-                if ui.button("Add Course Info").clicked() {
-                    self.current_add_object = Some(ObjectType::CourseInfo);
-                }
-
-                if ui.button("Add Enemy").clicked() {
-                    self.current_add_object = Some(ObjectType::Enemy);
-                }
             });
-        });
     }
 
     fn handle_inputs(&mut self, ui: &mut egui::Ui, response: &egui::Response) {
         if response.clicked_by(egui::PointerButton::Secondary) {
             self.show_object_context_menu = !self.show_object_context_menu;
         }
-        
+
         if self.show_object_context_menu {
             self.add_object_context_menu(ui);
         }
@@ -360,9 +361,9 @@ impl LevelEditor {
             ObjectIndex::LabeledWall(index) => {
                 self.process_labeled_wall_attributes(ui, index);
             }
-            
+
             ObjectIndex::CommonGimmick(index) => {
-                let _ = self.process_common_gimmick_attributes(ui, index);   
+                let _ = self.process_common_gimmick_attributes(ui, index);
             }
 
             ObjectIndex::Gimmick(index) => {
@@ -386,6 +387,4 @@ impl LevelEditor {
             }
         }
     }
-
-    
 }
