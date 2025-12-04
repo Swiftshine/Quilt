@@ -250,8 +250,8 @@ impl LevelEditor {
                 );
             }
 
-            if response.hovered() && ui.ctx().input(|i| i.pointer.any_released()) {
-                if let Some(mut pointer_pos) = response.hover_pos() {
+            if response.hovered() && ui.ctx().input(|i| i.pointer.any_released())
+                && let Some(mut pointer_pos) = response.hover_pos() {
                     pointer_pos -= rect.min.to_vec2();
 
                     match object_type {
@@ -386,7 +386,6 @@ impl LevelEditor {
                     }
                     self.current_add_object = None;
                 }
-            }
         }
     }
 }

@@ -174,11 +174,10 @@ impl LevelEditor {
                     
                     if ui.button("Update")
                     .on_hover_text("Updates 'objectdata.json' from the internet.")
-                    .clicked() {
-                        if let Err(e) = self.update_object_data() {
+                    .clicked()
+                        && let Err(e) = self.update_object_data() {
                             eprintln!("Failed to update object data. Reason: {:?}", e);
                         }
-                    }
                     
                     if ui.button("Refresh")
                     .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
