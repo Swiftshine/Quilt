@@ -1,11 +1,10 @@
-use anyhow::{anyhow, bail, Result};
+use crate::quilt::game::bgst::*;
+use anyhow::{Result, anyhow, bail};
 use egui::TextureOptions;
 use image::{ImageBuffer, RgbaImage};
+use rayon::prelude::*;
 use rfd::FileDialog;
 use std::{collections::HashMap, fs};
-use rayon::prelude::*;
-use crate::quilt::game::bgst::*;
-
 
 #[derive(Default)]
 pub struct BGSTRenderer {
@@ -21,19 +20,14 @@ pub struct BGSTRenderer {
 }
 
 impl BGSTRenderer {
-    pub fn apply_mask(
-        target: &[u8],
-        mask: &[u8],
-        width: u32,
-        height: u32
-    ) -> Result<Vec<u8>> {
+    pub fn apply_mask(target: &[u8], mask: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
         if mask.len() != mask.len() {
             bail!("the image sizes are not equal");
         }
 
         let target_image: RgbaImage = ImageBuffer::from_raw(width, height, target.to_vec())
             .ok_or_else(|| anyhow!("failed to decode target image"))?;
-        
+
         let masked_image: RgbaImage = ImageBuffer::from_raw(width, height, mask.to_vec())
             .ok_or_else(|| anyhow!("failed to decode mask image"))?;
 
@@ -56,16 +50,21 @@ impl BGSTRenderer {
         Ok(output_bytes)
     }
 
-    pub fn get_raw_image_by_texture_handle(&self, tex_handle: &egui::TextureHandle) -> Result<Vec<u8>> {
+    pub fn get_raw_image_by_texture_handle(
+        &self,
+        tex_handle: &egui::TextureHandle,
+    ) -> Result<Vec<u8>> {
         let handle_id = tex_handle.id();
 
         if let Some(image_data) = self.raw_image_data.get(&handle_id) {
             Ok(image_data.clone())
         } else {
-            bail!("no raw image data found for texture handle id {:?}", handle_id);
+            bail!(
+                "no raw image data found for texture handle id {:?}",
+                handle_id
+            );
         }
     }
-
 
     pub fn new() -> Self {
         Self {
@@ -76,15 +75,16 @@ impl BGSTRenderer {
             tile_offset: egui::Vec2::splat(0.0),
             opacity: 128,
             zoom: 1.0,
-            
+
             ..Default::default()
         }
     }
 
     pub fn open_file(&mut self, ui: &egui::Ui) -> Result<()> {
         if let Some(path) = FileDialog::new()
-        .add_filter("BGST file", &["bgst3"])
-        .pick_file() {
+            .add_filter("BGST file", &["bgst3"])
+            .pick_file()
+        {
             let data = fs::read(path)?;
 
             if data.is_empty() || b"BGST" != &data[..4] {
@@ -94,27 +94,30 @@ impl BGSTRenderer {
             self.bgst_file = Some(BGSTFile::from_bytes(&data));
 
             // decode images
-            
+
             let bgst_file = self.bgst_file.as_ref().unwrap();
 
             self.decoded_image_handles.clear();
             self.masked_textures.clear();
 
-            let results: Vec<(egui::TextureHandle, Vec<u8>)> = bgst_file.compressed_images
+            let results: Vec<(egui::TextureHandle, Vec<u8>)> = bgst_file
+                .compressed_images
                 .par_iter()
                 .enumerate()
-                .map(|(index, encoded)|{
+                .map(|(index, encoded)| {
                     let tex_format = {
-                        let is_main = bgst_file.bgst_entries.iter()
-                            .any(|entry| entry.main_image_index > -1 && entry.main_image_index as usize == index);
+                        let is_main = bgst_file.bgst_entries.iter().any(|entry| {
+                            entry.main_image_index > -1 && entry.main_image_index as usize == index
+                        });
 
-                        let is_mask = bgst_file.bgst_entries.iter()
-                            .any(|entry| entry.mask_image_index > -1 && entry.mask_image_index as usize == index);
+                        let is_mask = bgst_file.bgst_entries.iter().any(|entry| {
+                            entry.mask_image_index > -1 && entry.mask_image_index as usize == index
+                        });
 
                         match (is_main, is_mask) {
-                            (true, _) => gctex::TextureFormat::CMPR,    // "main" image
-                            (_, true) => gctex::TextureFormat::I4,      // mask image
-                            _ => gctex::TextureFormat::CMPR // default
+                            (true, _) => gctex::TextureFormat::CMPR, // "main" image
+                            (_, true) => gctex::TextureFormat::I4,   // mask image
+                            _ => gctex::TextureFormat::CMPR,         // default
                         }
                     };
 
@@ -124,7 +127,7 @@ impl BGSTRenderer {
                         bgst_file.image_height,
                         tex_format,
                         &Vec::new(),
-                        0
+                        0,
                     );
 
                     let handle = self.get_texture_handle(
@@ -132,11 +135,12 @@ impl BGSTRenderer {
                         bgst_file.image_width as usize,
                         bgst_file.image_height as usize,
                         index,
-                        &decoded
+                        &decoded,
                     );
 
                     (handle, decoded)
-                }).collect();
+                })
+                .collect();
 
             for (handle, decoded) in results {
                 self.raw_image_data.insert(handle.id(), decoded);
@@ -145,19 +149,19 @@ impl BGSTRenderer {
 
             // determine which entries have masks
             let (masked, _): (Vec<BGSTEntry>, Vec<_>) = bgst_file
-            .bgst_entries
-            .iter()
-            .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
+                .bgst_entries
+                .iter()
+                .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
 
             let num_images = self.decoded_image_handles.len();
 
             // cache the masked entries
             let masked_results: Vec<((usize, usize), egui::TextureHandle)> = masked
                 .into_par_iter()
-                .filter_map(|entry|{
+                .filter_map(|entry| {
                     let main_index = entry.main_image_index as usize;
                     let mask_index = entry.mask_image_index as usize;
-                    
+
                     if main_index >= num_images || mask_index >= num_images {
                         // they're invalid
                         return None;
@@ -168,12 +172,12 @@ impl BGSTRenderer {
 
                     let main_image = match self.get_raw_image_by_texture_handle(main_handle) {
                         Ok(img) => img,
-                        Err(_) => return None
+                        Err(_) => return None,
                     };
 
                     let mask_image = match self.get_raw_image_by_texture_handle(mask_handle) {
                         Ok(img) => img,
-                        Err(_) => return None
+                        Err(_) => return None,
                     };
 
                     // apply masks
@@ -181,27 +185,32 @@ impl BGSTRenderer {
                         &main_image,
                         &mask_image,
                         bgst_file.image_width,
-                        bgst_file.image_height
+                        bgst_file.image_height,
                     ) {
                         Ok(img) => img,
-                        Err(_) => return None
+                        Err(_) => return None,
                     };
 
                     // load textures
                     let masked_texture = ui.ctx().load_texture(
                         format!("be_masked_tex_{}-{}", main_index, mask_index),
                         egui::ColorImage::from_rgba_unmultiplied(
-                            [bgst_file.image_width as usize, bgst_file.image_height as usize],
-                            &masked_image
+                            [
+                                bgst_file.image_width as usize,
+                                bgst_file.image_height as usize,
+                            ],
+                            &masked_image,
                         ),
-                        TextureOptions::LINEAR
+                        TextureOptions::LINEAR,
                     );
 
                     Some(((main_index, mask_index), masked_texture))
-                }).collect();
-            
+                })
+                .collect();
+
             for ((main_index, mask_index), masked_texture) in masked_results {
-                self.masked_textures.insert((main_index, mask_index), masked_texture);
+                self.masked_textures
+                    .insert((main_index, mask_index), masked_texture);
             }
         }
 
@@ -209,34 +218,30 @@ impl BGSTRenderer {
     }
 
     fn get_texture_handle(
-        &self, 
+        &self,
         ui: &egui::Ui,
         width: usize,
         height: usize,
         index: usize,
-        decoded: &[u8]
+        decoded: &[u8],
     ) -> egui::TextureHandle {
-        let texture = egui::ColorImage::from_rgba_unmultiplied(
-            [width, height],
-            decoded
-        );
+        let texture = egui::ColorImage::from_rgba_unmultiplied([width, height], decoded);
 
-        ui.ctx().load_texture(format!("le_bgst_image-{}", index), texture, egui::TextureOptions::LINEAR)       
+        ui.ctx().load_texture(
+            format!("le_bgst_image-{}", index),
+            texture,
+            egui::TextureOptions::LINEAR,
+        )
     }
 
     /// Rendering function for the level editor
-    pub fn le_render(
-        &self,
-        ui: &mut egui::Ui,
-        rect: egui::Rect,
-        position: egui::Vec2,
-    ) {
+    pub fn le_render(&self, ui: &mut egui::Ui, rect: egui::Rect, position: egui::Vec2) {
         if self.bgst_file.is_none() {
             return;
         }
 
         let bgst_file = self.bgst_file.as_ref().unwrap();
-        
+
         // collect entries based on whether or not
         // a mask is applied
 
@@ -245,14 +250,15 @@ impl BGSTRenderer {
             .iter()
             .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
 
-
         // sort both vectors by entry layer
         masked.sort_by(|a, b| a.layer.cmp(&b.layer));
         unmasked.sort_by(|a, b| a.layer.cmp(&b.layer));
 
         let grid_origin = egui::Vec2::new(
             position.x - self.tile_offset.x,
-            position.y - (self.tile_size * self.zoom * bgst_file.grid_height as f32) - self.tile_offset.y
+            position.y
+                - (self.tile_size * self.zoom * bgst_file.grid_height as f32)
+                - self.tile_offset.y,
         );
 
         // println!("BGSTRenderer::le_render - grid_origin: {}", grid_origin);
@@ -261,12 +267,11 @@ impl BGSTRenderer {
         for entry in unmasked.iter() {
             self.render_unmasked_entry(ui, rect, entry, grid_origin);
         }
-        
+
         // render masked
         for entry in masked.iter() {
             self.render_masked_entry(ui, rect, entry, grid_origin);
         }
-
     }
 
     pub fn render_unmasked_entry(
@@ -274,7 +279,7 @@ impl BGSTRenderer {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         entry: &BGSTEntry,
-        origin: egui::Vec2
+        origin: egui::Vec2,
     ) {
         let num_handles = self.decoded_image_handles.len();
 
@@ -285,18 +290,12 @@ impl BGSTRenderer {
         }
 
         let tex_handle = &self.decoded_image_handles[index as usize];
-        let grid_pos = egui::Vec2::new(
-            entry.grid_x_position as f32,
-            entry.grid_y_position as f32
-        );
+        let grid_pos = egui::Vec2::new(entry.grid_x_position as f32, entry.grid_y_position as f32);
 
         let image_size_vec = self.tile_size * self.zoom * self.tile_scale;
         let tile_pos = origin + (grid_pos * image_size_vec);
 
-        let tile_rect = egui::Rect::from_min_size(
-            tile_pos.to_pos2(),
-            image_size_vec
-        );
+        let tile_rect = egui::Rect::from_min_size(tile_pos.to_pos2(), image_size_vec);
 
         let painter = ui.painter_at(rect);
 
@@ -304,7 +303,7 @@ impl BGSTRenderer {
             tex_handle.id(),
             tile_rect,
             egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity)
+            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity),
         );
     }
 
@@ -313,7 +312,7 @@ impl BGSTRenderer {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         entry: &BGSTEntry,
-        origin: egui::Vec2
+        origin: egui::Vec2,
     ) {
         let painter = ui.painter_at(rect);
 
@@ -321,26 +320,20 @@ impl BGSTRenderer {
         let mask_index = entry.mask_image_index as usize;
 
         let masked_texture = self.masked_textures.get(&(main_index, mask_index));
-        let grid_pos = egui::Vec2::new(
-            entry.grid_x_position as f32,
-            entry.grid_y_position as f32,
-        );
+        let grid_pos = egui::Vec2::new(entry.grid_x_position as f32, entry.grid_y_position as f32);
 
         let image_size_vec = self.tile_size * self.zoom * self.tile_scale;
 
         let tile_pos = origin + (grid_pos * image_size_vec);
-            
-        let tile_rect = egui::Rect::from_min_size(
-            tile_pos.to_pos2(),
-            image_size_vec
-        );
+
+        let tile_rect = egui::Rect::from_min_size(tile_pos.to_pos2(), image_size_vec);
 
         if let Some(tex) = masked_texture {
             painter.image(
                 tex.id(),
                 tile_rect,
                 egui::Rect::from_min_size(egui::Pos2::ZERO, egui::Vec2::splat(1.0)),
-                egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity)
+                egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, self.opacity),
             );
         }
     }

@@ -1,4 +1,4 @@
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{BigEndian, ByteOrder};
 use egui::{Pos2, Vec2};
 // use encoding_rs::SHIFT_JIS;
 
@@ -15,7 +15,7 @@ use egui::{Pos2, Vec2};
 #[derive(Default, Clone, Copy)]
 pub struct Point2D {
     pub x: f32,
-    pub y: f32
+    pub y: f32,
 }
 
 impl Point2D {
@@ -34,28 +34,25 @@ impl Point2D {
     }
 
     pub fn from_pos2(pos: Pos2) -> Self {
-        Self {
-            x: pos.x,
-            y: pos.y
-        }
+        Self { x: pos.x, y: pos.y }
     }
 
     pub fn from_vec2(pos: Vec2) -> Self {
-        Self {
-            x: pos.x,
-            y: pos.y
-        }
+        Self { x: pos.x, y: pos.y }
     }
 
     pub fn get_vec2(&self) -> Vec2 {
-        Vec2 { x: self.x, y: self.y }
+        Vec2 {
+            x: self.x,
+            y: self.y,
+        }
     }
 
     pub fn get_point3d(&self) -> Point3D {
         Point3D {
             x: self.x,
             y: self.y,
-            z: 0.0
+            z: 0.0,
         }
     }
 }
@@ -64,11 +61,11 @@ impl Point2D {
 pub struct Point3D {
     pub x: f32,
     pub y: f32,
-    pub z: f32
+    pub z: f32,
 }
 
 impl Point3D {
-    pub fn from_be_bytes(input: &[u8]) -> Self {    
+    pub fn from_be_bytes(input: &[u8]) -> Self {
         let x = BigEndian::read_f32(&input[..4]);
         let y = BigEndian::read_f32(&input[4..8]);
         let z = BigEndian::read_f32(&input[8..0xC]);
@@ -87,7 +84,7 @@ impl Point3D {
     pub fn get_point2d(&self) -> Point2D {
         Point2D {
             x: self.x,
-            y: self.y
+            y: self.y,
         }
     }
 }
@@ -124,7 +121,7 @@ impl NameMap {
         input: &[u8],
         count: usize,
         size: usize,
-        start_offset: usize // offset to the "footer"
+        start_offset: usize, // offset to the "footer"
     ) {
         for i in 0..count {
             let start = start_offset + (i * size);
@@ -150,7 +147,7 @@ impl HexMap {
         input: &[u8],
         count: usize,
         size: usize,
-        start_offset: usize // offset to the "footer"
+        start_offset: usize, // offset to the "footer"
     ) {
         for i in 0..count {
             let start = start_offset + (i * size);
@@ -164,21 +161,22 @@ impl HexMap {
                 .unwrap_or(size);
 
             let name = &name_bytes[..null_terminator_pos];
-            self.hex_names.push(hex::encode(name).to_string().to_uppercase());
+            self.hex_names
+                .push(hex::encode(name).to_string().to_uppercase());
         }
     }
 }
 
 pub struct Camera {
     pub position: egui::Vec2,
-    pub zoom: f32
+    pub zoom: f32,
 }
 
 impl Default for Camera {
     fn default() -> Self {
         Self {
             position: egui::Vec2::ZERO,
-            zoom: 1.0
+            zoom: 1.0,
         }
     }
 }
@@ -188,7 +186,7 @@ impl Camera {
         let zoom_sensitivity = 0.1;
         let zoom_min = 0.5;
         let zoom_max = 30.0;
-    
+
         // zoom handling
         if canvas_response.hovered() {
             let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
@@ -197,7 +195,7 @@ impl Camera {
                 self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max);
             }
         }
-    
+
         // pan reset handling
 
         if canvas_response.dragged_by(egui::PointerButton::Primary)
@@ -214,9 +212,8 @@ impl Camera {
     pub fn to_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
         egui::Vec2 {
             x: (pos.x - self.position.x) * self.zoom,
-            y: (-pos.y - self.position.y) * self.zoom
+            y: (-pos.y - self.position.y) * self.zoom,
         }
-
     }
 
     // pub fn from_camera(&self) -> egui::Vec2 {
@@ -229,7 +226,7 @@ impl Camera {
     pub fn convert_from_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
         egui::Vec2 {
             x: (pos.x / self.zoom) + self.position.x,
-            y: (-pos.y / self.zoom) - self.position.y
+            y: (-pos.y / self.zoom) - self.position.y,
         }
     }
 

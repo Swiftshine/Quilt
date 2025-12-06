@@ -1,5 +1,5 @@
 use crate::quilt::common::*;
-use byteorder::{ByteOrder, BigEndian};
+use byteorder::{BigEndian, ByteOrder};
 
 const HEADER_SIZE: usize = 0x58;
 const WALL_SIZE: usize = 0x20;
@@ -19,7 +19,7 @@ pub struct Wall {
     pub normalized_vector: Point2D, // this field is a bit odd in that x and y are swapped
     pub collision_type: String,
 
-    pub is_selected: bool
+    pub is_selected: bool,
 }
 
 #[derive(Default)]
@@ -30,7 +30,7 @@ pub struct LabeledWall {
     pub collision_type: String,
     pub label: String,
 
-    pub is_selected: bool
+    pub is_selected: bool,
 }
 
 #[derive(Default)]
@@ -48,7 +48,7 @@ pub struct CommonGimmickParams {
     pub common_string_param: String,
     pub int_params: [i32; 5],
     pub float_params: [f32; 5],
-    pub string_params: [String; 5]
+    pub string_params: [String; 5],
 }
 
 #[derive(Default)]
@@ -57,7 +57,7 @@ pub struct CommonGimmick {
     pub position: Point3D,
     pub params: CommonGimmickParams,
 
-    pub is_selected: bool
+    pub is_selected: bool,
 }
 
 #[derive(Default)]
@@ -67,7 +67,7 @@ pub struct Gimmick {
     pub position: Point3D,
     pub params: Params,
 
-    pub is_selected: bool
+    pub is_selected: bool,
 }
 
 #[derive(Default)]
@@ -77,7 +77,7 @@ pub struct Path {
     pub params: Params,
     pub points: Vec<Point2D>,
 
-    pub is_selected: bool
+    pub is_selected: bool,
 }
 
 #[derive(Default)]
@@ -90,7 +90,6 @@ pub struct Zone {
 
     pub is_selected: bool,
 }
-
 
 #[derive(Default)]
 pub struct CourseInfo {
@@ -127,7 +126,7 @@ impl Mapdata {
 
         let bounds_min = Point2D::from_be_bytes(&input[4..0xC]);
         let bounds_max = Point2D::from_be_bytes(&input[0xC..0x14]);
-        
+
         let mut mapdata = Mapdata {
             _version: version,
             bounds_min,
@@ -141,38 +140,29 @@ impl Mapdata {
         let num_wall_labels_offs = BigEndian::read_u32(&input[0x54..0x58]) as usize;
 
         let count = BigEndian::read_u32(
-            &input[num_common_gimmick_names_offs..num_common_gimmick_names_offs + 4]
+            &input[num_common_gimmick_names_offs..num_common_gimmick_names_offs + 4],
         ) as usize;
-        
+
         mapdata.common_gimmick_names.read_names(
             input,
             count,
             0x20,
-            
-            4 + num_common_gimmick_names_offs
+            4 + num_common_gimmick_names_offs,
         );
 
-        let count = BigEndian::read_u32(
-            &input[num_colbin_types_offs..num_colbin_types_offs + 4]
-        ) as usize;
+        let count =
+            BigEndian::read_u32(&input[num_colbin_types_offs..num_colbin_types_offs + 4]) as usize;
 
-        mapdata.colbin_types.read_names(
-            input,
-            count,
-            0x20,
-            4 + num_colbin_types_offs
-        );
+        mapdata
+            .colbin_types
+            .read_names(input, count, 0x20, 4 + num_colbin_types_offs);
 
-        let count = BigEndian::read_u32(
-            &input[num_wall_labels_offs..num_wall_labels_offs + 4]
-        ) as usize;
+        let count =
+            BigEndian::read_u32(&input[num_wall_labels_offs..num_wall_labels_offs + 4]) as usize;
 
-        mapdata.wall_labels.read_names(
-            input,
-            count,
-            0x20,
-            4 + num_wall_labels_offs
-        );
+        mapdata
+            .wall_labels
+            .read_names(input, count, 0x20, 4 + num_wall_labels_offs);
 
         // entities
 
@@ -184,18 +174,17 @@ impl Mapdata {
         for i in 0..num_walls {
             let start = wall_offs + (i * WALL_SIZE);
             let end = start + WALL_SIZE;
-            
-            mapdata.walls.push(Wall::from_bytes(
-                &input[start..end],
-                &mapdata.colbin_types
-            ));
+
+            mapdata
+                .walls
+                .push(Wall::from_bytes(&input[start..end], &mapdata.colbin_types));
         }
-        
+
         // labeled walls
-        
+
         let num_labeled_walls = BigEndian::read_u32(&input[0x1C..0x20]) as usize;
         let labeled_wall_offs = BigEndian::read_u32(&input[0x20..0x24]) as usize;
-        
+
         for i in 0..num_labeled_walls {
             let start = labeled_wall_offs + (i * LABELED_WALL_SIZE);
             let end = start + LABELED_WALL_SIZE;
@@ -203,7 +192,7 @@ impl Mapdata {
             mapdata.labeled_walls.push(LabeledWall::from_bytes(
                 &input[start..end],
                 &mapdata.colbin_types,
-                &mapdata.wall_labels
+                &mapdata.wall_labels,
             ));
         }
 
@@ -216,10 +205,9 @@ impl Mapdata {
             let start = common_gimmick_offs + (i * COMMON_GIMMICK_SIZE);
             let end = start + COMMON_GIMMICK_SIZE;
 
-
             mapdata.common_gimmicks.push(CommonGimmick::from_bytes(
                 &input[start..end],
-                &mapdata.common_gimmick_names
+                &mapdata.common_gimmick_names,
             ));
         }
 
@@ -232,13 +220,13 @@ impl Mapdata {
             let start = gimmick_offs + (i * GIMMICK_SIZE);
             let end = start + GIMMICK_SIZE;
 
-            mapdata.gimmicks.push(Gimmick::from_bytes(
-                &input[start..end]
-            ));
+            mapdata
+                .gimmicks
+                .push(Gimmick::from_bytes(&input[start..end]));
         }
 
         // paths
-        
+
         let num_paths = BigEndian::read_u32(&input[0x34..0x38]) as usize;
         let path_offs = BigEndian::read_u32(&input[0x38..0x3C]) as usize;
 
@@ -249,9 +237,7 @@ impl Mapdata {
             let end = start + BASE_PATH_SIZE + (num_points * 8);
             cur_path_offs += num_points * 8;
 
-            mapdata.paths.push(Path::from_bytes(
-                &input[start..end]
-            ));
+            mapdata.paths.push(Path::from_bytes(&input[start..end]));
         }
 
         // zones
@@ -263,9 +249,7 @@ impl Mapdata {
             let start = zone_offs + (i * ZONE_SIZE);
             let end = start + ZONE_SIZE;
 
-            mapdata.zones.push(Zone::from_bytes(
-                &input[start..end]
-            ));
+            mapdata.zones.push(Zone::from_bytes(&input[start..end]));
         }
 
         // course info
@@ -277,9 +261,9 @@ impl Mapdata {
             let start = course_info_offs + (i * COURSE_INFO_SIZE);
             let end = start + COURSE_INFO_SIZE;
 
-            mapdata.course_infos.push(CourseInfo::from_bytes(
-                &input[start..end]
-            ));
+            mapdata
+                .course_infos
+                .push(CourseInfo::from_bytes(&input[start..end]));
         }
 
         mapdata
@@ -305,11 +289,13 @@ impl Mapdata {
             }
         }
 
-        // calculate offsets 
+        // calculate offsets
         let wall_offset = HEADER_SIZE;
         let labeled_wall_offset = wall_offset + (WALL_SIZE * self.walls.len());
-        let common_gimmick_offset = labeled_wall_offset + (LABELED_WALL_SIZE * self.labeled_walls.len());
-        let gimmick_offset = common_gimmick_offset + (COMMON_GIMMICK_SIZE * self.common_gimmicks.len());
+        let common_gimmick_offset =
+            labeled_wall_offset + (LABELED_WALL_SIZE * self.labeled_walls.len());
+        let gimmick_offset =
+            common_gimmick_offset + (COMMON_GIMMICK_SIZE * self.common_gimmicks.len());
         let path_offset = gimmick_offset + (GIMMICK_SIZE * self.gimmicks.len());
 
         // paths have a variable length
@@ -320,11 +306,13 @@ impl Mapdata {
 
         let zone_offset = path_offset + path_chunk_size;
         let course_info_offset = zone_offset + (ZONE_SIZE * self.zones.len());
-        let common_gimmick_name_offset = course_info_offset + (COURSE_INFO_SIZE * self.course_infos.len());
+        let common_gimmick_name_offset =
+            course_info_offset + (COURSE_INFO_SIZE * self.course_infos.len());
 
-        let colbin_type_offset = common_gimmick_name_offset + 4 + (0x20 * self.common_gimmick_names.hex_names.len());
-        let labeled_wall_labels_offset = colbin_type_offset + 4 + (0x20 * self.colbin_types.names.len());
-        
+        let colbin_type_offset =
+            common_gimmick_name_offset + 4 + (0x20 * self.common_gimmick_names.hex_names.len());
+        let labeled_wall_labels_offset =
+            colbin_type_offset + 4 + (0x20 * self.colbin_types.names.len());
 
         // data writing
         let mut out = Vec::<u8>::new();
@@ -387,7 +375,7 @@ impl Mapdata {
         for info in self.course_infos.iter() {
             out.extend(info.to_bytes());
         }
-        
+
         // common gimmick names
         out.extend((self.common_gimmick_names.hex_names.len() as u32).to_be_bytes());
         for name in self.common_gimmick_names.hex_names.iter() {
@@ -405,8 +393,7 @@ impl Mapdata {
         for col_type in self.colbin_types.names.iter() {
             out.extend(string_to_buffer(col_type, 0x20));
         }
-        
-        
+
         // labeled wall labels
         out.extend((self.wall_labels.names.len() as u32).to_be_bytes());
         for label in self.wall_labels.names.iter() {
@@ -415,11 +402,10 @@ impl Mapdata {
 
         // alignment
         out.resize(out.len().next_multiple_of(0x20), 0);
-        
+
         out
     }
 }
-
 
 impl Wall {
     fn from_bytes(input: &[u8], name_map: &NameMap) -> Self {
@@ -462,12 +448,12 @@ impl Wall {
         let direction = (self.end.x - self.start.x, self.end.y - self.start.y);
         let magnitude = f32::sqrt(direction.0.powf(2.0) + direction.1.powf(2.0));
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
-        
+
         self.normalized_vector = Point2D {
             x: -normalized.1, // this has to be inverted,
             // because otherwise, the player's NURBS animation
             // (namely, the player's feet) would face the opposite direction
-            y: normalized.0
+            y: normalized.0,
         };
     }
 }
@@ -496,7 +482,7 @@ impl LabeledWall {
         &self,
         index: usize,
         collision_type_map: &NameMap,
-        label_map: &NameMap
+        label_map: &NameMap,
     ) -> Vec<u8> {
         let mut out = Vec::new();
 
@@ -529,12 +515,12 @@ impl LabeledWall {
         let direction = (self.end.x - self.start.x, self.end.y - self.start.y);
         let magnitude = f32::sqrt(direction.0.powf(2.0) + direction.1.powf(2.0));
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
-        
+
         self.normalized_vector = Point2D {
             x: -normalized.1, // this has to be inverted,
             // because otherwise, the player's NURBS animation
             // (namely, the player's feet) would face the opposite direction
-            y: normalized.0
+            y: normalized.0,
         };
     }
 }
@@ -603,7 +589,7 @@ impl CommonGimmickParams {
             let end = start + 4;
             params.common_float_params[i] = BigEndian::read_f32(&input[start..end]);
         }
-        
+
         params.common_string_param = string_from_buffer(&input[0x10..0x18]);
 
         for i in 0..5 {
@@ -634,7 +620,6 @@ impl CommonGimmickParams {
             out.extend(int.to_be_bytes());
         }
 
-
         for float in &self.common_float_params {
             out.extend(float.to_be_bytes());
         }
@@ -648,7 +633,6 @@ impl CommonGimmickParams {
         for int in &self.int_params {
             out.extend(int.to_be_bytes());
         }
-
 
         for float in &self.float_params {
             out.extend(float.to_be_bytes());
@@ -704,7 +688,6 @@ impl Gimmick {
         let position = Point3D::from_be_bytes(&input[0x40..0x4C]);
         let params = Params::from_bytes(&input[0x4C..]);
 
-        
         let mut gmk = Gimmick {
             name,
             position,
@@ -713,7 +696,7 @@ impl Gimmick {
         };
 
         gmk.unk_30.copy_from_slice(&input[0x30..0x40]);
- 
+
         gmk
     }
 
@@ -722,7 +705,6 @@ impl Gimmick {
 
         out.extend(self.name.as_bytes());
         out.extend(vec![0; 0x30 - self.name.len()]);
-
 
         out.extend_from_slice(&self.unk_30);
 
@@ -740,22 +722,19 @@ impl Path {
         let path_type = string_from_buffer(&input[0x20..0x40]);
         let params = Params::from_bytes(&input[0x40..0x118]);
 
-        
         let mut path = Path {
             name,
             path_type,
             params,
             ..Default::default()
         };
-        
+
         let num_points = BigEndian::read_u32(&input[0x118..0x11C]) as usize;
 
         for i in 0..num_points {
             let start = 0x11C + (i * 8);
             let end = start + 8;
-            path.points.push(Point2D::from_be_bytes(
-                &input[start..end]
-            ));
+            path.points.push(Point2D::from_be_bytes(&input[start..end]));
         }
 
         path
@@ -781,7 +760,6 @@ impl Path {
         out
     }
 }
-
 
 impl Zone {
     fn from_bytes(input: &[u8]) -> Self {
@@ -826,7 +804,7 @@ impl CourseInfo {
         let unk_20 = string_from_buffer(&input[0x20..0x40]);
         let params = Params::from_bytes(&input[0x40..0x118]);
         let position = Point3D::from_be_bytes(&input[0x118..]);
-        
+
         CourseInfo {
             name,
             unk_20,

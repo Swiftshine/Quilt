@@ -38,7 +38,7 @@
 //                 // }
 //             });
 //         });
-        
+
 //         egui::CentralPanel::default()
 //         .show(ui.ctx(), |ui|{
 //             if self.bgst_renderer.bgst_file.is_some() {

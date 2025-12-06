@@ -1,40 +1,33 @@
 use super::LevelEditor;
+use crate::quilt::game::{endata::*, mapdata::*};
+use anyhow::{Result, bail};
+use gfarch::gfarch;
+use rfd::FileDialog;
 use std::fs;
 use std::path::PathBuf;
-use anyhow::{bail, Result};
-use rfd::FileDialog;
-use gfarch::gfarch;
-use crate::quilt::game::{
-    endata::*,
-    mapdata::*
-};
 
 impl LevelEditor {
-    
     pub fn update_level_data(&mut self) {
         self.current_endata = if let Some(enbin_index) = self.selected_enbin_index {
-            Endata::from_data(
-                &self.archive_contents[enbin_index].1
-            )
+            Endata::from_data(&self.archive_contents[enbin_index].1)
         } else {
             Default::default()
         };
 
         self.current_mapdata = if let Some(mapbin_index) = self.selected_mapbin_index {
-            Mapdata::from_data(
-                &self.archive_contents[mapbin_index].1
-            )
+            Mapdata::from_data(&self.archive_contents[mapbin_index].1)
         } else {
             Default::default()
         };
-        
+
         self.selected_object_indices.clear();
     }
 
     pub fn open_file(&mut self, ctx: &egui::Context) -> Result<()> {
         if let Some(path) = FileDialog::new()
-        .add_filter("Level archive", &["gfa"])
-        .pick_file() {
+            .add_filter("Level archive", &["gfa"])
+            .pick_file()
+        {
             self.file_path = Some(path);
             let path = self.file_path.as_ref().unwrap();
             let data = fs::read(path)?;
@@ -44,14 +37,11 @@ impl LevelEditor {
                 bail!("archive is invalid");
             }
 
-
-            self.selected_enbin_index = 
-            if self.archive_contents[0].0.contains(".enbin") {
+            self.selected_enbin_index = if self.archive_contents[0].0.contains(".enbin") {
                 Some(0)
             } else {
                 None
             };
-
 
             self.selected_mapbin_index = if self.archive_contents.len() > 1
                 && self.archive_contents[1].0.contains(".mapbin")
@@ -66,7 +56,7 @@ impl LevelEditor {
             self.update_level_data();
 
             self.file_open = true;
-            
+
             // images
             self.object_textures.clear();
 
@@ -82,7 +72,7 @@ impl LevelEditor {
     pub fn open_folder(&mut self, ctx: &egui::Context) -> Result<()> {
         if let Some(path) = FileDialog::new().pick_folder() {
             self.file_path = Some(path.clone());
-            
+
             if let Ok(entries) = fs::read_dir(&path) {
                 let mut files = Vec::new();
 
@@ -103,14 +93,12 @@ impl LevelEditor {
                 }
 
                 self.archive_contents = files;
-                
-                self.selected_enbin_index = 
-                if self.archive_contents[0].0.contains(".enbin") {
+
+                self.selected_enbin_index = if self.archive_contents[0].0.contains(".enbin") {
                     Some(0)
                 } else {
                     None
                 };
-
 
                 self.selected_mapbin_index = if self.archive_contents.len() > 1
                     && self.archive_contents[1].0.contains(".mapbin")
@@ -119,7 +107,6 @@ impl LevelEditor {
                 } else {
                     None
                 };
-
 
                 self.selected_file_index = 0;
                 self.update_level_data();
@@ -136,8 +123,9 @@ impl LevelEditor {
     pub fn save_file(&mut self, save_as: bool) -> Result<()> {
         if save_as {
             match rfd::FileDialog::new()
-            .add_filter("Level archive", &["gfa"])
-            .save_file() {
+                .add_filter("Level archive", &["gfa"])
+                .save_file()
+            {
                 Some(p) => {
                     self.file_path = Some(p);
                 }
@@ -162,7 +150,7 @@ impl LevelEditor {
             &self.archive_contents,
             gfarch::Version::V3,
             gfarch::CompressionType::BPE,
-            gfarch::GFCPOffset::Default
+            gfarch::GFCPOffset::Default,
         );
 
         fs::write(self.file_path.as_ref().unwrap(), archive)?;
@@ -171,8 +159,7 @@ impl LevelEditor {
 
     pub fn save_folder(&mut self, save_as: bool) -> Result<()> {
         if save_as {
-            match rfd::FileDialog::new()
-            .pick_folder() {
+            match rfd::FileDialog::new().pick_folder() {
                 Some(p) => {
                     self.file_path = Some(p);
                 }
@@ -184,15 +171,12 @@ impl LevelEditor {
         }
 
         let stem = match self.file_path.as_ref().unwrap().file_stem() {
-            Some(p) => {
-                PathBuf::from(p.to_str().unwrap_or_default())
-            }
-            
+            Some(p) => PathBuf::from(p.to_str().unwrap_or_default()),
+
             None => {
                 bail!("Couldn't get file stem");
             }
         };
-
 
         // enbin
         if let Some(index) = self.selected_enbin_index {
@@ -205,12 +189,19 @@ impl LevelEditor {
         }
 
         for file in self.archive_contents.iter() {
-            let filepath =
-            self.file_path.as_ref().unwrap().parent().unwrap().to_str().unwrap().to_string() +
-            "/" +
-            stem.to_str().unwrap() +
-            "/" +
-            &file.0;
+            let filepath = self
+                .file_path
+                .as_ref()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string()
+                + "/"
+                + stem.to_str().unwrap()
+                + "/"
+                + &file.0;
 
             let _ = fs::write(filepath, &file.1);
         }
@@ -222,8 +213,10 @@ impl LevelEditor {
         self.file_open = true;
         self.file_path = None;
         self.archive_contents.clear();
-        self.archive_contents.push((String::from("1.enbin"), Endata::default().to_bytes()));
-        self.archive_contents.push((String::from("1.mapbin"), Mapdata::default().get_bytes()));
+        self.archive_contents
+            .push((String::from("1.enbin"), Endata::default().to_bytes()));
+        self.archive_contents
+            .push((String::from("1.mapbin"), Mapdata::default().get_bytes()));
         self.update_level_data();
     }
 }

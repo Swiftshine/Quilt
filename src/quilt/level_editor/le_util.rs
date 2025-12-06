@@ -1,33 +1,34 @@
-use super::{
-    EditMode, LevelEditor, ObjectIndex
-};
+use super::{EditMode, LevelEditor, ObjectIndex};
 
-use std::{env, fs};
-use anyhow::{bail, Result, Context};
+use anyhow::{Context, Result, bail};
 use reqwest::blocking::Client;
+use std::{env, fs};
 
 impl LevelEditor {
     pub fn edit_mode_to_string(edit_mode: EditMode) -> String {
         match edit_mode {
             EditMode::Hide => "Hide",
             EditMode::View => "View",
-            EditMode::Edit => "Edit"
-        }.to_string()
+            EditMode::Edit => "Edit",
+        }
+        .to_string()
     }
 
     pub fn add_common_gimmick_texture(&mut self, ctx: &egui::Context, hex: &str) {
         let key = format!("common_gimmick-{}", hex);
-        if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
-            if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex) {
-                let texture = ctx.load_texture(
-                    &key, image_data, egui::TextureOptions::LINEAR
-                );
-                e.insert(texture);
-            }
+        if let std::collections::hash_map::Entry::Vacant(e) =
+            self.object_textures.entry(key.clone())
+            && let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", hex)
+        {
+            let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
+            e.insert(texture);
         }
     }
 
-    pub fn load_image_from_tex_folder(folder_name: &str, file_name: &str) -> Result<egui::ColorImage> {
+    pub fn load_image_from_tex_folder(
+        folder_name: &str,
+        file_name: &str,
+    ) -> Result<egui::ColorImage> {
         let path = format!("quilt_res/tex/{folder_name}/{file_name}.png");
         let image = image::open(&path)?.to_rgba8();
 
@@ -38,10 +39,9 @@ impl LevelEditor {
             .collect();
 
         Ok(egui::ColorImage {
-                size: [width as usize, height as usize],
-                pixels
-            }
-        )
+            size: [width as usize, height as usize],
+            pixels,
+        })
     }
 
     pub fn load_object_textures(&mut self, ctx: &egui::Context) {
@@ -49,26 +49,24 @@ impl LevelEditor {
 
         for gmk in self.current_mapdata.gimmicks.iter() {
             let key = format!("gimmick-{}", &gmk.name);
-            if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
-                if let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name) {
-                    let texture = ctx.load_texture(
-                        &key, image_data, egui::TextureOptions::LINEAR
-                    );
+            if let std::collections::hash_map::Entry::Vacant(e) =
+                self.object_textures.entry(key.clone())
+                && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name)
+            {
+                let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
 
-                    e.insert(texture);
-                }
+                e.insert(texture);
             }
         }
 
         for gmk in self.current_mapdata.common_gimmicks.iter() {
             let key = format!("common_gimmick-{}", &gmk.hex);
-            if let std::collections::hash_map::Entry::Vacant(e) = self.object_textures.entry(key.clone()) {
-                if let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", &gmk.hex) {
-                    let texture = ctx.load_texture(
-                        &key, image_data, egui::TextureOptions::LINEAR
-                    );
-                    e.insert(texture);
-                }
+            if let std::collections::hash_map::Entry::Vacant(e) =
+                self.object_textures.entry(key.clone())
+                && let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", &gmk.hex)
+            {
+                let texture = ctx.load_texture(&key, image_data, egui::TextureOptions::LINEAR);
+                e.insert(texture);
             }
         }
     }
@@ -82,8 +80,8 @@ impl LevelEditor {
 
                 ObjectIndex::LabeledWall(index) => {
                     self.current_mapdata.labeled_walls[*index].is_selected = false;
-                }       
-                         
+                }
+
                 ObjectIndex::CommonGimmick(index) => {
                     self.current_mapdata.common_gimmicks[*index].is_selected = false;
                 }
@@ -95,7 +93,7 @@ impl LevelEditor {
                 ObjectIndex::Path(index) => {
                     self.current_mapdata.paths[*index].is_selected = false;
                 }
-                
+
                 ObjectIndex::Zone(index) => {
                     self.current_mapdata.zones[*index].is_selected = false;
                 }
@@ -126,7 +124,9 @@ impl LevelEditor {
         let content = response.text()?;
 
         let current_exe = env::current_exe()?;
-        let current_dir = current_exe.parent().context("failed to get parent directory")?;
+        let current_dir = current_exe
+            .parent()
+            .context("failed to get parent directory")?;
 
         let quilt_res_path = current_dir.join("quilt_res");
 
@@ -134,7 +134,7 @@ impl LevelEditor {
             if !b {
                 fs::create_dir(&quilt_res_path)?;
             }
-            
+
             fs::write(quilt_res_path.join("objectdata.json"), &content)?;
             self.object_data_json = serde_json::from_str(&content).expect("failed to parse json");
         } else {
@@ -144,7 +144,10 @@ impl LevelEditor {
         Ok(())
     }
 
-    pub fn get_translated_common_gimmick_name(json: &serde_json::Value, hex: &str) -> Option<String> {
+    pub fn get_translated_common_gimmick_name(
+        json: &serde_json::Value,
+        hex: &str,
+    ) -> Option<String> {
         let common = json.get("common_gimmicks")?;
         let data = common.get(hex)?;
         let translation = data.get("name").and_then(|s| s.as_str())?;
@@ -153,7 +156,9 @@ impl LevelEditor {
 
     pub fn refresh_object_data(&mut self) -> Result<()> {
         let current_exe = env::current_exe()?;
-        let current_dir = current_exe.parent().context("failed to get parent directory")?;
+        let current_dir = current_exe
+            .parent()
+            .context("failed to get parent directory")?;
         let file_path = current_dir.join("quilt_res").join("objectdata.json");
         if let Ok(s) = fs::read_to_string(file_path) {
             self.object_data_json = serde_json::from_str(&s).expect("failed to read json");
