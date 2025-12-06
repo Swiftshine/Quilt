@@ -65,14 +65,6 @@ impl LevelEditor {
                 self.current_mapdata.paths.retain(|path| path.name != "NONE");
                 self.current_mapdata.zones.retain(|zone| zone.name != "NONE");
             }
-
-            ui.collapsing("Level information", |ui|{
-                ui.label("Mapdata").highlight();
-                ui.horizontal(|ui|{
-                    ui.label("Unknown @ 0x0");
-                    ui.add(egui::DragValue::new(&mut self.current_mapdata.unk_0).range(f32::MIN..=f32::MAX));
-                })
-            });
         });
 
         // canvas options

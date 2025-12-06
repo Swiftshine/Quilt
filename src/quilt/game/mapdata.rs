@@ -104,7 +104,7 @@ pub struct CourseInfo {
 
 #[derive(Default)]
 pub struct Mapdata {
-    pub unk_0: f32,
+    pub _version: f32,
     pub bounds_min: Point2D,
     pub bounds_max: Point2D,
 
@@ -123,13 +123,13 @@ pub struct Mapdata {
 
 impl Mapdata {
     pub fn from_data(input: &[u8]) -> Self {
-        let unk_0 = BigEndian::read_f32(&input[..4]);
+        let version = BigEndian::read_f32(&input[..4]);
 
         let bounds_min = Point2D::from_be_bytes(&input[4..0xC]);
         let bounds_max = Point2D::from_be_bytes(&input[0xC..0x14]);
         
         let mut mapdata = Mapdata {
-            unk_0,
+            _version: version,
             bounds_min,
             bounds_max,
             ..Default::default()
@@ -300,7 +300,6 @@ impl Mapdata {
                 self.colbin_types.names.push(wall.collision_type.clone());
             }
 
-
             if !self.wall_labels.names.contains(&wall.label) {
                 self.wall_labels.names.push(wall.label.clone());
             }
@@ -331,7 +330,9 @@ impl Mapdata {
         let mut out = Vec::<u8>::new();
 
         // header
-        out.extend(self.unk_0.to_be_bytes());
+        let version: f32 = 3.3; // hardcode because there's no reason to use any other version
+
+        out.extend(version.to_be_bytes());
         out.extend(self.bounds_min.get_be_bytes());
         out.extend(self.bounds_max.get_be_bytes());
         out.extend((self.walls.len() as u32).to_be_bytes());
