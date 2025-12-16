@@ -1,157 +1,215 @@
+use std::collections::HashMap;
+
 use crate::quilt::game::bgst::BGSTEntry;
 
 use super::BGSTEditor;
 
 impl BGSTEditor {
     pub fn render_contents(&mut self, ui: &mut egui::Ui) {
+        egui::ComboBox::from_label("Selected Layer")
+        .selected_text(format!("Layer {}", self.selected_layer))
+        .show_ui(ui, |ui|{
+            for layer in 0..12 {
+                ui.selectable_value(
+                    &mut self.selected_layer,
+                    layer,
+                    format!("Layer {layer}")
+                );
+            }
+
+        }); // selected layer combo box
+        
         egui::Frame::canvas(ui.style())
         .show(ui, |ui|{
             egui::ScrollArea::both().id_salt("be_image_render_scroll_area").show(ui, |ui|{
-                let desired_size = ui.available_size();
-                let (rect, _response) = ui.allocate_exact_size(desired_size, egui::Sense::drag());
-
-                let painter = ui.painter_at(rect);
-                painter.rect_filled(rect, 0.0, egui::Color32::BLACK);
+                // grid
                 
-                // let origin = response.hover_pos().unwrap_or_default();
+                egui::Grid::new("bg_image_grid")
+                .spacing(egui::Vec2::ZERO) // no padding in between squares
+                .show(ui, |ui|{
+                    if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_ref() {
+                        let image_render_size = egui::Vec2::splat(100.0);
 
-                // TODO/NOTE:
+                        // we need to be able to draw empty squares should a coordinate not have
+                        // any associated cells
+    
+                        // make a map for lookup
+                        
+                        // (y, x)
+                        let mut entry_map: HashMap<(u32, u32), &BGSTEntry> = HashMap::new();
 
-                // the origin is in the top left.
+                        for entry in bgst_file.bgst_entries.iter()
+                            .filter(|e| e.layer == self.selected_layer)
+                            .filter(|e| e.is_valid())
+                        {
+                            entry_map.insert(
+                                (entry.grid_y_position as u32, entry.grid_x_position as u32),
+                                entry
+                            );
+                        }
+                        // println!("{:#?}", bgst_file);
 
-                // let origin = egui::Vec2::splat(500.0);
+                        // render by y coordinate
+                        
+                        for y in 0..bgst_file.grid_height {
+                            for x in 0..bgst_file.grid_width {
 
+                                let coordinate = (y, x);
 
-                // get grid origin
-                
-                let origin = self.find_grid_origin();
+                                if let Some(entry) = entry_map.get(&coordinate) {
+                                    // render filled square
 
-                // let origin = egui::Vec2::new(30.0, 80.0);
-                
+                                    let main_index = entry.main_image_index as usize;
+                                    let mask_index = entry.mask_image_index as usize;
+                                    
 
-                self.bgst_renderer.zoom = 5.0f32;
+                                    let texture_handle = if entry.is_masked() {
+                                        self.bgst_renderer.masked_textures.get(&(main_index, mask_index)).unwrap()
+                                    } else {
+                                        &self.bgst_renderer.decoded_image_handles[main_index]
+                                    };
 
-                // grid rendering
+                                    let image = egui::Image::new(texture_handle).fit_to_exact_size(image_render_size);
 
-                // layer-by-layer
+                                    let image_button = egui::ImageButton::new(image)
+                                        .frame(false); // disable frame, it's distracting
 
-                for layer in 0..12 {
-                    if self.layer_rendered[layer] {
-                        // self.render_by_layer(ui, rect, layer as i16, origin.to_vec2());
-                        self.render_by_layer(ui, rect, layer as i16, origin);
-                    }
-                }
+                                    let resp = ui.add(image_button);
+                                    
+                                    if resp.hovered() {
+                                        ui.painter_at(resp.rect).rect_filled(
+                                            resp.rect,
+                                            0.0,
+                                            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10),
+                                        );
+                                    }
 
+                                    if resp.clicked() {
+                                        // do something or other
+                                        println!("I got clicked! Main: {main_index}, Mask: {mask_index}");
+                                    }
+                                } else {
+                                    // render empty square
 
-                // image list
-                egui::Area::new(egui::Id::from("be_image_list"))
-                .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
-                .show(ui.ctx(), |ui|{
-                    egui::Frame::popup(ui.style())
-                    .inner_margin(egui::Vec2::splat(8.0))
-                    .show(ui, |ui|{
-                        ui.collapsing("Image list", |ui|{
-                            self.display_image_list(ui);
-                        });
-                    });
-                });
+                                    let (rect, resp) = ui.allocate_exact_size(
+                                        image_render_size,
+                                        egui::Sense::click()
+                                    );
 
-                // layer toggles
-                egui::Area::new(egui::Id::from("be_layer_toggle"))
-                .anchor(egui::Align2::LEFT_TOP, egui::Vec2::new(10.0, 10.0))
-                .show(ui.ctx(), |ui|{
-                    egui::Frame::popup(ui.style())
-                    .inner_margin(egui::Vec2::splat(8.0))
-                    .show(ui, |ui|{
-                        ui.collapsing("Toggle Layers", |ui|{
-                            for layer in 0..12 {
-                                let text = format!("Layer {}", layer + 1);
-                                ui.checkbox(&mut self.layer_rendered[layer], text);
+                                    if resp.hovered() {
+                                        ui.painter_at(rect).rect(
+                                            rect,
+                                            0.0,
+                                            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x1),
+                                            egui::Stroke::new(1.0, egui::Color32::WHITE)
+                                        );
+                                    }
+
+                                    if resp.clicked() {
+                                        println!("empty tile at Y {y} X {x}");
+                                    }
+                                }
                             }
-                        });
-                    });
-                
+
+                            ui.end_row();
+                        }
+                    }
                 });
 
-            });
+
+                // // image list
+                // egui::Area::new(egui::Id::from("be_image_list"))
+                // .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+                // .show(ui.ctx(), |ui|{
+                //     egui::Frame::popup(ui.style())
+                //     .inner_margin(egui::Vec2::splat(8.0))
+                //     .show(ui, |ui|{
+                //         ui.collapsing("Image list", |ui|{
+                //             self.display_image_list(ui);
+                //         });
+                //     });
+                // });
+
+            }); // scroll area
+
         });
     }
 
-    pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
-        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
-        ui.label(format!("Count: {}", bgst_file.compressed_images.len()));
+    // pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
+    //     let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+    //     ui.label(format!("Count: {}", bgst_file.compressed_images.len()));
         
-        let table = egui_extras::TableBuilder::new(ui)
-            .striped(true)
-            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(egui_extras::Column::auto()) // image column
-            .column(egui_extras::Column::auto()); // index column
+    //     let table = egui_extras::TableBuilder::new(ui)
+    //         .striped(true)
+    //         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+    //         .column(egui_extras::Column::auto()) // image column
+    //         .column(egui_extras::Column::auto()); // index column
 
-        table.body(|mut body| {
-            for (index, image_handle) in self.bgst_renderer.decoded_image_handles.iter().enumerate() {
-                body.row(32.0, |mut row| {
-                    // image column
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Image::new(image_handle).max_size(egui::Vec2::splat(100.0))
-                        );
-                    });
-                    // index column
-                    row.col(|ui| {
-                        ui.label(format!("Index {index}"));
-                    });
-                });
-            }
-        });
-    }
+    //     table.body(|mut body| {
+    //         for (index, image_handle) in self.bgst_renderer.decoded_image_handles.iter().enumerate() {
+    //             body.row(32.0, |mut row| {
+    //                 // image column
+    //                 row.col(|ui| {
+    //                     ui.add(
+    //                         egui::Image::new(image_handle).max_size(egui::Vec2::splat(100.0))
+    //                     );
+    //                 });
+    //                 // index column
+    //                 row.col(|ui| {
+    //                     ui.label(format!("Index {index}"));
+    //                 });
+    //             });
+    //         }
+    //     });
+    // }
 
-    fn render_by_layer(
-        &mut self,
-        ui: &mut egui::Ui,
-        rect: egui::Rect,
-        layer: i16,
-        origin: egui::Vec2
-    ) {
-        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+    // fn render_by_layer(
+    //     &mut self,
+    //     ui: &mut egui::Ui,
+    //     rect: egui::Rect,
+    //     layer: i16,
+    //     origin: egui::Vec2
+    // ) {
+    //     let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
 
-        let entries: Vec<&BGSTEntry> = Vec::from_iter(bgst_file.bgst_entries
-            .iter()
-            .filter(|entry| entry.layer == layer));
+    //     let entries: Vec<&BGSTEntry> = Vec::from_iter(bgst_file.bgst_entries
+    //         .iter()
+    //         .filter(|entry| entry.layer == layer));
 
-        // println!("BGSTEditor::render_by_layer - origin: {}", origin);
+    //     // println!("BGSTEditor::render_by_layer - origin: {}", origin);
 
-        // separate by mask
+    //     // separate by mask
 
-        let (masked, unmasked): (Vec<&BGSTEntry>, Vec<&BGSTEntry>) =
-            entries
-            .iter()
-            .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
-
-        
-        // unmasked
-        for entry in unmasked {
-            self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
-        }
-        
-        // masked
-        for entry in masked {
-            self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
-        }
-    }
-
-    fn find_grid_origin(&self) -> egui::Vec2 {
-        // origin is the top left corner of the grid
-
-        let bgst_file = &self.bgst_renderer.bgst_file.as_ref().unwrap();
-
-        let _grid_height = bgst_file.grid_height;
-        let _grid_width = bgst_file.grid_width;
-
-        let _image_height = bgst_file.image_height;
-        let _image_width = bgst_file.image_width;
+    //     let (masked, unmasked): (Vec<&BGSTEntry>, Vec<&BGSTEntry>) =
+    //         entries
+    //         .iter()
+    //         .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
 
         
-        egui::Vec2::new(0.0f32, 0.0f32)
-    }
+    //     // unmasked
+    //     for entry in unmasked {
+    //         self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
+    //     }
+        
+    //     // masked
+    //     for entry in masked {
+    //         self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
+    //     }
+    // }
+
+    // fn find_grid_origin(&self) -> egui::Vec2 {
+    //     // origin is the top left corner of the grid
+
+    //     let bgst_file = &self.bgst_renderer.bgst_file.as_ref().unwrap();
+
+    //     let _grid_height = bgst_file.grid_height;
+    //     let _grid_width = bgst_file.grid_width;
+
+    //     let _image_height = bgst_file.image_height;
+    //     let _image_width = bgst_file.image_width;
+
+        
+    //     egui::Vec2::new(0.0f32, 0.0f32)
+    // }
     
 }

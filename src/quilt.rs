@@ -12,14 +12,14 @@ use eframe::{NativeOptions, egui};
 use egui::IconData;
 use level_editor::LevelEditor;
 use views::QuiltView;
-// use bgst_editor::BGSTEditor;
+use bgst_editor::BGSTEditor;
 use gfarch_utility::GfArchUtility;
 
 pub struct QuiltApp {
     current_view: QuiltView,
     level_editor: LevelEditor,
-    // bgst_editor: BGSTEditor,
     gfarch_utility: GfArchUtility,
+    bgst_editor: BGSTEditor,
 }
 
 impl QuiltApp {
@@ -28,8 +28,8 @@ impl QuiltApp {
         Self {
             current_view: QuiltView::Home,
             level_editor: LevelEditor::new(),
-            // bgst_editor: BGSTEditor::new(),
             gfarch_utility: GfArchUtility::new(),
+            bgst_editor: BGSTEditor::new(),
         }
     }
 
@@ -86,7 +86,11 @@ impl eframe::App for QuiltApp {
         egui::TopBottomPanel::top("q_top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.selectable_value(&mut self.current_view, QuiltView::Home, "Quilt");
+                    ui.selectable_value(
+                        &mut self.current_view,
+                        QuiltView::Home,
+                        "Quilt"
+                    );
                     ui.selectable_value(
                         &mut self.current_view,
                         QuiltView::LevelEditor,
@@ -97,7 +101,11 @@ impl eframe::App for QuiltApp {
                         QuiltView::GfArchUtility,
                         "Good-Feel Archive Utility",
                     );
-                    // ui.selectable_value(&mut self.current_view, QuiltView::BGSTEditor, "BGST Editor");
+                    ui.selectable_value(
+                        &mut self.current_view, 
+                        QuiltView::BGSTEditor,
+                        "BGST Editor"
+                    );
                 });
             });
         });
@@ -116,9 +124,11 @@ impl eframe::App for QuiltApp {
 
                 QuiltView::GfArchUtility => {
                     self.gfarch_utility.show_ui(ui);
-                } // QuiltView::BGSTEditor => {
-                  //     self.bgst_editor.show_ui(ui);
-                  // }
+                }
+                
+                QuiltView::BGSTEditor => {
+                    self.bgst_editor.show_ui(ui);
+                }
             }
         });
     }

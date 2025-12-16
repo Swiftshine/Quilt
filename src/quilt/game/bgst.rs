@@ -6,7 +6,7 @@ use byteorder::{BigEndian, ByteOrder};
 const GRID_ENTRY_SIZE: usize = 0x10;
 const COMPRESSED_IMAGE_SIZE: usize = 0x20000;
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug)]
 // all fields here are i16 in the BGST format
 pub struct BGSTEntry {
     pub _enabled: bool,
@@ -19,12 +19,23 @@ pub struct BGSTEntry {
     pub _unk_e: i16,
 }
 
-#[derive(Default)]
+// helper methods
+impl BGSTEntry {
+    pub fn is_masked(&self) -> bool {
+        self.main_image_index > -1 && self.mask_image_index > -1
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.main_image_index > -1 || self.mask_image_index > -1
+    }
+}
+
+#[derive(Default, Debug)]
 pub struct BGSTFile {
     pub _flags: u32,
     pub image_width: u32,
     pub image_height: u32,
-    pub _grid_width: u32,
+    pub grid_width: u32,
     pub grid_height: u32,
     pub _show_layer: [bool; 0xC],
     pub bgst_entries: Vec<BGSTEntry>,
@@ -78,7 +89,7 @@ impl BGSTFile {
             _flags: flags,
             image_width,
             image_height,
-            _grid_width: grid_width,
+            grid_width,
             grid_height,
             _show_layer: show_layer,
             bgst_entries,

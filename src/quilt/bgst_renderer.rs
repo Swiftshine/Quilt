@@ -17,7 +17,22 @@ pub struct BGSTRenderer {
     pub tile_scale: egui::Vec2,
     pub opacity: u8,
     pub zoom: f32,
+    // pub grid_images: Option<Vec<GridImageEntry>>
 }
+
+// #[derive(Default)]
+// enum GridImageSelection {
+//     #[default]
+//     Unselected,
+//     Hovered,
+//     Selected,
+// }
+
+// #[derive(Default)]
+// pub struct GridImageEntry {
+//     pub selection_state: GridImageSelection,
+// }
+
 
 impl BGSTRenderer {
     pub fn apply_mask(target: &[u8], mask: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
@@ -248,7 +263,7 @@ impl BGSTRenderer {
         let (mut masked, mut unmasked): (Vec<BGSTEntry>, Vec<BGSTEntry>) = bgst_file
             .bgst_entries
             .iter()
-            .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
+            .partition(|entry| entry.is_masked());
 
         // sort both vectors by entry layer
         masked.sort_by(|a, b| a.layer.cmp(&b.layer));

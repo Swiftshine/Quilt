@@ -3,5 +3,5 @@ pub enum QuiltView {
     Home,
     LevelEditor,
     GfArchUtility,
-    // BGSTEditor,
+    BGSTEditor,
 }
