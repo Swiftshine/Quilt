@@ -4,7 +4,7 @@ use egui::TextureOptions;
 use image::{ImageBuffer, RgbaImage};
 use rayon::prelude::*;
 use rfd::FileDialog;
-use std::{collections::HashMap, fs};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 #[derive(Default)]
 pub struct BGSTRenderer {
@@ -17,22 +17,7 @@ pub struct BGSTRenderer {
     pub tile_scale: egui::Vec2,
     pub opacity: u8,
     pub zoom: f32,
-    // pub grid_images: Option<Vec<GridImageEntry>>
 }
-
-// #[derive(Default)]
-// enum GridImageSelection {
-//     #[default]
-//     Unselected,
-//     Hovered,
-//     Selected,
-// }
-
-// #[derive(Default)]
-// pub struct GridImageEntry {
-//     pub selection_state: GridImageSelection,
-// }
-
 
 impl BGSTRenderer {
     pub fn apply_mask(target: &[u8], mask: &[u8], width: u32, height: u32) -> Result<Vec<u8>> {
@@ -95,138 +80,135 @@ impl BGSTRenderer {
         }
     }
 
-    pub fn open_file(&mut self, ui: &egui::Ui) -> Result<()> {
+    pub fn open_file(&mut self, ui: &egui::Ui) -> Result<PathBuf> {
         if let Some(path) = FileDialog::new()
             .add_filter("BGST file", &["bgst3"])
             .pick_file()
         {
-            let data = fs::read(path)?;
+            let data = fs::read(&path)?;
 
             if data.is_empty() || b"BGST" != &data[..4] {
                 bail!("bgst is invalid");
             }
 
             self.bgst_file = Some(BGSTFile::from_bytes(&data));
+            let _ = self.cache_textures(ui);
 
-            // decode images
+            Ok(path)
+        } else {
+            bail!("user exited")
+        }
+    }
 
-            let bgst_file = self.bgst_file.as_ref().unwrap();
+    /// Decodes and caches images
+    pub fn cache_textures(&mut self, ui: &egui::Ui) -> Result<()> {
+        // put this here
+        let bgst_file = match self.bgst_file.as_ref() {
+            Some(file) => file,
+            None => bail!("BGST file not loaded")
+        };
 
-            self.decoded_image_handles.clear();
-            self.masked_textures.clear();
+        // clear old data
+        self.decoded_image_handles.clear();
+        self.masked_textures.clear();
+        self.raw_image_data.clear();
 
-            let results: Vec<(egui::TextureHandle, Vec<u8>)> = bgst_file
-                .compressed_images
-                .par_iter()
-                .enumerate()
-                .map(|(index, encoded)| {
-                    let tex_format = {
-                        let is_main = bgst_file.bgst_entries.iter().any(|entry| {
-                            entry.main_image_index > -1 && entry.main_image_index as usize == index
-                        });
-
-                        let is_mask = bgst_file.bgst_entries.iter().any(|entry| {
-                            entry.mask_image_index > -1 && entry.mask_image_index as usize == index
-                        });
-
-                        match (is_main, is_mask) {
-                            (true, _) => gctex::TextureFormat::CMPR, // "main" image
-                            (_, true) => gctex::TextureFormat::I4,   // mask image
-                            _ => gctex::TextureFormat::CMPR,         // default
-                        }
-                    };
-
-                    let decoded = gctex::decode(
-                        encoded,
-                        bgst_file.image_width,
-                        bgst_file.image_height,
-                        tex_format,
-                        &Vec::new(),
-                        0,
-                    );
-
-                    let handle = self.get_texture_handle(
-                        ui,
-                        bgst_file.image_width as usize,
-                        bgst_file.image_height as usize,
-                        index,
-                        &decoded,
-                    );
-
-                    (handle, decoded)
-                })
-                .collect();
-
-            for (handle, decoded) in results {
-                self.raw_image_data.insert(handle.id(), decoded);
-                self.decoded_image_handles.push(handle);
-            }
-
-            // determine which entries have masks
-            let (masked, _): (Vec<BGSTEntry>, Vec<_>) = bgst_file
-                .bgst_entries
-                .iter()
-                .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
-
-            let num_images = self.decoded_image_handles.len();
-
-            // cache the masked entries
-            let masked_results: Vec<((usize, usize), egui::TextureHandle)> = masked
-                .into_par_iter()
-                .filter_map(|entry| {
-                    let main_index = entry.main_image_index as usize;
-                    let mask_index = entry.mask_image_index as usize;
-
-                    if main_index >= num_images || mask_index >= num_images {
-                        // they're invalid
-                        return None;
+        let results: Vec<(egui::TextureHandle, Vec<u8>)> = bgst_file
+            .compressed_images
+            .par_iter()
+            .enumerate()
+            .map(|(index, encoded)| {
+                let tex_format = {
+                    let is_main = bgst_file.bgst_entries.iter().any(|entry| {
+                        entry.main_image_index > -1 && entry.main_image_index as usize == index
+                    });
+                    let is_mask = bgst_file.bgst_entries.iter().any(|entry| {
+                        entry.mask_image_index > -1 && entry.mask_image_index as usize == index
+                    });
+                    match (is_main, is_mask) {
+                        (true, _) => gctex::TextureFormat::CMPR, // "main" image
+                        (_, true) => gctex::TextureFormat::I4,   // mask image
+                        _ => gctex::TextureFormat::CMPR,         // default
                     }
+                };
+                let decoded = gctex::decode(
+                    encoded,
+                    bgst_file.image_width,
+                    bgst_file.image_height,
+                    tex_format,
+                    &Vec::new(),
+                    0,
+                );
+                let handle = self.get_texture_handle(
+                    ui,
+                    bgst_file.image_width as usize,
+                    bgst_file.image_height as usize,
+                    index,
+                    &decoded,
+                );
+                (handle, decoded)
+            })
+        .collect();
 
-                    let main_handle = &self.decoded_image_handles[main_index];
-                    let mask_handle = &self.decoded_image_handles[mask_index];
+        for (handle, decoded) in results {
+            self.raw_image_data.insert(handle.id(), decoded);
+            self.decoded_image_handles.push(handle);
+        }
+        // determine which entries have masks
+        let (masked, _): (Vec<BGSTEntry>, Vec<_>) = bgst_file
+            .bgst_entries
+            .iter()
+            .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
+        let num_images = self.decoded_image_handles.len();
+        // cache the masked entries
+        let masked_results: Vec<((usize, usize), egui::TextureHandle)> = masked
+            .into_par_iter()
+            .filter_map(|entry| {
+                let main_index = entry.main_image_index as usize;
+                let mask_index = entry.mask_image_index as usize;
+                if main_index >= num_images || mask_index >= num_images {
+                    // they're invalid
+                    return None;
+                }
+                let main_handle = &self.decoded_image_handles[main_index];
+                let mask_handle = &self.decoded_image_handles[mask_index];
+                let main_image = match self.get_raw_image_by_texture_handle(main_handle) {
+                    Ok(img) => img,
+                    Err(_) => return None,
+                };
+                let mask_image = match self.get_raw_image_by_texture_handle(mask_handle) {
+                    Ok(img) => img,
+                    Err(_) => return None,
+                };
+                // apply masks
+                let masked_image = match BGSTRenderer::apply_mask(
+                    &main_image,
+                    &mask_image,
+                    bgst_file.image_width,
+                    bgst_file.image_height,
+                ) {
+                    Ok(img) => img,
+                    Err(_) => return None,
+                };
+                // load textures
+                let masked_texture = ui.ctx().load_texture(
+                    format!("be_masked_tex_{}-{}", main_index, mask_index),
+                    egui::ColorImage::from_rgba_unmultiplied(
+                        [
+                            bgst_file.image_width as usize,
+                            bgst_file.image_height as usize,
+                        ],
+                        &masked_image,
+                    ),
+                    TextureOptions::LINEAR,
+                );
+                Some(((main_index, mask_index), masked_texture))
+        })
+        .collect();
 
-                    let main_image = match self.get_raw_image_by_texture_handle(main_handle) {
-                        Ok(img) => img,
-                        Err(_) => return None,
-                    };
-
-                    let mask_image = match self.get_raw_image_by_texture_handle(mask_handle) {
-                        Ok(img) => img,
-                        Err(_) => return None,
-                    };
-
-                    // apply masks
-                    let masked_image = match BGSTRenderer::apply_mask(
-                        &main_image,
-                        &mask_image,
-                        bgst_file.image_width,
-                        bgst_file.image_height,
-                    ) {
-                        Ok(img) => img,
-                        Err(_) => return None,
-                    };
-
-                    // load textures
-                    let masked_texture = ui.ctx().load_texture(
-                        format!("be_masked_tex_{}-{}", main_index, mask_index),
-                        egui::ColorImage::from_rgba_unmultiplied(
-                            [
-                                bgst_file.image_width as usize,
-                                bgst_file.image_height as usize,
-                            ],
-                            &masked_image,
-                        ),
-                        TextureOptions::LINEAR,
-                    );
-
-                    Some(((main_index, mask_index), masked_texture))
-                })
-                .collect();
-
-            for ((main_index, mask_index), masked_texture) in masked_results {
-                self.masked_textures
-                    .insert((main_index, mask_index), masked_texture);
-            }
+        for ((main_index, mask_index), masked_texture) in masked_results {
+            self.masked_textures
+                .insert((main_index, mask_index), masked_texture);
         }
 
         Ok(())

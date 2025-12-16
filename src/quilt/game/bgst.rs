@@ -1,15 +1,21 @@
-// use gctex;
-// use image;
+use gctex;
+use image::{self, GenericImageView};
+// use std::{collections::{HashMap, HashSet}, fs};
+use std::fs;
+
+
 use byteorder::{BigEndian, ByteOrder};
 
-// const HEADER_SIZE: usize = 0x40;
+use anyhow::{Result, bail};
+
+const HEADER_SIZE: usize = 0x40;
 const GRID_ENTRY_SIZE: usize = 0x10;
 const COMPRESSED_IMAGE_SIZE: usize = 0x20000;
 
 #[derive(Default, Clone, Copy, Debug)]
 // all fields here are i16 in the BGST format
 pub struct BGSTEntry {
-    pub _enabled: bool,
+    pub enabled: bool,
     pub layer: i16,
     pub grid_x_position: i16,
     pub grid_y_position: i16,
@@ -21,18 +27,27 @@ pub struct BGSTEntry {
 
 // helper methods
 impl BGSTEntry {
+    pub fn main_valid(&self) -> bool {
+        self.main_image_index > -1
+    }
+
+    pub fn mask_valid(&self) -> bool {
+        self.mask_image_index > -1
+    }
+
     pub fn is_masked(&self) -> bool {
-        self.main_image_index > -1 && self.mask_image_index > -1
+        self.main_valid() && self.mask_valid()
     }
 
     pub fn is_valid(&self) -> bool {
-        self.main_image_index > -1 || self.mask_image_index > -1
+        self.main_valid() || self.mask_valid()
     }
+
 }
 
 #[derive(Default, Debug)]
 pub struct BGSTFile {
-    pub _flags: u32,
+    pub flags: u32,
     pub image_width: u32,
     pub image_height: u32,
     pub grid_width: u32,
@@ -80,13 +95,19 @@ impl BGSTFile {
         // read compressed images
         let compressed_images: Vec<Vec<u8>> = input[image_data_offset..]
             .chunks(COMPRESSED_IMAGE_SIZE)
+            .take(image_count) // don't read padding
             .map(|img| img.to_vec())
             .collect();
+
+        
+        for img in compressed_images.iter() {
+            assert_eq!(img.len(), COMPRESSED_IMAGE_SIZE);
+        }
 
         assert_eq!(image_count, compressed_images.len());
 
         BGSTFile {
-            _flags: flags,
+            flags,
             image_width,
             image_height,
             grid_width,
@@ -96,6 +117,173 @@ impl BGSTFile {
             _scale_modifier: scale_modifier,
             compressed_images,
         }
+    }
+
+
+    /// Removes unused entries and images
+    /// ! Don't use yet
+    // pub fn cleanup(&mut self) {
+    //     // collect used indices
+    //     let mut used_indices = HashSet::new();
+
+    //     let valid_entries: Vec<&BGSTEntry> = self.bgst_entries.iter()
+    //     .filter(|entry| entry.is_valid()).collect();
+
+    //     for entry in valid_entries.iter() {
+    //         if entry.main_valid() {
+    //             used_indices.insert(entry.main_image_index as usize);
+    //         }
+
+    //         if entry.mask_valid() {
+    //             used_indices.insert(entry.mask_image_index as usize);
+    //         }
+    //     }
+
+    //     // (old, new)
+    //     let mut old_to_new_index: HashMap<usize, usize> = HashMap::new();
+    //     let mut new_compressed_images = Vec::new();
+    //     let mut new_index_counter = 0;
+
+    //     for (old_index, compressed_data) in self.compressed_images.drain(..).enumerate() {
+    //         if used_indices.contains(&old_index) {
+    //             // keep the image
+    //             new_compressed_images.push(compressed_data);
+
+    //             // store mapping
+    //             old_to_new_index.insert(old_index, new_index_counter);
+    //             new_index_counter += 1;
+    //         } // otherwise it's discarded
+    //     }
+        
+    //     self.compressed_images = new_compressed_images;
+
+    //     // update BGST entry indices
+
+    //     for entry in self.bgst_entries.iter_mut() {
+    //         if entry.main_valid() {
+    //             let old_index = entry.main_image_index as usize;
+
+    //             if let Some(&new_index) = old_to_new_index.get(&old_index) {
+    //                 entry.main_image_index = new_index as i16;
+    //             } else {
+    //                 entry.main_image_index = -1;
+    //             }
+    //         }
+
+    //         if entry.mask_valid() {
+    //             let old_index = entry.mask_image_index as usize;
+
+    //             if let Some(&new_index) = old_to_new_index.get(&old_index) {
+    //                 entry.mask_image_index = new_index as i16;
+    //             } else {
+    //                 entry.mask_image_index = -1;
+    //             }
+    //         }
+    //     }
+        
+    //     // remove redundant entries
+    //     self.bgst_entries.retain(|e| e.is_valid());
+    // }
+
+    pub fn get_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        // header 
+        out.extend(String::from("BGST").as_bytes());
+        out.extend(self.flags.to_be_bytes());
+        out.extend(self.image_width.to_be_bytes());
+        out.extend(self.image_height.to_be_bytes());
+        out.extend(self.grid_width.to_be_bytes());
+        out.extend(self.grid_height.to_be_bytes());
+
+        let image_count = self.compressed_images.len() as u32;
+
+        out.extend(image_count.to_be_bytes());
+
+        for layer in self._show_layer {
+            out.push(layer as u8);
+        }
+
+        out.extend((HEADER_SIZE as u32).to_be_bytes());
+        let image_data_offset = (HEADER_SIZE + (self.bgst_entries.len() * GRID_ENTRY_SIZE)) as u32;
+
+        out.extend(image_data_offset.to_be_bytes());
+        out.extend(self._scale_modifier.to_be_bytes());
+        out.resize(out.len() + 0xC, 0); // padding
+
+        // entries
+
+        for entry in self.bgst_entries.iter() {
+            out.extend((entry.enabled as i16).to_be_bytes());
+            out.extend(entry.layer.to_be_bytes());
+
+            out.extend(entry.grid_x_position.to_be_bytes());
+            out.extend(entry.grid_y_position.to_be_bytes());
+
+            out.extend(entry.main_image_index.to_be_bytes());
+            out.extend(entry.mask_image_index.to_be_bytes());
+
+            out.extend(entry._unk_c.to_be_bytes());
+            out.extend(entry._unk_e.to_be_bytes());
+        }
+
+        // compressed chunks
+
+        for chunk in self.compressed_images.iter() {
+            out.extend_from_slice(chunk);
+        }
+
+        // padding
+        out.resize(out.len().next_multiple_of(0x20), 0);
+
+        out
+    }
+
+    pub fn replace(&mut self, entry_index: usize) -> Result<()> {
+        let entry = &self.bgst_entries[entry_index];
+
+        // get path
+
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("Image file", &["png"]) // just png for now
+            .pick_file()
+        {
+            let file_data = fs::read(path)?;
+
+            if file_data.is_empty() {
+                bail!("empty file");
+            }
+
+            // decode image
+
+            let img = match image::load_from_memory_with_format(&file_data, image::ImageFormat::Png) {
+                Ok(img) => img,
+                Err(e) => bail!("failed to decode image: {}", e)
+            };
+
+            let (width, height) = img.dimensions();
+
+            const EXPECTED_SIZE: u32 = 512; // in extra epic yarn, this is 256
+
+            if width != EXPECTED_SIZE || height != EXPECTED_SIZE {
+                bail!("image dimensions must be {}x{}", EXPECTED_SIZE, EXPECTED_SIZE);
+            };
+
+            // get raw rgba
+            let rgba = img.into_rgba8().into_raw();
+
+            // again this is epic yarn (wii) only for now
+
+            let compressed = gctex::encode(gctex::TextureFormat::CMPR, &rgba, EXPECTED_SIZE, EXPECTED_SIZE);
+
+            // assume its a main image
+
+            self.compressed_images[entry.main_image_index as usize] = compressed;
+
+            // self.compressed_images[]
+        }
+
+        Ok(())
     }
 }
 
@@ -111,7 +299,7 @@ impl BGSTEntry {
         let _unk_e = BigEndian::read_i16(&input[0xE..0x10]);
 
         BGSTEntry {
-            _enabled: enabled,
+            enabled,
             layer,
             grid_x_position,
             grid_y_position,

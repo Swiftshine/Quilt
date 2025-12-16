@@ -1,7 +1,4 @@
 use std::collections::HashMap;
-
-use crate::quilt::game::bgst::BGSTEntry;
-
 use super::BGSTEditor;
 
 impl BGSTEditor {
@@ -24,6 +21,8 @@ impl BGSTEditor {
             egui::ScrollArea::both().id_salt("be_image_render_scroll_area").show(ui, |ui|{
                 // grid
                 
+                let mut clicked_index: Option<usize> = None;
+
                 egui::Grid::new("bg_image_grid")
                 .spacing(egui::Vec2::ZERO) // no padding in between squares
                 .show(ui, |ui|{
@@ -35,17 +34,17 @@ impl BGSTEditor {
     
                         // make a map for lookup
                         
-                        // (y, x)
-                        let mut entry_map: HashMap<(u32, u32), &BGSTEntry> = HashMap::new();
+                        // (y, x), index
+                        let mut entry_map: HashMap<(u32, u32), usize> = HashMap::new();
 
-                        for entry in bgst_file.bgst_entries.iter()
-                            .filter(|e| e.layer == self.selected_layer)
-                            .filter(|e| e.is_valid())
-                        {
-                            entry_map.insert(
-                                (entry.grid_y_position as u32, entry.grid_x_position as u32),
-                                entry
-                            );
+                        for (index, entry) in bgst_file.bgst_entries.iter().enumerate() {
+                            if entry.layer == self.selected_layer && entry.is_valid() {
+                                entry_map.insert(
+                                    (entry.grid_y_position as u32, entry.grid_x_position as u32),
+                                    index
+                                );
+
+                            }
                         }
                         // println!("{:#?}", bgst_file);
 
@@ -56,8 +55,9 @@ impl BGSTEditor {
 
                                 let coordinate = (y, x);
 
-                                if let Some(entry) = entry_map.get(&coordinate) {
+                                if let Some(index) = entry_map.get(&coordinate) {
                                     // render filled square
+                                    let entry = &bgst_file.bgst_entries[*index];
 
                                     let main_index = entry.main_image_index as usize;
                                     let mask_index = entry.mask_image_index as usize;
@@ -86,7 +86,9 @@ impl BGSTEditor {
 
                                     if resp.clicked() {
                                         // do something or other
-                                        println!("I got clicked! Main: {main_index}, Mask: {mask_index}");
+                                        // println!("I got clicked! Main: {main_index}, Mask: {mask_index}");
+
+                                        clicked_index = Some(*index);
                                     }
                                 } else {
                                     // render empty square
@@ -116,6 +118,16 @@ impl BGSTEditor {
                     }
                 });
 
+                // handle any clicked squares
+
+                if let Some(index) = clicked_index {
+                    if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_mut() {
+                        let _ = bgst_file.replace(index);
+                        // bgst_file.cleanup();
+                        let _ = self.bgst_renderer.cache_textures(ui);
+                    }
+                }
+
 
                 // // image list
                 // egui::Area::new(egui::Id::from("be_image_list"))
@@ -134,6 +146,8 @@ impl BGSTEditor {
 
         });
     }
+
+
 
     // pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
     //     let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
