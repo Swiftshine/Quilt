@@ -21,7 +21,8 @@ impl BGSTEditor {
             egui::ScrollArea::both().id_salt("be_image_render_scroll_area").show(ui, |ui|{
                 // grid
                 
-                let mut clicked_index: Option<usize> = None;
+                // right click, index)
+                let mut clicked_index: Option<(bool, usize)> = None;
 
                 egui::Grid::new("bg_image_grid")
                 .spacing(egui::Vec2::ZERO) // no padding in between squares
@@ -88,8 +89,14 @@ impl BGSTEditor {
                                         // do something or other
                                         // println!("I got clicked! Main: {main_index}, Mask: {mask_index}");
 
-                                        clicked_index = Some(*index);
+                                        clicked_index = Some((false, *index));
                                     }
+
+                                    if resp.secondary_clicked() {
+                                        clicked_index = Some((true, *index));
+                                    }
+
+                                    
                                 } else {
                                     // render empty square
 
@@ -120,9 +127,13 @@ impl BGSTEditor {
 
                 // handle any clicked squares
 
-                if let Some(index) = clicked_index {
+                if let Some((right_click, index)) = clicked_index {
                     if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_mut() {
-                        let _ = bgst_file.replace(index);
+                        if right_click {
+                            bgst_file.invalidate(index);
+                        } else {
+                            let _ = bgst_file.replace(index);
+                        }
                         // bgst_file.cleanup();
                         let _ = self.bgst_renderer.cache_textures(ui);
                     }

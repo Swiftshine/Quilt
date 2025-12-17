@@ -239,6 +239,13 @@ impl BGSTFile {
         out
     }
 
+    pub fn invalidate(&mut self, entry_index: usize) {
+        let entry = &mut self.bgst_entries[entry_index];
+
+        entry.main_image_index = -1;
+        entry.mask_image_index = -1;
+    }
+    
     pub fn replace(&mut self, entry_index: usize) -> Result<()> {
         let entry = &self.bgst_entries[entry_index];
 
@@ -279,8 +286,6 @@ impl BGSTFile {
             // assume its a main image
 
             self.compressed_images[entry.main_image_index as usize] = compressed;
-
-            // self.compressed_images[]
         }
 
         Ok(())
