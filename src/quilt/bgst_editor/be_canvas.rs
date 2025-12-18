@@ -232,11 +232,13 @@ impl BGSTEditor {
 
                         // todo! entry (and image) index manip
 
+                        ui.checkbox(
+                            &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[index].enabled,
+                            "Enabled?"
+                        );
+
                         // todo! ability to set entry image/mask index manually
                             // this can save space because you won't need to add new masks
-                        
-                        // todo! toggle entry enabled
-                        
                     });
                         
                     if !image_removed {
