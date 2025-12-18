@@ -212,14 +212,11 @@ impl BGSTEditor {
                                 );
                             }
 
-                        } else {
-                            if ui.button("Add Mask").clicked() {
-                                if let Ok(image_index) = bgst_file.add_image(gctex::TextureFormat::I4) {
-                                    bgst_file.bgst_entries[entry_index].mask_image_index = image_index as i16;
+                        } else if ui.button("Add Mask").clicked()
+                        && let Ok(image_index) = bgst_file.add_image(gctex::TextureFormat::I4) {
+                            bgst_file.bgst_entries[entry_index].mask_image_index = image_index as i16;
 
-                                    refresh = true;
-                                }
-                            }
+                            refresh = true;
                         }
                         
                         let image_count = self.bgst_renderer.bgst_file.as_ref().unwrap().compressed_images.len();

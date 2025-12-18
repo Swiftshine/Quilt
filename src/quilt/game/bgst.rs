@@ -122,8 +122,8 @@ impl BGSTFile {
     }
 
 
-    /// Removes unused entries and images
-    /// ! Don't use yet
+    // /// Removes unused entries and images
+    // ! Don't use yet
     // pub fn cleanup(&mut self) {
     //     // collect used indices
     //     let mut used_indices = HashSet::new();
@@ -256,7 +256,7 @@ impl BGSTFile {
         
         let entry = BGSTEntry {
             enabled: true,
-            layer: layer,
+            layer,
             grid_x_position: x,
             grid_y_position: y,
             main_image_index: (self.compressed_images.len() - 1) as i16,
