@@ -241,13 +241,36 @@ impl BGSTFile {
         out
     }
 
-    pub fn invalidate(&mut self, entry_index: usize) {
-        let entry = &mut self.bgst_entries[entry_index];
-
-        entry.main_image_index = -1;
-        entry.mask_image_index = -1;
+    pub fn remove_entry(&mut self, entry_index: usize) {
+        self.bgst_entries.remove(entry_index);
     }
     
+    /// Creates a new BGST entry and associated image
+    pub fn create_entry(
+        &mut self,
+        layer: i16,
+        (x, y): (i16, i16) // (x, y)
+    ) -> Result<()> {
+        // you'd have to have a main image before applying a mask
+        self.add_image(gctex::TextureFormat::CMPR)?;
+        
+        let entry = BGSTEntry {
+            enabled: true,
+            layer: layer,
+            grid_x_position: x,
+            grid_y_position: y,
+            main_image_index: (self.compressed_images.len() - 1) as i16,
+            mask_image_index: -1,
+            _unk_c: -1,
+            _unk_e: -1
+        };
+
+        self.bgst_entries.push(entry);
+
+        Ok(())
+    }
+
+
     /// Uses a file dialog to replace an image.
     pub fn replace_image(&mut self, image_index: Option<usize>, format: gctex::TextureFormat) -> Result<()> {
         // get path
@@ -328,7 +351,7 @@ impl BGSTFile {
                 BGST_TILE_SIZE,
                 image::ExtendedColorType::Rgba8
             )?;
-            
+
             Ok(())   
         } else {
             bail!("user exited")

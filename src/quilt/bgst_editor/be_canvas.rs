@@ -159,7 +159,8 @@ impl BGSTEditor {
             return;
         }
         
-        let mut refresh = false;
+        let mut do_refresh = false;
+        let mut image_removed = false;
 
         match self.selected_tile.clone().unwrap() {
             TileSelection::Entry(index) => {
@@ -173,15 +174,17 @@ impl BGSTEditor {
                             let entry = &bgst_file.bgst_entries[index];
                             let _ = bgst_file.replace_image(Some(entry.main_image_index as usize), gctex::TextureFormat::CMPR);
 
-                            refresh = true;
+                            do_refresh = true;
                         }
                         
                         if ui.button("Remove Image").clicked() {
                             let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap(); 
-                            bgst_file.invalidate(index);
+                            bgst_file.remove_entry(index);
                             self.selected_tile = None;
-
-                            refresh = true;
+                        
+                            do_refresh = true;
+                            image_removed = true;
+                            return; // return from the *closure*
                         }
 
                         if ui.button("Export Image").clicked() {
@@ -201,13 +204,13 @@ impl BGSTEditor {
                                 let mask_image_index = bgst_file.bgst_entries[index].mask_image_index;
                                 let _ = bgst_file.replace_image(Some(mask_image_index as usize), gctex::TextureFormat::I4);
 
-                                refresh = true;
+                                do_refresh = true;
                             }
                             
                             if ui.button("Remove Mask").clicked() {
                                 bgst_file.bgst_entries[index].mask_image_index = -1;
 
-                                refresh = true;
+                                do_refresh = true;
                             }
                             
                             if ui.button("Export Mask").clicked() {
@@ -221,7 +224,7 @@ impl BGSTEditor {
                                 if let Ok(image_index) = bgst_file.add_image(gctex::TextureFormat::I4) {
                                     bgst_file.bgst_entries[index].mask_image_index = image_index as i16;
 
-                                    refresh = true;
+                                    do_refresh = true;
                                 }
                             }
                         }
@@ -232,19 +235,18 @@ impl BGSTEditor {
                         // todo! ability to set entry image/mask index manually
                             // this can save space because you won't need to add new masks
                         
-                        if refresh {
-                            let _ = self.bgst_renderer.cache_textures(ui.ctx());
-                        }
+                        // todo! toggle entry enabled
+                        
                     });
-
-                    {
+                        
+                    if !image_removed {
                         let image_render_size = egui::Vec2::splat(100.0);
 
                         let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
                         let entry = &bgst_file.bgst_entries[index];
-
+                            
                         // show the main image
-
+                            
                         let main_image_texture_handle = &self.bgst_renderer.decoded_image_handles[entry.main_image_index as usize];
                         ui.add(
                             egui::Image::new(main_image_texture_handle).fit_to_exact_size(image_render_size)
@@ -261,10 +263,24 @@ impl BGSTEditor {
                     }
                 });
             }
-        
-            TileSelection::Empty((_y, _x)) => {
-                // ui.label("(empty)");
+            
+            TileSelection::Empty((y, x)) => {
+                if ui.button("Add Image").clicked() {
+                    // create new entry
+                    do_refresh = self.bgst_renderer.bgst_file
+                    .as_mut()
+                    .unwrap()
+                    .create_entry(
+                        self.selected_layer,
+                        (x as i16, y as i16)
+                    )
+                    .is_ok();
+                }
             }
+        }
+
+        if do_refresh {
+            let _ = self.bgst_renderer.cache_textures(ui.ctx());
         }
     }
     // pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
@@ -293,55 +309,6 @@ impl BGSTEditor {
     //             });
     //         }
     //     });
-    // }
-
-    // fn render_by_layer(
-    //     &mut self,
-    //     ui: &mut egui::Ui,
-    //     rect: egui::Rect,
-    //     layer: i16,
-    //     origin: egui::Vec2
-    // ) {
-    //     let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
-
-    //     let entries: Vec<&BGSTEntry> = Vec::from_iter(bgst_file.bgst_entries
-    //         .iter()
-    //         .filter(|entry| entry.layer == layer));
-
-    //     // println!("BGSTEditor::render_by_layer - origin: {}", origin);
-
-    //     // separate by mask
-
-    //     let (masked, unmasked): (Vec<&BGSTEntry>, Vec<&BGSTEntry>) =
-    //         entries
-    //         .iter()
-    //         .partition(|entry| entry.main_image_index > -1 && entry.mask_image_index > -1);
-
-        
-    //     // unmasked
-    //     for entry in unmasked {
-    //         self.bgst_renderer.render_unmasked_entry(ui, rect, entry, origin);
-    //     }
-        
-    //     // masked
-    //     for entry in masked {
-    //         self.bgst_renderer.render_masked_entry(ui, rect, entry, origin);
-    //     }
-    // }
-
-    // fn find_grid_origin(&self) -> egui::Vec2 {
-    //     // origin is the top left corner of the grid
-
-    //     let bgst_file = &self.bgst_renderer.bgst_file.as_ref().unwrap();
-
-    //     let _grid_height = bgst_file.grid_height;
-    //     let _grid_width = bgst_file.grid_width;
-
-    //     let _image_height = bgst_file.image_height;
-    //     let _image_width = bgst_file.image_width;
-
-        
-    //     egui::Vec2::new(0.0f32, 0.0f32)
     // }
     
 }
