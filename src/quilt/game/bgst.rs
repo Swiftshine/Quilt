@@ -246,7 +246,8 @@ impl BGSTFile {
         entry.mask_image_index = -1;
     }
     
-    pub fn replace_image(&mut self, image_index: usize) -> Result<()> {
+    /// Uses a file dialog to replace an image.
+    pub fn replace_image(&mut self, image_index: Option<usize>, format: gctex::TextureFormat) -> Result<()> {
         // get path
 
         if let Some(path) = rfd::FileDialog::new()
@@ -279,14 +280,28 @@ impl BGSTFile {
 
             // again this is epic yarn (wii) only for now
 
-            let compressed = gctex::encode(gctex::TextureFormat::CMPR, &rgba, EXPECTED_SIZE, EXPECTED_SIZE);
+            let compressed = gctex::encode(format, &rgba, EXPECTED_SIZE, EXPECTED_SIZE);
 
-            // assume its a main image
+            if let Some(image_index) = image_index {
+                // replacing an existing one
+                self.compressed_images[image_index] = compressed;
+            } else {
+                // adding a new one
+                self.compressed_images.push(compressed);
+            }
 
-            self.compressed_images[image_index] = compressed;
+            Ok(())
+        } else {
+            bail!("User exited")
         }
-
-        Ok(())
+    }
+    
+    /// Uses a file dialog to add an image.
+    /// ### Returns
+    /// The index of the compressed image.
+    pub fn add_image(&mut self, format: gctex::TextureFormat) -> Result<usize> {
+        self.replace_image(None, format)?;
+        Ok(self.compressed_images.len() - 1)
     }
 }
 

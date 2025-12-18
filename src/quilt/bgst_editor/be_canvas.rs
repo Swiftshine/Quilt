@@ -159,47 +159,68 @@ impl BGSTEditor {
             return;
         }
         
+        let mut refresh = false;
+
         match self.selected_tile.clone().unwrap() {
             TileSelection::Entry(index) => {
                 ui.horizontal(|ui|{
                     // image manip options
                     
                     ui.vertical(|ui|{
-                        
                         // main image
                         if ui.button("Replace Image").clicked() {
                             let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
                             let entry = &bgst_file.bgst_entries[index];
-                            
-                            let _ = bgst_file.replace_image(entry.main_image_index as usize);
-                        }
-                        
-                        
-                        
-                        let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
-                        let entry = &bgst_file.bgst_entries[index];
-                        if entry.is_masked() {
-                            if ui.button("Replace Mask").clicked() {
-                                let _ = bgst_file.replace_image(entry.mask_image_index as usize);
-                            }
-                            
-                            if ui.button("Remove Mask").clicked() {
-                                todo!();
-                                // need to also update the entry's mask index
-                            }
-                        } else {
-                            // todo! option to add a mask
+                            let _ = bgst_file.replace_image(Some(entry.main_image_index as usize), gctex::TextureFormat::CMPR);
+
+                            refresh = true;
                         }
                         
                         if ui.button("Remove Image").clicked() {
                             let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap(); 
                             bgst_file.invalidate(index);
                             self.selected_tile = None;
+
+                            refresh = true;
                         }
 
-                        // todo! entry index manip
+                        // mask image
+                        let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
+                        
+                        if bgst_file.bgst_entries[index].is_masked() {
+                            if ui.button("Replace Mask").clicked() {
+                                let mask_image_index = bgst_file.bgst_entries[index].mask_image_index;
+                                let _ = bgst_file.replace_image(Some(mask_image_index as usize), gctex::TextureFormat::I4);
+
+                                refresh = true;
+                            }
+                            
+                            if ui.button("Remove Mask").clicked() {
+                                bgst_file.bgst_entries[index].mask_image_index = -1;
+
+                                refresh = true;
+                            }
+                        } else {
+                            if ui.button("Add Mask").clicked() {
+                                if let Ok(image_index) = bgst_file.add_image(gctex::TextureFormat::I4) {
+                                    bgst_file.bgst_entries[index].mask_image_index = image_index as i16;
+
+                                    refresh = true;
+                                }
+                            }
+                        }
+                        
+
+                        // todo! entry (and image) index manip
 
                         // todo! export tile image
+
+                        // todo! ability to set entry image/mask index manually
+                            // this can save space because you won't need to add new masks
+                        
+                        if refresh {
+                            let _ = self.bgst_renderer.cache_textures(ui.ctx());
+                        }
                     });
 
                     // display image(s)

@@ -92,7 +92,7 @@ impl BGSTRenderer {
             }
 
             self.bgst_file = Some(BGSTFile::from_bytes(&data));
-            let _ = self.cache_textures(ui);
+            let _ = self.cache_textures(ui.ctx());
 
             Ok(path)
         } else {
@@ -101,7 +101,7 @@ impl BGSTRenderer {
     }
 
     /// Decodes and caches images
-    pub fn cache_textures(&mut self, ui: &egui::Ui) -> Result<()> {
+    pub fn cache_textures(&mut self, ctx: &egui::Context) -> Result<()> {
         // put this here
         let bgst_file = match self.bgst_file.as_ref() {
             Some(file) => file,
@@ -140,7 +140,7 @@ impl BGSTRenderer {
                     0,
                 );
                 let handle = self.load_texture_handle(
-                    ui,
+                    ctx,
                     bgst_file.image_width as usize,
                     bgst_file.image_height as usize,
                     index,
@@ -191,7 +191,7 @@ impl BGSTRenderer {
                     Err(_) => return None,
                 };
                 // load textures
-                let masked_texture = ui.ctx().load_texture(
+                let masked_texture = ctx.load_texture(
                     format!("be_masked_tex_{}-{}", main_index, mask_index),
                     egui::ColorImage::from_rgba_unmultiplied(
                         [
@@ -216,7 +216,7 @@ impl BGSTRenderer {
 
     fn load_texture_handle(
         &self,
-        ui: &egui::Ui,
+        ctx: &egui::Context,
         width: usize,
         height: usize,
         index: usize,
@@ -224,7 +224,7 @@ impl BGSTRenderer {
     ) -> egui::TextureHandle {
         let texture = egui::ColorImage::from_rgba_unmultiplied([width, height], decoded);
 
-        ui.ctx().load_texture(
+        ctx.load_texture(
             format!("le_bgst_image-{}", index),
             texture,
             egui::TextureOptions::LINEAR,
