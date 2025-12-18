@@ -3,7 +3,6 @@ use image::{self, GenericImageView};
 // use std::{collections::{HashMap, HashSet}, fs};
 use std::fs;
 
-
 use byteorder::{BigEndian, ByteOrder};
 
 use anyhow::{Result, bail};
@@ -44,7 +43,6 @@ impl BGSTEntry {
     pub fn is_valid(&self) -> bool {
         self.main_valid() || self.mask_valid()
     }
-
 }
 
 #[derive(Default, Debug)]
@@ -101,7 +99,6 @@ impl BGSTFile {
             .map(|img| img.to_vec())
             .collect();
 
-        
         for img in compressed_images.iter() {
             assert_eq!(img.len(), COMPRESSED_IMAGE_SIZE);
         }
@@ -120,7 +117,6 @@ impl BGSTFile {
             compressed_images,
         }
     }
-
 
     // /// Removes unused entries and images
     // ! Don't use yet
@@ -156,7 +152,7 @@ impl BGSTFile {
     //             new_index_counter += 1;
     //         } // otherwise it's discarded
     //     }
-        
+
     //     self.compressed_images = new_compressed_images;
 
     //     // update BGST entry indices
@@ -182,7 +178,7 @@ impl BGSTFile {
     //             }
     //         }
     //     }
-        
+
     //     // remove redundant entries
     //     self.bgst_entries.retain(|e| e.is_valid());
     // }
@@ -190,7 +186,7 @@ impl BGSTFile {
     pub fn get_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
-        // header 
+        // header
         out.extend(String::from("BGST").as_bytes());
         out.extend(self.flags.to_be_bytes());
         out.extend(self.image_width.to_be_bytes());
@@ -244,16 +240,16 @@ impl BGSTFile {
     pub fn remove_entry(&mut self, entry_index: usize) {
         self.bgst_entries.remove(entry_index);
     }
-    
+
     /// Creates a new BGST entry and associated image
     pub fn create_entry(
         &mut self,
         layer: i16,
-        (x, y): (i16, i16) // (x, y)
+        (x, y): (i16, i16), // (x, y)
     ) -> Result<()> {
         // you'd have to have a main image before applying a mask
         self.add_image(gctex::TextureFormat::CMPR)?;
-        
+
         let entry = BGSTEntry {
             enabled: true,
             layer,
@@ -262,7 +258,7 @@ impl BGSTFile {
             main_image_index: (self.compressed_images.len() - 1) as i16,
             mask_image_index: -1,
             _unk_c: -1,
-            _unk_e: -1
+            _unk_e: -1,
         };
 
         self.bgst_entries.push(entry);
@@ -270,9 +266,12 @@ impl BGSTFile {
         Ok(())
     }
 
-
     /// Uses a file dialog to replace an image.
-    pub fn replace_image(&mut self, image_index: Option<usize>, format: gctex::TextureFormat) -> Result<()> {
+    pub fn replace_image(
+        &mut self,
+        image_index: Option<usize>,
+        format: gctex::TextureFormat,
+    ) -> Result<()> {
         // get path
 
         if let Some(path) = rfd::FileDialog::new()
@@ -287,15 +286,20 @@ impl BGSTFile {
 
             // decode image
 
-            let img = match image::load_from_memory_with_format(&file_data, image::ImageFormat::Png) {
+            let img = match image::load_from_memory_with_format(&file_data, image::ImageFormat::Png)
+            {
                 Ok(img) => img,
-                Err(e) => bail!("failed to decode image: {}", e)
+                Err(e) => bail!("failed to decode image: {}", e),
             };
 
             let (width, height) = img.dimensions();
 
             if width != BGST_TILE_SIZE || height != BGST_TILE_SIZE {
-                bail!("image dimensions must be {}x{}", BGST_TILE_SIZE, BGST_TILE_SIZE);
+                bail!(
+                    "image dimensions must be {}x{}",
+                    BGST_TILE_SIZE,
+                    BGST_TILE_SIZE
+                );
             };
 
             // get raw rgba
@@ -318,7 +322,7 @@ impl BGSTFile {
             bail!("User exited")
         }
     }
-    
+
     /// Uses a file dialog to add an image.
     /// ### Returns
     /// The index of the compressed image.
@@ -327,21 +331,18 @@ impl BGSTFile {
         Ok(self.compressed_images.len() - 1)
     }
 
-
     pub fn export_image(&self, image_index: usize, format: gctex::TextureFormat) -> Result<()> {
-
         if let Some(path) = rfd::FileDialog::new()
             .add_filter("Image file", &["png"])
             .save_file()
         {
-
             let decompressed = gctex::decode(
                 &self.compressed_images[image_index],
                 BGST_TILE_SIZE,
                 BGST_TILE_SIZE,
                 format,
                 &Vec::new(),
-                0
+                0,
             );
 
             image::save_buffer(
@@ -349,10 +350,10 @@ impl BGSTFile {
                 &decompressed,
                 BGST_TILE_SIZE,
                 BGST_TILE_SIZE,
-                image::ExtendedColorType::Rgba8
+                image::ExtendedColorType::Rgba8,
             )?;
 
-            Ok(())   
+            Ok(())
         } else {
             bail!("user exited")
         }

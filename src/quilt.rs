@@ -8,12 +8,12 @@ mod views;
 
 use std::sync::Arc;
 
+use bgst_editor::BGSTEditor;
 use eframe::{NativeOptions, egui};
 use egui::IconData;
+use gfarch_utility::GfArchUtility;
 use level_editor::LevelEditor;
 use views::QuiltView;
-use bgst_editor::BGSTEditor;
-use gfarch_utility::GfArchUtility;
 
 pub struct QuiltApp {
     current_view: QuiltView,
@@ -86,20 +86,16 @@ impl eframe::App for QuiltApp {
         egui::TopBottomPanel::top("q_top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.selectable_value(
-                        &mut self.current_view,
-                        QuiltView::Home,
-                        "Quilt"
-                    );
+                    ui.selectable_value(&mut self.current_view, QuiltView::Home, "Quilt");
                     ui.selectable_value(
                         &mut self.current_view,
                         QuiltView::LevelEditor,
                         "Level Editor",
                     );
                     ui.selectable_value(
-                        &mut self.current_view, 
+                        &mut self.current_view,
                         QuiltView::BGSTEditor,
-                        "BGST Editor"
+                        "BGST Editor",
                     );
                     ui.selectable_value(
                         &mut self.current_view,
@@ -110,25 +106,23 @@ impl eframe::App for QuiltApp {
             });
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            match self.current_view {
-                QuiltView::Home => {
-                    ui.centered_and_justified(|ui| {
-                        ui.label("Welcome to Quilt.");
-                    });
-                }
+        egui::CentralPanel::default().show(ctx, |ui| match self.current_view {
+            QuiltView::Home => {
+                ui.centered_and_justified(|ui| {
+                    ui.label("Welcome to Quilt.");
+                });
+            }
 
-                QuiltView::LevelEditor => {
-                    self.level_editor.show_ui(ui);
-                }
+            QuiltView::LevelEditor => {
+                self.level_editor.show_ui(ui);
+            }
 
-                QuiltView::GfArchUtility => {
-                    self.gfarch_utility.show_ui(ui);
-                }
-                
-                QuiltView::BGSTEditor => {
-                    self.bgst_editor.show_ui(ui);
-                }
+            QuiltView::GfArchUtility => {
+                self.gfarch_utility.show_ui(ui);
+            }
+
+            QuiltView::BGSTEditor => {
+                self.bgst_editor.show_ui(ui);
             }
         });
     }

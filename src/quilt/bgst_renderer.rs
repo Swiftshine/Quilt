@@ -105,7 +105,7 @@ impl BGSTRenderer {
         // put this here
         let bgst_file = match self.bgst_file.as_ref() {
             Some(file) => file,
-            None => bail!("BGST file not loaded")
+            None => bail!("BGST file not loaded"),
         };
 
         // clear old data
@@ -148,7 +148,7 @@ impl BGSTRenderer {
                 );
                 (handle, decoded)
             })
-        .collect();
+            .collect();
 
         for (handle, decoded) in results {
             self.raw_image_data.insert(handle.id(), decoded);
@@ -203,8 +203,8 @@ impl BGSTRenderer {
                     TextureOptions::LINEAR,
                 );
                 Some(((main_index, mask_index), masked_texture))
-        })
-        .collect();
+            })
+            .collect();
 
         for ((main_index, mask_index), masked_texture) in masked_results {
             self.masked_textures
@@ -234,11 +234,10 @@ impl BGSTRenderer {
     pub fn get_texture_handle(&self, index: usize) -> Option<&egui::TextureHandle> {
         if let Some(bgst_file) = self.bgst_file.as_ref() {
             let entry = &bgst_file.bgst_entries[index];
-    
+
             let main_index = entry.main_image_index as usize;
             let mask_index = entry.mask_image_index as usize;
 
-            
             if entry.is_masked() {
                 Some(self.masked_textures.get(&(main_index, mask_index)).unwrap())
             } else {
