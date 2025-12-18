@@ -123,32 +123,18 @@ impl BGSTEditor {
                     }
                 });
 
-                // handle any clicked squares
-
-                // if let Some((right_click, index)) = clicked_index {
-                //     if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_mut() {
-                //         if right_click {
-                //             bgst_file.invalidate(index);
-                //         } else {
-                //             let _ = bgst_file.replace(index);
-                //         }
-                //         // bgst_file.cleanup();
-                //         let _ = self.bgst_renderer.cache_textures(ui);
-                //     }
-                // }
-
-                // // image list
-                // egui::Area::new(egui::Id::from("be_image_list"))
-                // .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
-                // .show(ui.ctx(), |ui|{
-                //     egui::Frame::popup(ui.style())
-                //     .inner_margin(egui::Vec2::splat(8.0))
-                //     .show(ui, |ui|{
-                //         ui.collapsing("Image list", |ui|{
-                //             self.display_image_list(ui);
-                //         });
-                //     });
-                // });
+                // image list
+                egui::Area::new(egui::Id::from("be_image_list"))
+                .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+                .show(ui.ctx(), |ui|{
+                    egui::Frame::popup(ui.style())
+                    .inner_margin(egui::Vec2::splat(8.0))
+                    .show(ui, |ui|{
+                        ui.collapsing("Image list", |ui|{
+                            self.display_image_list(ui);
+                        });
+                    });
+                });
 
             }); // scroll area
         });
@@ -159,30 +145,33 @@ impl BGSTEditor {
             return;
         }
         
-        let mut do_refresh = false;
+        let mut refresh = false;
         let mut image_removed = false;
 
         match self.selected_tile.clone().unwrap() {
-            TileSelection::Entry(index) => {
+            TileSelection::Entry(entry_index) => {
                 ui.horizontal(|ui|{
                     // image manip options
                     
                     ui.vertical(|ui|{
+                        ui.label(format!("Entry Index: {}", entry_index));
+
+                        
                         // main image
                         if ui.button("Replace Image").clicked() {
                             let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
-                            let entry = &bgst_file.bgst_entries[index];
+                            let entry = &bgst_file.bgst_entries[entry_index];
                             let _ = bgst_file.replace_image(Some(entry.main_image_index as usize), gctex::TextureFormat::CMPR);
 
-                            do_refresh = true;
+                            refresh = true;
                         }
                         
                         if ui.button("Remove Image").clicked() {
                             let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap(); 
-                            bgst_file.remove_entry(index);
+                            bgst_file.remove_entry(entry_index);
                             self.selected_tile = None;
                         
-                            do_refresh = true;
+                            refresh = true;
                             image_removed = true;
                             return; // return from the *closure*
                         }
@@ -191,7 +180,7 @@ impl BGSTEditor {
                             let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
 
                             let _ = bgst_file.export_image(
-                                bgst_file.bgst_entries[index].main_image_index as usize,
+                                bgst_file.bgst_entries[entry_index].main_image_index as usize,
                                 gctex::TextureFormat::CMPR
                             );
                         }
@@ -199,53 +188,101 @@ impl BGSTEditor {
                         // mask image
                         let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
                         
-                        if bgst_file.bgst_entries[index].is_masked() {
+                        if bgst_file.bgst_entries[entry_index].is_masked() {
                             if ui.button("Replace Mask").clicked() {
-                                let mask_image_index = bgst_file.bgst_entries[index].mask_image_index;
+                                let mask_image_index = bgst_file.bgst_entries[entry_index].mask_image_index;
                                 let _ = bgst_file.replace_image(Some(mask_image_index as usize), gctex::TextureFormat::I4);
 
-                                do_refresh = true;
+                                refresh = true;
                             }
                             
                             if ui.button("Remove Mask").clicked() {
-                                bgst_file.bgst_entries[index].mask_image_index = -1;
+                                // todo! maybe just remove the image?
+                                // seems like a bunch of masks could be added to the file otherwise
+                                
+                                bgst_file.bgst_entries[entry_index].mask_image_index = -1;
 
-                                do_refresh = true;
+                                refresh = true;
                             }
                             
                             if ui.button("Export Mask").clicked() {
                                 let _ = bgst_file.export_image(
-                                    bgst_file.bgst_entries[index].mask_image_index as usize,
+                                    bgst_file.bgst_entries[entry_index].mask_image_index as usize,
                                     gctex::TextureFormat::I4
                                 );
                             }
+
                         } else {
                             if ui.button("Add Mask").clicked() {
                                 if let Ok(image_index) = bgst_file.add_image(gctex::TextureFormat::I4) {
-                                    bgst_file.bgst_entries[index].mask_image_index = image_index as i16;
+                                    bgst_file.bgst_entries[entry_index].mask_image_index = image_index as i16;
 
-                                    do_refresh = true;
+                                    refresh = true;
                                 }
                             }
                         }
                         
-
-                        // todo! entry (and image) index manip
+                        let image_count = self.bgst_renderer.bgst_file.as_ref().unwrap().compressed_images.len();
+                        let entry = &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index];
 
                         ui.checkbox(
-                            &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[index].enabled,
+                            &mut entry.enabled,
                             "Enabled?"
                         );
-
-                        // todo! ability to set entry image/mask index manually
-                            // this can save space because you won't need to add new masks
-                    });
                         
+                        let limit = (image_count - 1) as i16;
+
+                        // manual index assignment
+                        
+                        let mut changed = false;
+
+                        let image_index = &mut entry.main_image_index;
+
+                        ui.horizontal(|ui|{
+                            ui.label("Image Index");
+                            changed = ui.add(
+                                egui::DragValue::new(image_index)
+                                    .speed(1)
+                                    .range(0..=limit)
+                            ).changed();
+                        });
+
+                        // egui clamps the value when the drag value is dragged
+                        // but it doesn't account for arrow key input,
+                        // so it needs to be clamped further just in case
+
+                        if changed {
+                            *image_index = (*image_index).clamp(0, limit);
+                        }
+                        
+                        let masked = entry.is_masked();
+
+                        let image_index = &mut entry.mask_image_index;
+
+                        if masked {
+                            ui.horizontal(|ui|{
+                                ui.label("Mask Index");
+                                changed = ui.add(
+                                    egui::DragValue::new(image_index)
+                                        .speed(1)
+                                        .range(0..=limit)
+                                ).changed();
+                            });
+
+
+                            if changed {
+                                *image_index = (*image_index).clamp(0, limit);
+                                refresh = true; // todo! manual refresh?
+                            }
+                        }
+                    });
+                    
+                    // display image(s)
                     if !image_removed {
                         let image_render_size = egui::Vec2::splat(100.0);
 
                         let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
-                        let entry = &bgst_file.bgst_entries[index];
+                        let entry = &bgst_file.bgst_entries[entry_index];
                             
                         // show the main image
                             
@@ -269,7 +306,7 @@ impl BGSTEditor {
             TileSelection::Empty((y, x)) => {
                 if ui.button("Add Image").clicked() {
                     // create new entry
-                    do_refresh = self.bgst_renderer.bgst_file
+                    refresh = self.bgst_renderer.bgst_file
                     .as_mut()
                     .unwrap()
                     .create_entry(
@@ -281,36 +318,37 @@ impl BGSTEditor {
             }
         }
 
-        if do_refresh {
+        if refresh {
             let _ = self.bgst_renderer.cache_textures(ui.ctx());
         }
     }
-    // pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
-    //     let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
-    //     ui.label(format!("Count: {}", bgst_file.compressed_images.len()));
-        
-    //     let table = egui_extras::TableBuilder::new(ui)
-    //         .striped(true)
-    //         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-    //         .column(egui_extras::Column::auto()) // image column
-    //         .column(egui_extras::Column::auto()); // index column
 
-    //     table.body(|mut body| {
-    //         for (index, image_handle) in self.bgst_renderer.decoded_image_handles.iter().enumerate() {
-    //             body.row(32.0, |mut row| {
-    //                 // image column
-    //                 row.col(|ui| {
-    //                     ui.add(
-    //                         egui::Image::new(image_handle).max_size(egui::Vec2::splat(100.0))
-    //                     );
-    //                 });
-    //                 // index column
-    //                 row.col(|ui| {
-    //                     ui.label(format!("Index {index}"));
-    //                 });
-    //             });
-    //         }
-    //     });
-    // }
+    pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
+        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+        ui.label(format!("Count: {}", bgst_file.compressed_images.len()));
+        
+        let table = egui_extras::TableBuilder::new(ui)
+            .striped(true)
+            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(egui_extras::Column::auto()) // image column
+            .column(egui_extras::Column::auto()); // index column
+
+        table.body(|mut body| {
+            for (index, image_handle) in self.bgst_renderer.decoded_image_handles.iter().enumerate() {
+                body.row(32.0, |mut row| {
+                    // image column
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Image::new(image_handle).max_size(egui::Vec2::splat(100.0))
+                        );
+                    });
+                    // index column
+                    row.col(|ui| {
+                        ui.label(format!("Index {index}"));
+                    });
+                });
+            }
+        });
+    }
     
 }
