@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+
+use crate::quilt::bgst_editor::TileSelection;
+
 use super::BGSTEditor;
 
 impl BGSTEditor {
@@ -13,7 +16,6 @@ impl BGSTEditor {
                     format!("Layer {layer}")
                 );
             }
-
         }); // selected layer combo box
         
         egui::Frame::canvas(ui.style())
@@ -21,9 +23,6 @@ impl BGSTEditor {
             egui::ScrollArea::both().id_salt("be_image_render_scroll_area").show(ui, |ui|{
                 // grid
                 
-                // right click, index)
-                let mut clicked_index: Option<(bool, usize)> = None;
-
                 egui::Grid::new("bg_image_grid")
                 .spacing(egui::Vec2::ZERO) // no padding in between squares
                 .show(ui, |ui|{
@@ -44,7 +43,6 @@ impl BGSTEditor {
                                     (entry.grid_y_position as u32, entry.grid_x_position as u32),
                                     index
                                 );
-
                             }
                         }
                         // println!("{:#?}", bgst_file);
@@ -58,45 +56,36 @@ impl BGSTEditor {
 
                                 if let Some(index) = entry_map.get(&coordinate) {
                                     // render filled square
-                                    let entry = &bgst_file.bgst_entries[*index];
+                                    if let Some(texture_handle) = self.bgst_renderer.get_texture_handle(*index) {
+                                        // resize image because it's much too big
 
-                                    let main_index = entry.main_image_index as usize;
-                                    let mask_index = entry.mask_image_index as usize;
-                                    
-
-                                    let texture_handle = if entry.is_masked() {
-                                        self.bgst_renderer.masked_textures.get(&(main_index, mask_index)).unwrap()
-                                    } else {
-                                        &self.bgst_renderer.decoded_image_handles[main_index]
-                                    };
-
-                                    let image = egui::Image::new(texture_handle).fit_to_exact_size(image_render_size);
-
-                                    let image_button = egui::ImageButton::new(image)
-                                        .frame(false); // disable frame, it's distracting
-
-                                    let resp = ui.add(image_button);
-                                    
-                                    if resp.hovered() {
-                                        ui.painter_at(resp.rect).rect_filled(
-                                            resp.rect,
-                                            0.0,
-                                            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10),
-                                        );
+                                        let image = egui::Image::new(texture_handle).fit_to_exact_size(image_render_size);
+    
+                                        let image_button = egui::ImageButton::new(image)
+                                            .frame(false); // disable frame, it's distracting
+    
+                                        let resp = ui.add(image_button);
+                                        
+                                        if resp.clicked() {
+                                            self.selected_tile = Some(TileSelection::Entry(*index));
+                                        }
+                                        
+                                        if let Some(tile) = &self.selected_tile &&
+                                            *tile == TileSelection::Entry(*index) {
+                                            ui.painter_at(resp.rect).rect_filled(
+                                                resp.rect,
+                                                0.0,
+                                                egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x10),
+                                            );
+                                        } else if resp.hovered() {
+                                            ui.painter_at(resp.rect).rect_filled(
+                                                resp.rect,
+                                                0.0,
+                                                egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x5),
+                                            );
+                                        }
                                     }
 
-                                    if resp.clicked() {
-                                        // do something or other
-                                        // println!("I got clicked! Main: {main_index}, Mask: {mask_index}");
-
-                                        clicked_index = Some((false, *index));
-                                    }
-
-                                    if resp.secondary_clicked() {
-                                        clicked_index = Some((true, *index));
-                                    }
-
-                                    
                                 } else {
                                     // render empty square
 
@@ -105,17 +94,26 @@ impl BGSTEditor {
                                         egui::Sense::click()
                                     );
 
-                                    if resp.hovered() {
+                                    
+                                    if resp.clicked() {
+                                        self.selected_tile = Some(TileSelection::Empty((y, x)));
+                                    }
+
+                                    if let Some(tile) = &self.selected_tile &&
+                                        *tile == TileSelection::Empty((y, x)) {
                                         ui.painter_at(rect).rect(
                                             rect,
                                             0.0,
                                             egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x1),
                                             egui::Stroke::new(1.0, egui::Color32::WHITE)
                                         );
-                                    }
-
-                                    if resp.clicked() {
-                                        println!("empty tile at Y {y} X {x}");
+                                    } else if resp.hovered() {
+                                        ui.painter_at(rect).rect(
+                                            rect,
+                                            0.0,
+                                            egui::Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x1),
+                                            egui::Stroke::new(1.0, egui::Color32::WHITE)
+                                        );
                                     }
                                 }
                             }
@@ -127,18 +125,17 @@ impl BGSTEditor {
 
                 // handle any clicked squares
 
-                if let Some((right_click, index)) = clicked_index {
-                    if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_mut() {
-                        if right_click {
-                            bgst_file.invalidate(index);
-                        } else {
-                            let _ = bgst_file.replace(index);
-                        }
-                        // bgst_file.cleanup();
-                        let _ = self.bgst_renderer.cache_textures(ui);
-                    }
-                }
-
+                // if let Some((right_click, index)) = clicked_index {
+                //     if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_mut() {
+                //         if right_click {
+                //             bgst_file.invalidate(index);
+                //         } else {
+                //             let _ = bgst_file.replace(index);
+                //         }
+                //         // bgst_file.cleanup();
+                //         let _ = self.bgst_renderer.cache_textures(ui);
+                //     }
+                // }
 
                 // // image list
                 // egui::Area::new(egui::Id::from("be_image_list"))
@@ -154,12 +151,96 @@ impl BGSTEditor {
                 // });
 
             }); // scroll area
-
         });
     }
 
+    pub fn handle_selected_tile(&mut self, ui: &mut egui::Ui) {
+        if self.selected_tile.is_none() {
+            return;
+        }
+        
+        match self.selected_tile.clone().unwrap() {
+            TileSelection::Entry(index) => {
+                ui.horizontal(|ui|{
+                    // image manip options
+                    
+                    ui.vertical(|ui|{
+                        
+                        // main image
+                        if ui.button("Replace Image").clicked() {
+                            let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
+                            let entry = &bgst_file.bgst_entries[index];
+                            
+                            let _ = bgst_file.replace_image(entry.main_image_index as usize);
+                        }
+                        
+                        
+                        
+                        let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
+                        let entry = &bgst_file.bgst_entries[index];
+                        if entry.is_masked() {
+                            if ui.button("Replace Mask").clicked() {
+                                let _ = bgst_file.replace_image(entry.mask_image_index as usize);
+                            }
+                            
+                            if ui.button("Remove Mask").clicked() {
+                                todo!();
+                                // need to also update the entry's mask index
+                            }
+                        } else {
+                            // todo! option to add a mask
+                        }
+                        
+                        if ui.button("Remove Image").clicked() {
+                            let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap(); 
+                            bgst_file.invalidate(index);
+                            self.selected_tile = None;
+                        }
 
+                        // todo! entry index manip
+                    });
 
+                    // display image(s)
+
+                    // if let Some(texture_handle) = self.bgst_renderer.get_texture_handle(index) {
+                        
+                    //     ui.add(
+                        //         egui::Image::new(texture_handle).fit_to_exact_size(image_render_size)
+                        //     );
+                        // }
+                        
+                        // need to be able to display the main image and the mask if applicable
+                        
+                        {
+                        let image_render_size = egui::Vec2::splat(100.0);
+
+                        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+                        let entry = &bgst_file.bgst_entries[index];
+
+                        // show the main image
+
+                        let main_image_texture_handle = &self.bgst_renderer.decoded_image_handles[entry.main_image_index as usize];
+                        ui.add(
+                            egui::Image::new(main_image_texture_handle).fit_to_exact_size(image_render_size)
+                        );
+
+                        if entry.is_masked() {
+                            // show the mask
+                            let mask_image_texture_handle = &self.bgst_renderer.decoded_image_handles[entry.mask_image_index as usize];
+
+                            ui.add(
+                                egui::Image::new(mask_image_texture_handle).fit_to_exact_size(image_render_size)
+                            );
+                        }
+                    }
+                });
+            }
+        
+            TileSelection::Empty((_y, _x)) => {
+                // ui.label("(empty)");
+            }
+        }
+    }
     // pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
     //     let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
     //     ui.label(format!("Count: {}", bgst_file.compressed_images.len()));

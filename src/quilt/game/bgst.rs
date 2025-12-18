@@ -246,9 +246,7 @@ impl BGSTFile {
         entry.mask_image_index = -1;
     }
     
-    pub fn replace(&mut self, entry_index: usize) -> Result<()> {
-        let entry = &self.bgst_entries[entry_index];
-
+    pub fn replace_image(&mut self, image_index: usize) -> Result<()> {
         // get path
 
         if let Some(path) = rfd::FileDialog::new()
@@ -285,7 +283,7 @@ impl BGSTFile {
 
             // assume its a main image
 
-            self.compressed_images[entry.main_image_index as usize] = compressed;
+            self.compressed_images[image_index] = compressed;
         }
 
         Ok(())

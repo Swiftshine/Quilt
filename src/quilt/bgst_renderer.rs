@@ -139,7 +139,7 @@ impl BGSTRenderer {
                     &Vec::new(),
                     0,
                 );
-                let handle = self.get_texture_handle(
+                let handle = self.load_texture_handle(
                     ui,
                     bgst_file.image_width as usize,
                     bgst_file.image_height as usize,
@@ -214,7 +214,7 @@ impl BGSTRenderer {
         Ok(())
     }
 
-    fn get_texture_handle(
+    fn load_texture_handle(
         &self,
         ui: &egui::Ui,
         width: usize,
@@ -231,6 +231,23 @@ impl BGSTRenderer {
         )
     }
 
+    pub fn get_texture_handle(&self, index: usize) -> Option<&egui::TextureHandle> {
+        if let Some(bgst_file) = self.bgst_file.as_ref() {
+            let entry = &bgst_file.bgst_entries[index];
+    
+            let main_index = entry.main_image_index as usize;
+            let mask_index = entry.mask_image_index as usize;
+
+            
+            if entry.is_masked() {
+                Some(self.masked_textures.get(&(main_index, mask_index)).unwrap())
+            } else {
+                Some(&self.decoded_image_handles[main_index])
+            }
+        } else {
+            None
+        }
+    }
     /// Rendering function for the level editor
     pub fn le_render(&self, ui: &mut egui::Ui, rect: egui::Rect, position: egui::Vec2) {
         if self.bgst_file.is_none() {

@@ -1,24 +1,28 @@
 use super::bgst_renderer::BGSTRenderer;
-mod be_io;
-mod be_canvas;
 use anyhow::{Result, bail};
 use std::{fs, path::PathBuf};
+
+mod be_canvas;
+
+#[derive(Eq, PartialEq, Clone)]
+enum TileSelection {
+    Entry(usize), // BGSTEntry index
+    Empty((u32, u32)) // Tile coordinates (y, x)
+}
 
 #[derive(Default)]
 pub struct BGSTEditor {
     bgst_renderer: BGSTRenderer,
     selected_layer: i16,
     file_path: Option<PathBuf>,
-    // layer_rendered: [bool; 12],
+    selected_tile: Option<TileSelection>,
 }
 
 impl BGSTEditor {
     pub fn new() -> Self {
         Self {
             bgst_renderer: BGSTRenderer::new(),
-            // selected_layer: 0,
             ..Default::default()
-            // layer_rendered: [true; 12],
         }
     }
 
@@ -29,6 +33,7 @@ impl BGSTEditor {
                 if ui.button("Open").clicked() {
                     if let Ok(p) = self.bgst_renderer.open_file(ui) {
                         self.file_path = Some(p);
+                        self.selected_tile = None;
                     }
                     
                     ui.close_menu();
@@ -56,6 +61,7 @@ impl BGSTEditor {
         .show(ui.ctx(), |ui|{
             if self.bgst_renderer.bgst_file.is_some() {
                 self.render_contents(ui);
+                self.handle_selected_tile(ui);
             }
         });
     }
