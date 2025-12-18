@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
-use crate::quilt::bgst_editor::TileSelection;
+use crate::quilt::{bgst_editor::TileSelection, game::bgst::LAYER_NAMES};
 
 use super::BGSTEditor;
 
 impl BGSTEditor {
     pub fn render_contents(&mut self, ui: &mut egui::Ui) {
         egui::ComboBox::from_label("Selected Layer")
-            .selected_text(format!("Layer {}", self.selected_layer))
+            .selected_text(LAYER_NAMES[self.selected_layer as usize])
             .show_ui(ui, |ui| {
-                for layer in 0..12 {
-                    ui.selectable_value(&mut self.selected_layer, layer, format!("Layer {layer}"));
+                for (i, name) in LAYER_NAMES.iter().enumerate() {
+                    ui.selectable_value(&mut self.selected_layer, i as i16, *name);
                 }
             }); // selected layer combo box
 
