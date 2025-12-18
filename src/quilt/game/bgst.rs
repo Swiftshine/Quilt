@@ -12,6 +12,8 @@ const HEADER_SIZE: usize = 0x40;
 const GRID_ENTRY_SIZE: usize = 0x10;
 const COMPRESSED_IMAGE_SIZE: usize = 0x20000;
 
+const BGST_TILE_SIZE: u32 = 512; // in extra epic yarn, this is 256. todo: check if this can safely be changed
+
 #[derive(Default, Clone, Copy, Debug)]
 // all fields here are i16 in the BGST format
 pub struct BGSTEntry {
@@ -269,10 +271,8 @@ impl BGSTFile {
 
             let (width, height) = img.dimensions();
 
-            const EXPECTED_SIZE: u32 = 512; // in extra epic yarn, this is 256
-
-            if width != EXPECTED_SIZE || height != EXPECTED_SIZE {
-                bail!("image dimensions must be {}x{}", EXPECTED_SIZE, EXPECTED_SIZE);
+            if width != BGST_TILE_SIZE || height != BGST_TILE_SIZE {
+                bail!("image dimensions must be {}x{}", BGST_TILE_SIZE, BGST_TILE_SIZE);
             };
 
             // get raw rgba
@@ -280,7 +280,7 @@ impl BGSTFile {
 
             // again this is epic yarn (wii) only for now
 
-            let compressed = gctex::encode(format, &rgba, EXPECTED_SIZE, EXPECTED_SIZE);
+            let compressed = gctex::encode(format, &rgba, BGST_TILE_SIZE, BGST_TILE_SIZE);
 
             if let Some(image_index) = image_index {
                 // replacing an existing one
@@ -302,6 +302,37 @@ impl BGSTFile {
     pub fn add_image(&mut self, format: gctex::TextureFormat) -> Result<usize> {
         self.replace_image(None, format)?;
         Ok(self.compressed_images.len() - 1)
+    }
+
+
+    pub fn export_image(&self, image_index: usize, format: gctex::TextureFormat) -> Result<()> {
+
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("Image file", &["png"])
+            .save_file()
+        {
+
+            let decompressed = gctex::decode(
+                &self.compressed_images[image_index],
+                BGST_TILE_SIZE,
+                BGST_TILE_SIZE,
+                format,
+                &Vec::new(),
+                0
+            );
+
+            image::save_buffer(
+                path,
+                &decompressed,
+                BGST_TILE_SIZE,
+                BGST_TILE_SIZE,
+                image::ExtendedColorType::Rgba8
+            )?;
+            
+            Ok(())   
+        } else {
+            bail!("user exited")
+        }
     }
 }
 

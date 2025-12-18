@@ -184,6 +184,15 @@ impl BGSTEditor {
                             refresh = true;
                         }
 
+                        if ui.button("Export Image").clicked() {
+                            let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+
+                            let _ = bgst_file.export_image(
+                                bgst_file.bgst_entries[index].main_image_index as usize,
+                                gctex::TextureFormat::CMPR
+                            );
+                        }
+
                         // mask image
                         let bgst_file = self.bgst_renderer.bgst_file.as_mut().unwrap();
                         
@@ -200,6 +209,13 @@ impl BGSTEditor {
 
                                 refresh = true;
                             }
+                            
+                            if ui.button("Export Mask").clicked() {
+                                let _ = bgst_file.export_image(
+                                    bgst_file.bgst_entries[index].mask_image_index as usize,
+                                    gctex::TextureFormat::I4
+                                );
+                            }
                         } else {
                             if ui.button("Add Mask").clicked() {
                                 if let Ok(image_index) = bgst_file.add_image(gctex::TextureFormat::I4) {
@@ -213,8 +229,6 @@ impl BGSTEditor {
 
                         // todo! entry (and image) index manip
 
-                        // todo! export tile image
-
                         // todo! ability to set entry image/mask index manually
                             // this can save space because you won't need to add new masks
                         
@@ -223,18 +237,7 @@ impl BGSTEditor {
                         }
                     });
 
-                    // display image(s)
-
-                    // if let Some(texture_handle) = self.bgst_renderer.get_texture_handle(index) {
-                        
-                    //     ui.add(
-                        //         egui::Image::new(texture_handle).fit_to_exact_size(image_render_size)
-                        //     );
-                        // }
-                        
-                        // need to be able to display the main image and the mask if applicable
-                        
-                        {
+                    {
                         let image_render_size = egui::Vec2::splat(100.0);
 
                         let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
