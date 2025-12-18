@@ -6,13 +6,22 @@ use super::BGSTEditor;
 
 impl BGSTEditor {
     pub fn render_contents(&mut self, ui: &mut egui::Ui) {
-        egui::ComboBox::from_label("Selected Layer")
+        ui.horizontal(|ui|{
+            ui.label("Selected Layer");
+            egui::ComboBox::from_id_salt("be_selected_layer")
             .selected_text(LAYER_NAMES[self.selected_layer as usize])
             .show_ui(ui, |ui| {
                 for (i, name) in LAYER_NAMES.iter().enumerate() {
-                    ui.selectable_value(&mut self.selected_layer, i as i16, *name);
+                    ui.selectable_value(&mut self.selected_layer, i as i16, format!("{} ({})", name, i));
                 }
             }); // selected layer combo box
+            
+
+            ui.label("Scale Factor");
+            ui.add(egui::DragValue::new(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().scale_modifier)
+                .speed(1.0)
+                .range(f32::MIN..=f32::MAX));
+        });
 
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             egui::ScrollArea::both()
@@ -264,6 +273,7 @@ impl BGSTEditor {
                                 .add(egui::DragValue::new(image_index).speed(1).range(0..=limit))
                                 .changed();
                         });
+
 
                         // egui clamps the value when the drag value is dragged
                         // but it doesn't account for arrow key input,

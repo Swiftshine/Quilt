@@ -68,7 +68,7 @@ pub struct BGSTFile {
     pub grid_height: u32,
     pub _show_layer: [bool; 0xC],
     pub bgst_entries: Vec<BGSTEntry>,
-    pub _scale_modifier: f32,
+    pub scale_modifier: f32,
     pub compressed_images: Vec<Vec<u8>>,
 }
 
@@ -127,7 +127,7 @@ impl BGSTFile {
             grid_height,
             _show_layer: show_layer,
             bgst_entries,
-            _scale_modifier: scale_modifier,
+            scale_modifier,
             compressed_images,
         }
     }
@@ -220,7 +220,7 @@ impl BGSTFile {
         let image_data_offset = (HEADER_SIZE + (self.bgst_entries.len() * GRID_ENTRY_SIZE)) as u32;
 
         out.extend(image_data_offset.to_be_bytes());
-        out.extend(self._scale_modifier.to_be_bytes());
+        out.extend(self.scale_modifier.to_be_bytes());
         out.resize(out.len() + 0xC, 0); // padding
 
         // entries
