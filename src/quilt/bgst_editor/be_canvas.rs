@@ -198,6 +198,8 @@ impl BGSTEditor {
                         }
 
                         // todo! entry index manip
+
+                        // todo! export tile image
                     });
 
                     // display image(s)
