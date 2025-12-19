@@ -29,34 +29,36 @@ impl BGSTEditor {
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
         egui::TopBottomPanel::top("be_top_panel").show(ui.ctx(), |ui| {
             egui::menu::bar(ui, |ui| {
-                if ui.button("Open").clicked() {
-                    if let Ok(p) = self.bgst_renderer.open_file(ui) {
-                        self.file_path = Some(p);
-                        self.selected_tile = None;
+                // file submenu
+                ui.menu_button("File", |ui|{
+                    if ui.button("Open").clicked() {
+                        if let Ok(p) = self.bgst_renderer.open_file(ui) {
+                            self.file_path = Some(p);
+                            self.selected_tile = None;
+                        }
+
+                        ui.close_menu();
+                    }
+    
+                    if ui
+                        .add_enabled(self.bgst_renderer.bgst_file.is_some(), egui::Button::new("Save"))
+                        .clicked()
+                    {
+                        // save file
+                        let _ = self.save_file(false);
+                        ui.close_menu();
+                    }
+    
+                    if ui
+                        .add_enabled(self.bgst_renderer.bgst_file.is_some(), egui::Button::new("Save as"))
+                        .clicked()
+                    {
+                        // save file as
+                        let _ = self.save_file(true);
+                        ui.close_menu();
                     }
 
-                    ui.close_menu();
-                }
-
-                let file_open = self.bgst_renderer.bgst_file.is_some();
-
-                if ui
-                    .add_enabled(file_open, egui::Button::new("Save"))
-                    .clicked()
-                {
-                    // save file
-                    let _ = self.save_file(false);
-                    ui.close_menu();
-                }
-
-                if ui
-                    .add_enabled(file_open, egui::Button::new("Save as"))
-                    .clicked()
-                {
-                    // save file as
-                    let _ = self.save_file(true);
-                    ui.close_menu();
-                }
+                });
             });
         });
 
