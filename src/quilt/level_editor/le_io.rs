@@ -217,6 +217,8 @@ impl LevelEditor {
             .push((String::from("1.enbin"), Endata::default().to_bytes()));
         self.archive_contents
             .push((String::from("1.mapbin"), Mapdata::default().get_bytes()));
+        self.selected_enbin_index = Some(0);
+        self.selected_mapbin_index = Some(1);
         self.update_level_data();
     }
 }
