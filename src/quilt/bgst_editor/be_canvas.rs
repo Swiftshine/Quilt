@@ -302,6 +302,24 @@ impl BGSTEditor {
                                 refresh = true; // todo! manual refresh?
                             }
                         }
+
+                        ui.horizontal(|ui|{
+                            ui.label("Unknown @ 0xC");
+                            ui.add(
+                                egui::DragValue::new(&mut entry._unk_c)
+                                    .speed(1)
+                                    .range(i16::MIN..=i16::MAX)
+                            );
+                        });
+
+                        ui.horizontal(|ui|{
+                            ui.label("Unknown @ 0xE");
+                            ui.add(
+                                egui::DragValue::new(&mut entry._unk_e)
+                                    .speed(1)
+                                    .range(i16::MIN..=i16::MAX)
+                            );
+                        });
                     });
 
                     // display image(s)
