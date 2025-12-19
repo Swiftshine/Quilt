@@ -30,7 +30,7 @@ impl BGSTEditor {
         egui::TopBottomPanel::top("be_top_panel").show(ui.ctx(), |ui| {
             egui::menu::bar(ui, |ui| {
                 // file submenu
-                ui.menu_button("File", |ui|{
+                ui.menu_button("File", |ui| {
                     if ui.button("Open").clicked() {
                         if let Ok(p) = self.bgst_renderer.open_file(ui) {
                             self.file_path = Some(p);
@@ -39,25 +39,30 @@ impl BGSTEditor {
 
                         ui.close_menu();
                     }
-    
+
                     if ui
-                        .add_enabled(self.bgst_renderer.bgst_file.is_some(), egui::Button::new("Save"))
+                        .add_enabled(
+                            self.bgst_renderer.bgst_file.is_some(),
+                            egui::Button::new("Save"),
+                        )
                         .clicked()
                     {
                         // save file
                         let _ = self.save_file(false);
                         ui.close_menu();
                     }
-    
+
                     if ui
-                        .add_enabled(self.bgst_renderer.bgst_file.is_some(), egui::Button::new("Save as"))
+                        .add_enabled(
+                            self.bgst_renderer.bgst_file.is_some(),
+                            egui::Button::new("Save as"),
+                        )
                         .clicked()
                     {
                         // save file as
                         let _ = self.save_file(true);
                         ui.close_menu();
                     }
-
                 });
             });
         });

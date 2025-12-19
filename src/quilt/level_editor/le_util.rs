@@ -30,9 +30,15 @@ impl LevelEditor {
         file_name: &str,
     ) -> Result<egui::ColorImage> {
         let current_exe = env::current_exe().expect("failed to get current executable path");
-        let current_dir = current_exe.parent().expect("failed to get parent directory");
-        
-        let path = current_dir.join("quilt_res").join("tex").join(folder_name).join(format!("{}.png", file_name));
+        let current_dir = current_exe
+            .parent()
+            .expect("failed to get parent directory");
+
+        let path = current_dir
+            .join("quilt_res")
+            .join("tex")
+            .join(folder_name)
+            .join(format!("{}.png", file_name));
         let image = image::open(&path)?.to_rgba8();
 
         let (width, height) = image.dimensions();

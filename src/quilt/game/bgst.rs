@@ -13,18 +13,8 @@ const COMPRESSED_IMAGE_SIZE: usize = 0x20000;
 const BGST_TILE_SIZE: u32 = 512; // in extra epic yarn, this is 256. todo: check if this can safely be changed
 
 pub const LAYER_NAMES: [&str; 12] = [
-    "Far 5",
-    "Far 4",
-    "Far 3",
-    "Far 2",
-    "Far 1",
-    "Map",
-    "Game",
-    "Near 1",
-    "Near 2",
-    "Near 3",
-    "Near 4",
-    "Near 5"
+    "Far 5", "Far 4", "Far 3", "Far 2", "Far 1", "Map", "Game", "Near 1", "Near 2", "Near 3",
+    "Near 4", "Near 5",
 ];
 
 #[derive(Default, Clone, Copy, Debug)]

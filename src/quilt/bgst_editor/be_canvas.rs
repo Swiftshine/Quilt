@@ -6,21 +6,33 @@ use super::BGSTEditor;
 
 impl BGSTEditor {
     pub fn render_contents(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui|{
+        ui.horizontal(|ui| {
             ui.label("Selected Layer");
             egui::ComboBox::from_id_salt("be_selected_layer")
-            .selected_text(LAYER_NAMES[self.selected_layer as usize])
-            .show_ui(ui, |ui| {
-                for (i, name) in LAYER_NAMES.iter().enumerate() {
-                    ui.selectable_value(&mut self.selected_layer, i as i16, format!("{} ({})", name, i));
-                }
-            }); // selected layer combo box
-            
+                .selected_text(LAYER_NAMES[self.selected_layer as usize])
+                .show_ui(ui, |ui| {
+                    for (i, name) in LAYER_NAMES.iter().enumerate() {
+                        ui.selectable_value(
+                            &mut self.selected_layer,
+                            i as i16,
+                            format!("{} ({})", name, i),
+                        );
+                    }
+                }); // selected layer combo box
 
             ui.label("Scale Factor");
-            ui.add(egui::DragValue::new(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().scale_modifier)
+            ui.add(
+                egui::DragValue::new(
+                    &mut self
+                        .bgst_renderer
+                        .bgst_file
+                        .as_mut()
+                        .unwrap()
+                        .scale_modifier,
+                )
                 .speed(1.0)
-                .range(f32::MIN..=f32::MAX));
+                .range(f32::MIN..=f32::MAX),
+            );
         });
 
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
@@ -274,7 +286,6 @@ impl BGSTEditor {
                                 .changed();
                         });
 
-
                         // egui clamps the value when the drag value is dragged
                         // but it doesn't account for arrow key input,
                         // so it needs to be clamped further just in case
@@ -303,21 +314,21 @@ impl BGSTEditor {
                             }
                         }
 
-                        ui.horizontal(|ui|{
+                        ui.horizontal(|ui| {
                             ui.label("Unknown @ 0xC");
                             ui.add(
                                 egui::DragValue::new(&mut entry._unk_c)
                                     .speed(1)
-                                    .range(i16::MIN..=i16::MAX)
+                                    .range(i16::MIN..=i16::MAX),
                             );
                         });
 
-                        ui.horizontal(|ui|{
+                        ui.horizontal(|ui| {
                             ui.label("Unknown @ 0xE");
                             ui.add(
                                 egui::DragValue::new(&mut entry._unk_e)
                                     .speed(1)
-                                    .range(i16::MIN..=i16::MAX)
+                                    .range(i16::MIN..=i16::MAX),
                             );
                         });
                     });
