@@ -24,12 +24,12 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 
 ## Screenshots
 ### Level Editor
-![le_preview_1](assets/screenshots/LE_SS_1.png)
-![le_preview_2](assets/screenshots/LE_SS_2.png)
+![le_preview_1](assets/screenshots/LE_SS_1.png "Level Editor view of Fountain Gardens")
+![le_preview_2](assets/screenshots/LE_SS_2.png "Level Editor view of Patch Castle with **experimental** BGST preview.")
 
 ### Level Graphics Editor
-![be_preview_1](assets/screenshots/BE_SS_1.png)
-![be_preview_2](assets/screenshots/BE_SS_2.png)
+![be_preview_1](assets/screenshots/BE_SS_1.png "BGST Editor view of Fountain Gardens")
+![be_preview_2](assets/screenshots/BE_SS_2.png "BGST Editor view of Meta Melon Isle")
 
 
 ## Setup
