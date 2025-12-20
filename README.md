@@ -23,7 +23,7 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 - Render a grid
 
 ### GfArch utility
-- Extract and save `gfa` files within Quilt
+- Extract and save `.gfa` files within Quilt
 
 ## Screenshots
 ### Level Editor
