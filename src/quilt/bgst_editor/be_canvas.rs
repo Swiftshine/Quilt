@@ -187,6 +187,25 @@ impl BGSTEditor {
 
                     ui.vertical(|ui| {
                         ui.label(format!("Entry Index: {}", entry_index));
+                        ui.checkbox(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index].enabled, "Enabled?");
+                        ui.horizontal(|ui| {
+                            ui.label("Unknown @ 0xC");
+                            ui.add(
+                                egui::DragValue::new(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index]._unk_c)
+                                    .speed(1)
+                                    .range(i16::MIN..=i16::MAX),
+                            );
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Unknown @ 0xE");
+                            ui.add(
+                                egui::DragValue::new(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index]._unk_e)
+                                    .speed(1)
+                                    .range(i16::MIN..=i16::MAX),
+                            );
+                        });
+
 
                         // main image
                         if ui.button("Replace Image").clicked() {
@@ -266,11 +285,11 @@ impl BGSTEditor {
                             .unwrap()
                             .compressed_images
                             .len();
+
                         let entry =
                             &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries
                                 [entry_index];
 
-                        ui.checkbox(&mut entry.enabled, "Enabled?");
 
                         let limit = (image_count - 1) as i16;
 
@@ -315,24 +334,6 @@ impl BGSTEditor {
                                 refresh = true; // maybe manually refreshing should be an option?
                             }
                         }
-
-                        ui.horizontal(|ui| {
-                            ui.label("Unknown @ 0xC");
-                            ui.add(
-                                egui::DragValue::new(&mut entry._unk_c)
-                                    .speed(1)
-                                    .range(i16::MIN..=i16::MAX),
-                            );
-                        });
-
-                        ui.horizontal(|ui| {
-                            ui.label("Unknown @ 0xE");
-                            ui.add(
-                                egui::DragValue::new(&mut entry._unk_e)
-                                    .speed(1)
-                                    .range(i16::MIN..=i16::MAX),
-                            );
-                        });
                     });
 
                     // display image(s)
