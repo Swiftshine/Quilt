@@ -1,3 +1,5 @@
+use crate::quilt::game::bgst::LAYER_NAMES;
+
 use super::bgst_renderer::BGSTRenderer;
 use anyhow::{Result, bail};
 use std::{fs, path::PathBuf};
@@ -67,12 +69,43 @@ impl BGSTEditor {
             });
         });
 
-        egui::CentralPanel::default().show(ui.ctx(), |ui| {
-            if self.bgst_renderer.bgst_file.is_some() {
-                self.render_contents(ui);
-                self.handle_selected_tile(ui);
-            }
-        });
+        if self.bgst_renderer.bgst_file.is_some() {
+            egui::CentralPanel::default().show(ui.ctx(), |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Selected Layer");
+                    egui::ComboBox::from_id_salt("be_selected_layer")
+                        .selected_text(LAYER_NAMES[self.selected_layer as usize])
+                        .show_ui(ui, |ui| {
+                            for (i, name) in LAYER_NAMES.iter().enumerate() {
+                                ui.selectable_value(
+                                    &mut self.selected_layer,
+                                    i as i16,
+                                    format!("{} ({})", name, i),
+                                );
+                            }
+                        }); // selected layer combo box
+
+                    ui.label("Scale Factor");
+                    ui.add(
+                        egui::DragValue::new(
+                            &mut self
+                                .bgst_renderer
+                                .bgst_file
+                                .as_mut()
+                                .unwrap()
+                                .scale_modifier,
+                        )
+                        .speed(1.0)
+                        .range(f32::MIN..=f32::MAX),
+                    );
+                });
+
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    self.render_contents(ui);
+                    self.handle_selected_tile(ui);
+                });
+            });
+        }
     }
 
     pub fn save_file(&mut self, save_as: bool) -> Result<()> {

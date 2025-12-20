@@ -220,9 +220,7 @@ impl Mapdata {
             let start = gimmick_offs + (i * GIMMICK_SIZE);
             let end = start + GIMMICK_SIZE;
 
-            mapdata
-                .gimmicks
-                .push(Gimmick::decode(&input[start..end]));
+            mapdata.gimmicks.push(Gimmick::decode(&input[start..end]));
         }
 
         // paths
