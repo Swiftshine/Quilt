@@ -235,14 +235,13 @@ impl BGSTEditor {
                                 refresh = true;
                             }
 
-                            if ui.button("Remove Mask").clicked() {
-                                if bgst_file.remove_entry_mask(entry_index) {
+                            if ui.button("Remove Mask").clicked()
+                                && bgst_file.remove_entry_mask(entry_index) {
                                     refresh = true;
                                     image_removed = true;
 
                                     return; // from the closure
                                 }
-                            }
 
                             if ui.button("Export Mask").clicked() {
                                 let _ = bgst_file.export_image(
