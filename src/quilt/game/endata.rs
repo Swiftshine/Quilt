@@ -64,7 +64,7 @@ impl Endata {
         for i in 0..num_enemies {
             let start = enemy_offset + 4 + (i * ENEMY_SIZE);
             let end = start + ENEMY_SIZE;
-            endata.enemies.push(Enemy::from_bytes(&input[start..end]));
+            endata.enemies.push(Enemy::decode(&input[start..end]));
         }
 
         endata.unk_footer = input[unk_header_offset..].to_vec();
@@ -72,7 +72,7 @@ impl Endata {
         endata
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::<u8>::new();
 
         // header
@@ -90,7 +90,7 @@ impl Endata {
 
         // enemies
         for enemy in self.enemies.iter() {
-            out.extend(enemy.to_bytes());
+            out.extend(enemy.encode());
         }
 
         // the data at the end, if any
@@ -101,7 +101,7 @@ impl Endata {
 }
 
 impl EnemyParams {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let mut params = Self::default();
 
         for i in 0..3 {
@@ -119,7 +119,7 @@ impl EnemyParams {
         params
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         for i in 0..3 {
@@ -155,7 +155,7 @@ impl Enemy {
     }
 
     #[allow(non_snake_case)]
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let name = string_from_buffer(&input[..0x20]);
         let behavior = string_from_buffer(&input[0x20..0x40]);
         let path_name = string_from_buffer(&input[0x40..0x60]);
@@ -173,7 +173,7 @@ impl Enemy {
         for (i, param) in params.iter_mut().enumerate() {
             let start = 0xC4 + (i * ENEMY_PARAMS_SIZE);
             let end = start + ENEMY_PARAMS_SIZE;
-            *param = EnemyParams::from_bytes(&input[start..end]);
+            *param = EnemyParams::decode(&input[start..end]);
         }
 
         let unk_16C = BigEndian::read_u32(&input[0x16C..0x170]);
@@ -199,7 +199,7 @@ impl Enemy {
         }
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    fn encode(&self) -> Vec<u8> {
         let mut out = Vec::<u8>::new();
 
         out.extend(string_to_buffer(&self.name, 0x20));
@@ -216,7 +216,7 @@ impl Enemy {
         out.extend(self.position_3.to_be_bytes());
 
         for param in self.params.iter() {
-            out.extend(param.to_bytes());
+            out.extend(param.encode());
         }
 
         out.extend(&self.unk_16C.to_be_bytes());
@@ -225,26 +225,6 @@ impl Enemy {
         out
     }
 }
-
-// impl Line {
-//     fn from_bytes(input: &[u8], count: usize) -> Self {
-//         let mut line = Self::default();
-
-//         for i in 0..count {
-//             let start = i * 4;
-//             let end = start + 8;
-//             line.points.push(
-//                 Point2D::from_be_bytes(&input[start..end])
-//             );
-//         };
-
-//         line
-//     }
-
-//     // fn to_bytes(&self) -> Vec<u8> {
-//     //     todo!()
-//     // }
-// }
 
 pub fn color_string_to_label(s: &str) -> String {
     // the color "PURPLE" is typed as "PERPLE" in the game's code.

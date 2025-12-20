@@ -121,7 +121,7 @@ pub struct Mapdata {
 }
 
 impl Mapdata {
-    pub fn from_data(input: &[u8]) -> Self {
+    pub fn decode(input: &[u8]) -> Self {
         let version = BigEndian::read_f32(&input[..4]);
 
         let bounds_min = Point2D::from_be_bytes(&input[4..0xC]);
@@ -177,7 +177,7 @@ impl Mapdata {
 
             mapdata
                 .walls
-                .push(Wall::from_bytes(&input[start..end], &mapdata.colbin_types));
+                .push(Wall::decode(&input[start..end], &mapdata.colbin_types));
         }
 
         // labeled walls
@@ -189,7 +189,7 @@ impl Mapdata {
             let start = labeled_wall_offs + (i * LABELED_WALL_SIZE);
             let end = start + LABELED_WALL_SIZE;
 
-            mapdata.labeled_walls.push(LabeledWall::from_bytes(
+            mapdata.labeled_walls.push(LabeledWall::decode(
                 &input[start..end],
                 &mapdata.colbin_types,
                 &mapdata.wall_labels,
@@ -205,7 +205,7 @@ impl Mapdata {
             let start = common_gimmick_offs + (i * COMMON_GIMMICK_SIZE);
             let end = start + COMMON_GIMMICK_SIZE;
 
-            mapdata.common_gimmicks.push(CommonGimmick::from_bytes(
+            mapdata.common_gimmicks.push(CommonGimmick::decode(
                 &input[start..end],
                 &mapdata.common_gimmick_names,
             ));
@@ -222,7 +222,7 @@ impl Mapdata {
 
             mapdata
                 .gimmicks
-                .push(Gimmick::from_bytes(&input[start..end]));
+                .push(Gimmick::decode(&input[start..end]));
         }
 
         // paths
@@ -237,7 +237,7 @@ impl Mapdata {
             let end = start + BASE_PATH_SIZE + (num_points * 8);
             cur_path_offs += num_points * 8;
 
-            mapdata.paths.push(Path::from_bytes(&input[start..end]));
+            mapdata.paths.push(Path::decode(&input[start..end]));
         }
 
         // zones
@@ -249,7 +249,7 @@ impl Mapdata {
             let start = zone_offs + (i * ZONE_SIZE);
             let end = start + ZONE_SIZE;
 
-            mapdata.zones.push(Zone::from_bytes(&input[start..end]));
+            mapdata.zones.push(Zone::decode(&input[start..end]));
         }
 
         // course info
@@ -263,13 +263,13 @@ impl Mapdata {
 
             mapdata
                 .course_infos
-                .push(CourseInfo::from_bytes(&input[start..end]));
+                .push(CourseInfo::decode(&input[start..end]));
         }
 
         mapdata
     }
 
-    pub fn get_bytes(&mut self) -> Vec<u8> {
+    pub fn encode(&mut self) -> Vec<u8> {
         // preparations
 
         // determine if any names haven't been added to the maps
@@ -343,37 +343,37 @@ impl Mapdata {
 
         // walls
         for (i, w) in self.walls.iter().enumerate() {
-            out.extend(w.get_bytes(i, &self.colbin_types));
+            out.extend(w.encode(i, &self.colbin_types));
         }
 
         // labeled walls
         for (i, w) in self.labeled_walls.iter().enumerate() {
-            out.extend(w.to_bytes(i, &self.colbin_types, &self.wall_labels));
+            out.extend(w.encode(i, &self.colbin_types, &self.wall_labels));
         }
 
         // common gimmicks
         for gmk in self.common_gimmicks.iter() {
-            out.extend(gmk.to_bytes(&self.common_gimmick_names));
+            out.extend(gmk.encode(&self.common_gimmick_names));
         }
 
         // gimmicks
         for gmk in self.gimmicks.iter() {
-            out.extend(gmk.to_bytes());
+            out.extend(gmk.encode());
         }
 
         // paths
         for path in self.paths.iter() {
-            out.extend(path.to_bytes());
+            out.extend(path.encode());
         }
 
         // zones
         for zone in self.zones.iter() {
-            out.extend(zone.to_bytes());
+            out.extend(zone.encode());
         }
 
         // course info
         for info in self.course_infos.iter() {
-            out.extend(info.to_bytes());
+            out.extend(info.encode());
         }
 
         // common gimmick names
@@ -408,7 +408,7 @@ impl Mapdata {
 }
 
 impl Wall {
-    fn from_bytes(input: &[u8], name_map: &NameMap) -> Self {
+    fn decode(input: &[u8], name_map: &NameMap) -> Self {
         let start = Point2D::from_be_bytes(&input[..8]);
         let end = Point2D::from_be_bytes(&input[8..0x10]);
         let normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
@@ -424,7 +424,7 @@ impl Wall {
         }
     }
 
-    pub fn get_bytes(&self, wall_index: usize, name_map: &NameMap) -> Vec<u8> {
+    pub fn encode(&self, wall_index: usize, name_map: &NameMap) -> Vec<u8> {
         let mut out = Vec::new();
 
         out.extend(self.start.get_be_bytes());
@@ -459,7 +459,7 @@ impl Wall {
 }
 
 impl LabeledWall {
-    fn from_bytes(input: &[u8], collision_type_map: &NameMap, label_map: &NameMap) -> Self {
+    fn decode(input: &[u8], collision_type_map: &NameMap, label_map: &NameMap) -> Self {
         let start = Point2D::from_be_bytes(&input[..8]);
         let end = Point2D::from_be_bytes(&input[8..0x10]);
         let normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
@@ -478,7 +478,7 @@ impl LabeledWall {
         }
     }
 
-    pub fn to_bytes(
+    pub fn encode(
         &self,
         index: usize,
         collision_type_map: &NameMap,
@@ -526,7 +526,7 @@ impl LabeledWall {
 }
 
 impl Params {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let mut params = Self::default();
 
         for i in 0..3 {
@@ -551,7 +551,7 @@ impl Params {
         params
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         for int in &self.int_params {
@@ -575,7 +575,7 @@ impl Params {
 }
 
 impl CommonGimmickParams {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let mut params = Self::default();
 
         for i in 0..2 {
@@ -613,7 +613,7 @@ impl CommonGimmickParams {
         params
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         for int in &self.common_int_params {
@@ -651,18 +651,18 @@ impl CommonGimmickParams {
 }
 
 impl CommonGimmick {
-    fn from_bytes(input: &[u8], name_map: &HexMap) -> Self {
+    fn decode(input: &[u8], name_map: &HexMap) -> Self {
         let mut gmk = Self::default();
 
         let name_index = BigEndian::read_u32(&input[0..4]) as usize;
         gmk.hex = name_map.hex_names[name_index].clone();
         gmk.position = Point3D::from_be_bytes(&input[4..0x10]);
-        gmk.params = CommonGimmickParams::from_bytes(&input[0x10..]);
+        gmk.params = CommonGimmickParams::decode(&input[0x10..]);
 
         gmk
     }
 
-    pub fn to_bytes(&self, name_map: &HexMap) -> Vec<u8> {
+    pub fn encode(&self, name_map: &HexMap) -> Vec<u8> {
         let mut out = Vec::new();
 
         // name index
@@ -676,17 +676,17 @@ impl CommonGimmick {
         out.extend(self.position.to_be_bytes());
 
         // params
-        out.extend(self.params.to_bytes());
+        out.extend(self.params.encode());
 
         out
     }
 }
 
 impl Gimmick {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let name = string_from_buffer(&input[..0x30]);
         let position = Point3D::from_be_bytes(&input[0x40..0x4C]);
-        let params = Params::from_bytes(&input[0x4C..]);
+        let params = Params::decode(&input[0x4C..]);
 
         let mut gmk = Gimmick {
             name,
@@ -700,7 +700,7 @@ impl Gimmick {
         gmk
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         out.extend(self.name.as_bytes());
@@ -710,17 +710,17 @@ impl Gimmick {
 
         out.extend(self.position.to_be_bytes());
 
-        out.extend(self.params.to_bytes());
+        out.extend(self.params.encode());
 
         out
     }
 }
 
 impl Path {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let name = string_from_buffer(&input[..0x20]);
         let path_type = string_from_buffer(&input[0x20..0x40]);
-        let params = Params::from_bytes(&input[0x40..0x118]);
+        let params = Params::decode(&input[0x40..0x118]);
 
         let mut path = Path {
             name,
@@ -740,7 +740,7 @@ impl Path {
         path
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         out.extend(self.name.as_bytes());
@@ -749,7 +749,7 @@ impl Path {
         out.extend(self.path_type.as_bytes());
         out.extend(vec![0; 0x20 - self.path_type.len()]);
 
-        out.extend(self.params.to_bytes());
+        out.extend(self.params.encode());
 
         out.extend((self.points.len() as u32).to_be_bytes());
 
@@ -762,10 +762,10 @@ impl Path {
 }
 
 impl Zone {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let name = string_from_buffer(&input[..0x20]);
         let unk_20 = string_from_buffer(&input[0x20..0x40]);
-        let params = Params::from_bytes(&input[0x40..0x118]);
+        let params = Params::decode(&input[0x40..0x118]);
         let bounds_start = Point2D::from_be_bytes(&input[0x118..0x120]);
         let bounds_end = Point2D::from_be_bytes(&input[0x120..0x128]);
 
@@ -779,7 +779,7 @@ impl Zone {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         out.extend(self.name.as_bytes());
@@ -788,7 +788,7 @@ impl Zone {
         out.extend(self.unk_20.as_bytes());
         out.extend(vec![0; 0x20 - self.unk_20.len()]);
 
-        out.extend(self.params.to_bytes());
+        out.extend(self.params.encode());
 
         out.extend(self.bounds_start.get_be_bytes());
 
@@ -799,10 +799,10 @@ impl Zone {
 }
 
 impl CourseInfo {
-    fn from_bytes(input: &[u8]) -> Self {
+    fn decode(input: &[u8]) -> Self {
         let name = string_from_buffer(&input[..0x20]);
         let unk_20 = string_from_buffer(&input[0x20..0x40]);
-        let params = Params::from_bytes(&input[0x40..0x118]);
+        let params = Params::decode(&input[0x40..0x118]);
         let position = Point3D::from_be_bytes(&input[0x118..]);
 
         CourseInfo {
@@ -814,7 +814,7 @@ impl CourseInfo {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         out.extend(self.name.as_bytes());
@@ -823,7 +823,7 @@ impl CourseInfo {
         out.extend(self.unk_20.as_bytes());
         out.extend(vec![0; 0x20 - self.unk_20.len()]);
 
-        out.extend(self.params.to_bytes());
+        out.extend(self.params.encode());
 
         out.extend(self.position.to_be_bytes());
 

@@ -89,7 +89,7 @@ impl BGSTEditor {
             }
         }
 
-        let bytes = self.bgst_renderer.bgst_file.as_ref().unwrap().get_bytes();
+        let bytes = self.bgst_renderer.bgst_file.as_ref().unwrap().encode();
 
         fs::write(self.file_path.as_ref().unwrap(), bytes)?;
 

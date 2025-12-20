@@ -91,7 +91,7 @@ impl BGSTRenderer {
                 bail!("bgst is invalid");
             }
 
-            self.bgst_file = Some(BGSTFile::from_bytes(&data));
+            self.bgst_file = Some(BGSTFile::decode(&data));
             let _ = self.cache_textures(ui.ctx());
 
             Ok(path)

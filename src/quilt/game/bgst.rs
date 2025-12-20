@@ -63,7 +63,7 @@ pub struct BGSTFile {
 }
 
 impl BGSTFile {
-    pub fn from_bytes(input: &[u8]) -> Self {
+    pub fn decode(input: &[u8]) -> Self {
         // read header
         let flags = BigEndian::read_u32(&input[4..8]);
         let image_width = BigEndian::read_u32(&input[8..0xC]);
@@ -91,7 +91,7 @@ impl BGSTFile {
         while current_offset < image_data_offset {
             let start = current_offset;
             let end = current_offset + GRID_ENTRY_SIZE;
-            let entry = BGSTEntry::from_bytes(&input[start..end]);
+            let entry = BGSTEntry::decode(&input[start..end]);
             bgst_entries.push(entry);
             current_offset += GRID_ENTRY_SIZE;
         }
@@ -122,7 +122,7 @@ impl BGSTFile {
         }
     }
 
-    pub fn get_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
 
         // header
@@ -151,7 +151,7 @@ impl BGSTFile {
         // entries
 
         for entry in self.bgst_entries.iter() {
-            out.extend(entry.get_bytes());
+            out.extend(entry.encode());
         }
 
         // compressed chunks
@@ -336,7 +336,7 @@ impl BGSTFile {
 }
 
 impl BGSTEntry {
-    pub fn from_bytes(input: &[u8]) -> Self {
+    pub fn decode(input: &[u8]) -> Self {
         let enabled = BigEndian::read_i16(&input[..2]) != 0;
         let layer = BigEndian::read_i16(&input[2..4]);
         let grid_x_position = BigEndian::read_i16(&input[4..6]);
@@ -358,8 +358,9 @@ impl BGSTEntry {
         }
     }
 
-    pub fn get_bytes(&self) -> Vec<u8> {
+    pub fn encode(&self) -> Vec<u8> {
         let mut out = Vec::new();
+
         out.extend((self.enabled as i16).to_be_bytes());
         out.extend(self.layer.to_be_bytes());
 

@@ -15,7 +15,7 @@ impl LevelEditor {
         };
 
         self.current_mapdata = if let Some(mapbin_index) = self.selected_mapbin_index {
-            Mapdata::from_data(&self.archive_contents[mapbin_index].1)
+            Mapdata::decode(&self.archive_contents[mapbin_index].1)
         } else {
             Default::default()
         };
@@ -138,12 +138,12 @@ impl LevelEditor {
 
         // enbin
         if let Some(index) = self.selected_enbin_index {
-            self.archive_contents[index].1 = self.current_endata.to_bytes();
+            self.archive_contents[index].1 = self.current_endata.encode();
         }
 
         // mapbin
         if let Some(index) = self.selected_mapbin_index {
-            self.archive_contents[index].1 = self.current_mapdata.get_bytes();
+            self.archive_contents[index].1 = self.current_mapdata.encode();
         }
 
         let archive = gfarch::pack_from_files(
@@ -180,12 +180,12 @@ impl LevelEditor {
 
         // enbin
         if let Some(index) = self.selected_enbin_index {
-            self.archive_contents[index].1 = self.current_endata.to_bytes();
+            self.archive_contents[index].1 = self.current_endata.encode();
         }
 
         // mapbin
         if let Some(index) = self.selected_mapbin_index {
-            self.archive_contents[index].1 = self.current_mapdata.get_bytes();
+            self.archive_contents[index].1 = self.current_mapdata.encode();
         }
 
         for file in self.archive_contents.iter() {
@@ -214,9 +214,9 @@ impl LevelEditor {
         self.file_path = None;
         self.archive_contents.clear();
         self.archive_contents
-            .push((String::from("1.enbin"), Endata::default().to_bytes()));
+            .push((String::from("1.enbin"), Endata::default().encode()));
         self.archive_contents
-            .push((String::from("1.mapbin"), Mapdata::default().get_bytes()));
+            .push((String::from("1.mapbin"), Mapdata::default().encode()));
         self.selected_enbin_index = Some(0);
         self.selected_mapbin_index = Some(1);
         self.update_level_data();
