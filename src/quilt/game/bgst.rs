@@ -151,17 +151,7 @@ impl BGSTFile {
         // entries
 
         for entry in self.bgst_entries.iter() {
-            out.extend((entry.enabled as i16).to_be_bytes());
-            out.extend(entry.layer.to_be_bytes());
-
-            out.extend(entry.grid_x_position.to_be_bytes());
-            out.extend(entry.grid_y_position.to_be_bytes());
-
-            out.extend(entry.main_image_index.to_be_bytes());
-            out.extend(entry.mask_image_index.to_be_bytes());
-
-            out.extend(entry._unk_c.to_be_bytes());
-            out.extend(entry._unk_e.to_be_bytes());
+            out.extend(entry.get_bytes());
         }
 
         // compressed chunks
@@ -368,5 +358,20 @@ impl BGSTEntry {
         }
     }
 
-    // todo! to_bytes function
+    pub fn get_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+        out.extend((self.enabled as i16).to_be_bytes());
+        out.extend(self.layer.to_be_bytes());
+
+        out.extend(self.grid_x_position.to_be_bytes());
+        out.extend(self.grid_y_position.to_be_bytes());
+
+        out.extend(self.main_image_index.to_be_bytes());
+        out.extend(self.mask_image_index.to_be_bytes());
+
+        out.extend(self._unk_c.to_be_bytes());
+        out.extend(self._unk_e.to_be_bytes());
+
+        out
+    }
 }
