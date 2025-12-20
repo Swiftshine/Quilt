@@ -187,25 +187,45 @@ impl BGSTEditor {
 
                     ui.vertical(|ui| {
                         ui.label(format!("Entry Index: {}", entry_index));
-                        ui.checkbox(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index].enabled, "Enabled?");
+                        ui.checkbox(
+                            &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries
+                                [entry_index]
+                                .enabled,
+                            "Enabled?",
+                        );
                         ui.horizontal(|ui| {
                             ui.label("Unknown @ 0xC");
                             ui.add(
-                                egui::DragValue::new(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index]._unk_c)
-                                    .speed(1)
-                                    .range(i16::MIN..=i16::MAX),
+                                egui::DragValue::new(
+                                    &mut self
+                                        .bgst_renderer
+                                        .bgst_file
+                                        .as_mut()
+                                        .unwrap()
+                                        .bgst_entries[entry_index]
+                                        ._unk_c,
+                                )
+                                .speed(1)
+                                .range(i16::MIN..=i16::MAX),
                             );
                         });
 
                         ui.horizontal(|ui| {
                             ui.label("Unknown @ 0xE");
                             ui.add(
-                                egui::DragValue::new(&mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries[entry_index]._unk_e)
-                                    .speed(1)
-                                    .range(i16::MIN..=i16::MAX),
+                                egui::DragValue::new(
+                                    &mut self
+                                        .bgst_renderer
+                                        .bgst_file
+                                        .as_mut()
+                                        .unwrap()
+                                        .bgst_entries[entry_index]
+                                        ._unk_e,
+                                )
+                                .speed(1)
+                                .range(i16::MIN..=i16::MAX),
                             );
                         });
-
 
                         // main image
                         if ui.button("Replace Image").clicked() {
@@ -289,7 +309,6 @@ impl BGSTEditor {
                         let entry =
                             &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries
                                 [entry_index];
-
 
                         let limit = (image_count - 1) as i16;
 
