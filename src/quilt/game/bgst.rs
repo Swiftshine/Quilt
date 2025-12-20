@@ -241,7 +241,27 @@ impl BGSTFile {
         out
     }
 
+    fn remove_image_and_references(&mut self, image_index: usize) {
+        self.compressed_images.remove(image_index);
+
+        for entry in self.bgst_entries.iter_mut() {
+            if entry.main_image_index > image_index as i16 {
+                entry.main_image_index -= 1;
+            }
+
+            if entry.mask_image_index > image_index as i16 {
+                entry.mask_image_index -= 1;
+            }
+        }
+    }
+
     pub fn remove_entry(&mut self, entry_index: usize) {
+        // remove mask images if present
+        if self.bgst_entries[entry_index].is_masked() {
+            self.remove_entry_mask(entry_index);
+        }
+
+        self.remove_image_and_references(self.bgst_entries[entry_index].main_image_index as usize);
         self.bgst_entries.remove(entry_index);
     }
 
@@ -343,17 +363,7 @@ impl BGSTFile {
         
         if num_users == 0 { // we can remove the image
             // account for every entry with a mask index greater than the existing one
-            self.compressed_images.remove(mask_index as usize);
-    
-            for entry in self.bgst_entries.iter_mut() {
-                if entry.main_image_index > mask_index {
-                    entry.main_image_index -= 1;
-                }
-    
-                if entry.mask_image_index > mask_index {
-                    entry.mask_image_index -= 1;
-                }
-            }
+            self.remove_image_and_references(mask_index as usize);
 
             true
         } else { false }
@@ -418,4 +428,6 @@ impl BGSTEntry {
             _unk_e,
         }
     }
+
+    // todo! to_bytes function
 }
