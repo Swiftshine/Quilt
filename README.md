@@ -22,6 +22,9 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 - Open `.bgst3` files
 - Render a grid
 
+### GfArch utility
+- Open and extract `gfa` files within Quilt
+
 ## Screenshots
 ### Level Editor
 ![le_preview_1](assets/screenshots/LE_SS_1.png "Level Editor view of Fountain Gardens")
