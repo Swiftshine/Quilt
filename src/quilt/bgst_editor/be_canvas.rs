@@ -207,7 +207,8 @@ impl BGSTEditor {
 
                             refresh = true;
                             image_removed = true;
-                            return; // return from the *closure*
+
+                            return; // from the closure
                         }
 
                         if ui.button("Export Image").clicked() {
@@ -235,12 +236,12 @@ impl BGSTEditor {
                             }
 
                             if ui.button("Remove Mask").clicked() {
-                                // todo! maybe just remove the image?
-                                // seems like a bunch of masks could be added to the file otherwise
+                                if bgst_file.remove_entry_mask(entry_index) {
+                                    refresh = true;
+                                    image_removed = true;
 
-                                bgst_file.bgst_entries[entry_index].mask_image_index = -1;
-
-                                refresh = true;
+                                    return; // from the closure
+                                }
                             }
 
                             if ui.button("Export Mask").clicked() {
@@ -310,7 +311,8 @@ impl BGSTEditor {
 
                             if changed {
                                 *image_index = (*image_index).clamp(0, limit);
-                                refresh = true; // todo! manual refresh?
+
+                                refresh = true; // maybe manually refreshing should be an option?
                             }
                         }
 
@@ -334,7 +336,7 @@ impl BGSTEditor {
                     });
 
                     // display image(s)
-                    if !image_removed {
+                    if !image_removed && !refresh {
                         let image_render_size = egui::Vec2::splat(100.0);
 
                         let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();

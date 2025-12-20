@@ -327,6 +327,38 @@ impl BGSTFile {
         }
     }
 
+    /// Removes an entry's mask image.
+    /// ### Returns
+    /// Whether or not an image was removed.
+    pub fn remove_entry_mask(&mut self, entry_index: usize) -> bool {
+        let mask_index = self.bgst_entries[entry_index].mask_image_index;
+        self.bgst_entries[entry_index].mask_image_index = -1;
+        
+        // check if there are any other users of this mask
+        let num_users = self.bgst_entries
+            .iter()
+            .enumerate()
+            .filter(|(i, e)| *i != entry_index && e.mask_image_index == mask_index)
+            .count();
+        
+        if num_users == 0 { // we can remove the image
+            // account for every entry with a mask index greater than the existing one
+            self.compressed_images.remove(mask_index as usize);
+    
+            for entry in self.bgst_entries.iter_mut() {
+                if entry.main_image_index > mask_index {
+                    entry.main_image_index -= 1;
+                }
+    
+                if entry.mask_image_index > mask_index {
+                    entry.mask_image_index -= 1;
+                }
+            }
+
+            true
+        } else { false }
+    }
+
     /// Uses a file dialog to add an image.
     /// ### Returns
     /// The index of the compressed image.
