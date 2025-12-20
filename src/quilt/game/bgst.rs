@@ -353,20 +353,24 @@ impl BGSTFile {
     pub fn remove_entry_mask(&mut self, entry_index: usize) -> bool {
         let mask_index = self.bgst_entries[entry_index].mask_image_index;
         self.bgst_entries[entry_index].mask_image_index = -1;
-        
+
         // check if there are any other users of this mask
-        let num_users = self.bgst_entries
+        let num_users = self
+            .bgst_entries
             .iter()
             .enumerate()
             .filter(|(i, e)| *i != entry_index && e.mask_image_index == mask_index)
             .count();
-        
-        if num_users == 0 { // we can remove the image
+
+        if num_users == 0 {
+            // we can remove the image
             // account for every entry with a mask index greater than the existing one
             self.remove_image_and_references(mask_index as usize);
 
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 
     /// Uses a file dialog to add an image.
