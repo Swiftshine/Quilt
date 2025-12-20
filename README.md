@@ -9,7 +9,7 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 ### Roadmap
 - Collision editor
 - MNEB rendering
-- Potential <em>Kirby's Extra Epic Yarn</em> support.
+- Potential <em>Kirby's Extra Epic Yarn</em> support
 
 ## Capabilities
 ### Level Editor
@@ -50,3 +50,5 @@ In the end, your folder structure should look like this:
     │    └── objectdata.json
     └── [Quilt executable (Quilt.exe, etc.)]
 ```
+
+Note that Quilt will autogenerate the `quilt_res` folder in order to download `objectdata.json`.
