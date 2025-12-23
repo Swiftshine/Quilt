@@ -21,6 +21,7 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 ### Level Graphics Editor
 - Open `.bgst3` files
 - Render a grid
+- Export, replace, and remove tiles
 
 ### GfArch utility
 - Extract and save `.gfa` files within Quilt
