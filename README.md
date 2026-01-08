@@ -37,6 +37,11 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 
 
 ## Setup
+### Game Files
+1. Dump your copy of <em>Kirby's Epic Yarn</em>.
+2. Extract the game's contents. You can use Dolphin Emulator to do this.
+
+### Quilt Setup
 1. Download the latest release of Quilt or compile from source.
 2. Create a folder called `quilt_res` next to the Quilt app.
 3. Download the latest gimmick images for Quilt from [the Quilt image collection](https://github.com/Swiftshine/key-quilt-image). Put the `tex` folder within the `quilt_res` folder. To update your images, redownload the repository.
