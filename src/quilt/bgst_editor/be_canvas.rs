@@ -155,8 +155,14 @@ impl BGSTEditor {
             TileSelection::Entry(entry_index) => {
                 ui.horizontal(|ui| {
                     // image manip options
-
                     ui.vertical(|ui| {
+                        ui.label(
+                            format!(
+                                "X {} Y {}",
+                                self.bgst_renderer.bgst_file.as_ref().unwrap().bgst_entries[entry_index].grid_x_position,
+                                self.bgst_renderer.bgst_file.as_ref().unwrap().bgst_entries[entry_index].grid_y_position
+                            )
+                        );
                         ui.label(format!("Entry Index: {}", entry_index));
                         ui.checkbox(
                             &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries
@@ -358,6 +364,7 @@ impl BGSTEditor {
             }
 
             TileSelection::Empty((y, x)) => {
+                ui.label(format!("X {x} Y {y}"));
                 if ui.button("Add Image").clicked() {
                     // create new entry
                     refresh = self
