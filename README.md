@@ -45,7 +45,7 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 1. Download the latest release of Quilt or compile from source.
 2. Create a folder called `quilt_res` next to the Quilt app.
 3. Download the latest gimmick images for Quilt from [the Quilt image collection](https://github.com/Swiftshine/key-quilt-image). Put the `tex` folder within the `quilt_res` folder. To update your images, redownload the repository.
-4. Download the latest `objectdata.json` from [the object database](https://github.com/Swiftshine/key-objectdb). This only needs to be done once, as afterwards, you can update within the app. Put this in the `quilt_res` folder.
+4. Download the latest `objectdata.json` from [the object database](https://github.com/Swiftshine/key-objectdb). Put this in the `quilt_res` folder. Alternatively, you can open the level editor and go to `Object Data > Update` to download it from within Quilt.
 
 In the end, your folder structure should look like this:
 ```
