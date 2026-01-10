@@ -732,7 +732,7 @@ impl LevelEditor {
 
     pub fn process_labeled_wall_attributes(&mut self, ui: &egui::Ui, index: usize) {
         if ui.ctx().input(|i| i.key_pressed(egui::Key::Delete)) {
-            self.current_mapdata.walls.remove(index);
+            self.current_mapdata.labeled_walls.remove(index);
             self.selected_object_indices.clear();
             return;
         }
