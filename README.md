@@ -9,6 +9,8 @@ A <em>Kirby's Epic Yarn</em> modding tool.
 ### Roadmap
 - Collision editor
 - MNEB rendering
+- Save editor
+- Message editor
 - Potential <em>Kirby's Extra Epic Yarn</em> support
 
 ## Capabilities
