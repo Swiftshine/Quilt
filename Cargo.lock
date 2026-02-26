@@ -3352,6 +3352,7 @@ dependencies = [
  "rayon",
  "reqwest",
  "rfd",
+ "serde",
  "serde_json",
  "winresource",
 ]

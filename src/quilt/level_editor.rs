@@ -11,7 +11,10 @@ use std::{collections::HashMap, env, fs, path::PathBuf};
 use super::{bgst_renderer::BGSTRenderer, common::Camera};
 // use super::common::Camera;
 
-use crate::quilt::game::{endata::*, mapdata::*};
+use crate::quilt::{
+    game::{endata::*, mapdata::*},
+    settings::*,
+};
 
 #[derive(PartialEq)]
 // These are indices
@@ -117,7 +120,7 @@ impl LevelEditor {
         }
     }
 
-    pub fn show_ui(&mut self, ui: &mut egui::Ui) {
+    pub fn show_ui(&mut self, ui: &mut egui::Ui, _settings: &LevelEditorSettings) {
         egui::TopBottomPanel::top("le_top_panel")
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
@@ -133,30 +136,30 @@ impl LevelEditor {
                         let _ = self.open_file(ui.ctx());
                         ui.close_menu();
                     }
-                    
+
                     if ui.button("Open Folder").clicked() {
                         let _ = self.open_folder(ui.ctx());
                         ui.close_menu();
                     }
-    
+
                     if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Archive"))
                     .clicked() {
                         let _ = self.save_file(false);
                         ui.close_menu();
                     }
-    
+
                     if ui.add_enabled(self.file_open, Button::new("Save Archive as"))
                     .clicked() {
                         let _ = self.save_file(true);
                         ui.close_menu();
                     }
-    
+
                     if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Folder"))
                     .clicked() {
                         let _ = self.save_folder(false);
                         ui.close_menu();
                     }
-    
+
                     if ui.add_enabled(self.file_open, Button::new("Save Folder as"))
                     .clicked() {
                         let _ = self.save_folder(true);
@@ -169,31 +172,31 @@ impl LevelEditor {
                         ui.close_menu();
                     }
                 });
-                
+
                 ui.menu_button("Object Data", |ui|{
-                    
+
                     if ui.button("Update")
                     .on_hover_text("Updates 'objectdata.json' from the internet.")
                     .clicked()
                         && let Err(e) = self.update_object_data() {
                             eprintln!("Failed to update object data. Reason: {:?}", e);
                         }
-                    
+
                     if ui.button("Refresh")
                     .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
                     .clicked() {
                         let _ = self.refresh_object_data();
                     }
                 });
-                
-                let bg_base_found = 
+
+                let bg_base_found =
                 if self.file_open {
                     // check mapdata
                     self.current_mapdata.gimmicks.iter().any(|g| &g.name == "BG_BASE")
-                } else { 
+                } else {
                     self.render_bgst = false;
 
-                    false 
+                    false
                 };
 
                 let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
@@ -207,23 +210,21 @@ impl LevelEditor {
                         DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
                     );
 
-
                     ui.label("Tile X offset");
                     ui.add(
                         DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
                     );
-                    
+
                     ui.label("Tile Y offset");
                     ui.add(
                         DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
                     );
-    
-                    
+
                     ui.label("Tile X scale");
                     ui.add(
                         DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
                     );
-                    
+
                     ui.label("Tile Y scale");
                     ui.add(
                         DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
@@ -234,8 +235,8 @@ impl LevelEditor {
                         DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
                     );
                 }
-                
-                
+
+
             });
         });
 

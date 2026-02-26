@@ -1,6 +1,5 @@
 /target
-quilt_res/objectdata.json
+quilt_res/
 debug/
 .DS_Store
-quilt_res/
 scratch/

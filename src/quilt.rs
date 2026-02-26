@@ -4,6 +4,7 @@ mod common;
 mod game;
 mod gfarch_utility;
 mod level_editor;
+mod settings;
 mod views;
 
 use std::sync::Arc;
@@ -15,8 +16,14 @@ use gfarch_utility::GfArchUtility;
 use level_editor::LevelEditor;
 use views::QuiltView;
 
+use crate::quilt::settings::QuiltSettings;
+
 pub struct QuiltApp {
     current_view: QuiltView,
+
+    settings: QuiltSettings,
+    show_settings: bool,
+
     level_editor: LevelEditor,
     gfarch_utility: GfArchUtility,
     bgst_editor: BGSTEditor,
@@ -27,6 +34,10 @@ impl QuiltApp {
     fn new() -> Self {
         Self {
             current_view: QuiltView::Home,
+
+            settings: QuiltSettings::load_settings().unwrap_or_else(|_| QuiltSettings::default()),
+            show_settings: false,
+
             level_editor: LevelEditor::new(),
             gfarch_utility: GfArchUtility::new(),
             bgst_editor: BGSTEditor::new(),
@@ -111,10 +122,26 @@ impl eframe::App for QuiltApp {
                 ui.centered_and_justified(|ui| {
                     ui.label("Welcome to Quilt.");
                 });
+
+                egui::TopBottomPanel::top("q_top_panel").show(ui.ctx(), |ui| {
+                    if ui.button("Quilt Settings").clicked() {
+                        self.show_settings = !self.show_settings;
+                        ui.close_menu();
+                    }
+                });
+
+                if self.show_settings {
+                    egui::Window::new("Settings")
+                        .collapsible(true)
+                        .show(ui.ctx(), |ui| {
+                            self.settings.show_ui(ui);
+                        });
+                }
             }
 
             QuiltView::LevelEditor => {
-                self.level_editor.show_ui(ui);
+                self.level_editor
+                    .show_ui(ui, &self.settings.level_editor_settings);
             }
 
             QuiltView::GfArchUtility => {
