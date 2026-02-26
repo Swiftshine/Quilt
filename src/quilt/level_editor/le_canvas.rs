@@ -51,7 +51,7 @@ impl LevelEditor {
                 );
 
             if ui
-                .button("Remove 'NONE'?")
+                .button("Remove 'NONE'")
                 .on_hover_text("Any entities with a name of 'NONE' will be removed.")
                 .clicked()
             {
