@@ -393,22 +393,24 @@ impl LevelEditor {
                     }
 
                     ObjectType::Comment => {
-                        let mut comment = Comment::default();
-
                         // the file this comment is for
-                        comment.file = self.archive_contents[self.selected_file_index].0.to_owned();
+                        let file = self.archive_contents[self.selected_file_index].0.to_owned();
 
                         let pos = self
                             .camera
                             .convert_from_camera(pointer_pos.to_vec2())
                             .to_pos2();
-                        comment.position = Point2D::from_pos2(pos);
+                        let position = Point2D::from_pos2(pos);
 
                         if self.comments.is_none() {
                             self.comments = Some(Vec::new());
                         }
 
-                        self.comments.as_mut().unwrap().push(comment);
+                        self.comments.as_mut().unwrap().push(Comment {
+                            file,
+                            position,
+                            ..Default::default()
+                        });
                     }
                 }
                 self.current_add_object = None;
