@@ -208,7 +208,7 @@ impl Camera {
 
         if self.center_attempted {
             let screen_center = canvas_response.rect.center().to_vec2();
-            self.position.x = self.position.x - (screen_center.x / self.zoom);
+            self.position.x -= screen_center.x / self.zoom;
             self.position.y = -self.position.y - (screen_center.y / self.zoom);
             self.center_attempted = false;
         }

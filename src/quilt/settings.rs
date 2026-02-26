@@ -1,7 +1,6 @@
 use anyhow::Result;
 use eframe::egui;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::{env, fs};
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -24,7 +23,7 @@ impl QuiltVersion {
     }
 
     fn to_string(&self) -> String {
-        return format!("{}.{}.{}", self.major, self.minor, self.patch);
+        format!("{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
 
