@@ -272,8 +272,22 @@ impl LevelEditor {
                         }
 
                         ui.collapsing("Add Common Gimmick", |ui| {
+                            if ui
+                                .button("New")
+                                .on_hover_text("Create a blank common gimmick and fill in the hex name manually")
+                                .clicked()
+                            {
+                                let mut s = String::with_capacity(0x20 * 2);
+                                s.push_str("0123456789ABCDEF");
+
+                                self.current_add_object = Some(ObjectType::CommonGimmick(
+                                    s,
+                                ));
+                            }
+
                             ui.label("Search");
                             ui.text_edit_singleline(&mut self.common_gimmick_object_query);
+
                             egui::ScrollArea::vertical()
                                 .id_salt("le_add_common_gimmick")
                                 .max_height(150.0)

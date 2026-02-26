@@ -51,13 +51,24 @@ pub struct CommonGimmickParams {
     pub string_params: [String; 5],
 }
 
-#[derive(Default)]
 pub struct CommonGimmick {
     pub hex: String,
     pub position: Point3D,
     pub params: CommonGimmickParams,
 
     pub is_selected: bool,
+}
+
+impl Default for CommonGimmick {
+    fn default() -> Self {
+        Self {
+            hex: String::with_capacity(0x20 * 2), // the actual buffer is only 0x20 since they're in raw bytes,
+            // but the hex representation needs two bytes (characters) to represent one
+            position: Default::default(),
+            params: Default::default(),
+            is_selected: Default::default(),
+        }
+    }
 }
 
 #[derive(Default)]

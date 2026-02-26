@@ -1271,6 +1271,23 @@ impl LevelEditor {
                     ui.label("Edit fields regardless of documentation.");
 
                     ui.add_space(3.0);
+
+                    ui.label("Name (hex)");
+                    ui.horizontal(|ui|{
+                        let resp = ui.add(
+                            egui::TextEdit::singleline(&mut gmk.hex).char_limit(0x20 * 2).hint_text("0-9, A-F")
+                        );
+
+                        if resp.changed() {
+                            // ensure the user can only enter 0-9, A-F
+                            gmk.hex.retain(|c| c.is_ascii_hexdigit());
+
+                            // uppercase hex
+                            // (i could make this a setting in the future but that's not important right now)
+                            gmk.hex = gmk.hex.to_uppercase();
+                        }
+                    });
+
                     ui.label("Int values (common)");
                     ui.horizontal(|ui|{
                         for i in 0..2 {
