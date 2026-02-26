@@ -15,11 +15,11 @@ impl QuiltVersion {
     /// This version is to match the latest version of Quilt in which the available settings
     /// were updated.
     const fn latest() -> Self {
-        // 1.2.2
+        // 1.2.3
         Self {
             major: 1,
             minor: 2,
-            patch: 2,
+            patch: 3,
         }
     }
 
