@@ -185,12 +185,13 @@ impl LevelEditor {
 
         // comments
         if let Some(comments) = &self.comments
-            && !comments.is_empty() {
-                let json_string = serde_json::to_string_pretty(&comments)?;
+            && !comments.is_empty()
+        {
+            let json_string = serde_json::to_string_pretty(&comments)?;
 
-                self.archive_contents
-                    .push(("comments.json".to_string(), json_string.as_bytes().to_vec()))
-            }
+            self.archive_contents
+                .push(("comments.json".to_string(), json_string.as_bytes().to_vec()))
+        }
 
         let archive = gfarch::pack_from_files(
             &self.archive_contents,
@@ -236,12 +237,13 @@ impl LevelEditor {
 
         // comments
         if let Some(comments) = &self.comments
-            && !comments.is_empty() {
-                let json_string = serde_json::to_string_pretty(&comments)?;
+            && !comments.is_empty()
+        {
+            let json_string = serde_json::to_string_pretty(&comments)?;
 
-                self.archive_contents
-                    .push(("comments.json".to_string(), json_string.as_bytes().to_vec()))
-            }
+            self.archive_contents
+                .push(("comments.json".to_string(), json_string.as_bytes().to_vec()))
+        }
 
         for file in self.archive_contents.iter() {
             let filepath = self

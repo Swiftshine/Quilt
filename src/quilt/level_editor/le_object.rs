@@ -2129,16 +2129,17 @@ impl LevelEditor {
 
     pub fn process_comment_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
         if ui.ctx().input(|i| i.key_pressed(egui::Key::Delete))
-            && let Some(comments) = self.comments.as_mut() {
-                comments.remove(index);
+            && let Some(comments) = self.comments.as_mut()
+        {
+            comments.remove(index);
 
-                if comments.is_empty() {
-                    self.comments = None;
-                }
-
-                self.selected_object_indices.clear();
-                return;
+            if comments.is_empty() {
+                self.comments = None;
             }
+
+            self.selected_object_indices.clear();
+            return;
+        }
 
         if ui.ctx().input(|i| i.key_pressed(egui::Key::Escape)) {
             self.deselect_all();

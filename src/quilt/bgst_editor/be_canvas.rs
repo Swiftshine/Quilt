@@ -156,13 +156,15 @@ impl BGSTEditor {
                 ui.horizontal(|ui| {
                     // image manip options
                     ui.vertical(|ui| {
-                        ui.label(
-                            format!(
-                                "X {} Y {}",
-                                self.bgst_renderer.bgst_file.as_ref().unwrap().bgst_entries[entry_index].grid_x_position,
-                                self.bgst_renderer.bgst_file.as_ref().unwrap().bgst_entries[entry_index].grid_y_position
-                            )
-                        );
+                        ui.label(format!(
+                            "X {} Y {}",
+                            self.bgst_renderer.bgst_file.as_ref().unwrap().bgst_entries
+                                [entry_index]
+                                .grid_x_position,
+                            self.bgst_renderer.bgst_file.as_ref().unwrap().bgst_entries
+                                [entry_index]
+                                .grid_y_position
+                        ));
                         ui.label(format!("Entry Index: {}", entry_index));
                         ui.checkbox(
                             &mut self.bgst_renderer.bgst_file.as_mut().unwrap().bgst_entries
