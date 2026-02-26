@@ -1,7 +1,7 @@
 use anyhow::Result;
 use eframe::egui;
 use serde::{Deserialize, Serialize};
-use std::{env, fs};
+use std::{env, fmt::Display, fs};
 
 #[derive(Serialize, Deserialize, PartialEq)]
 struct QuiltVersion {
@@ -21,9 +21,11 @@ impl QuiltVersion {
             patch: 3,
         }
     }
+}
 
-    fn to_string(&self) -> String {
-        format!("{}.{}.{}", self.major, self.minor, self.patch)
+impl Display for QuiltVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
 
@@ -83,8 +85,8 @@ impl QuiltSettings {
                 // for now, we can just print it
                 println!(
                     "Warning: When opening quilt_settings.json, the version {} was found. Upon saving, quilt_settings.json will be adjusted to fit the current version ({}).",
-                    settings.version.to_string(),
-                    QuiltVersion::latest().to_string()
+                    settings.version,
+                    QuiltVersion::latest()
                 );
 
                 settings.version = QuiltVersion::latest();
