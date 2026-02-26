@@ -170,6 +170,7 @@ impl HexMap {
 pub struct Camera {
     pub position: egui::Vec2,
     pub zoom: f32,
+    center_attempted: bool,
 }
 
 impl Default for Camera {
@@ -177,6 +178,7 @@ impl Default for Camera {
         Self {
             position: egui::Vec2::ZERO,
             zoom: 1.0,
+            center_attempted: false,
         }
     }
 }
@@ -203,31 +205,37 @@ impl Camera {
         {
             self.reset();
         }
+
+        if self.center_attempted {
+            let screen_center = canvas_response.rect.center().to_vec2();
+            self.position.x = self.position.x - (screen_center.x / self.zoom);
+            self.position.y = -self.position.y - (screen_center.y / self.zoom);
+            self.center_attempted = false;
+        }
     }
 
     pub fn pan(&mut self, delta: egui::Vec2) {
         self.position -= delta;
     }
 
-    pub fn to_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
+    pub fn convert_to_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
         egui::Vec2 {
             x: (pos.x - self.position.x) * self.zoom,
             y: (-pos.y - self.position.y) * self.zoom,
         }
     }
 
-    // pub fn from_camera(&self) -> egui::Vec2 {
-    //     egui::Vec2 {
-    //         x: (self.position.x / self.zoom) + self.position.x,
-    //         y: (-self.position.y / self.zoom) + self.position.y
-    //     }
-    // }
-
     pub fn convert_from_camera(&self, pos: egui::Vec2) -> egui::Vec2 {
         egui::Vec2 {
             x: (pos.x / self.zoom) + self.position.x,
             y: (-pos.y / self.zoom) - self.position.y,
         }
+    }
+
+    /// Schedules a centering.
+    pub fn center(&mut self, pos: egui::Vec2) {
+        self.center_attempted = true;
+        self.position = pos;
     }
 
     pub fn reset(&mut self) {

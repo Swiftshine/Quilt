@@ -5,6 +5,22 @@ use reqwest::blocking::Client;
 use std::{env, fs};
 
 impl LevelEditor {
+    pub fn snap_to_start(&mut self) {
+        // look for START
+
+        let gimmick = self
+            .current_mapdata
+            .gimmicks
+            .iter()
+            .find(|g| &g.name == "START");
+
+        if let Some(start) = gimmick {
+            let gimmick_position = start.position.get_point2d().get_vec2();
+            self.camera.zoom = 5.0;
+            self.camera.center(gimmick_position);
+        }
+    }
+
     pub fn edit_mode_to_string(edit_mode: EditMode) -> String {
         match edit_mode {
             EditMode::Hide => "Hide",

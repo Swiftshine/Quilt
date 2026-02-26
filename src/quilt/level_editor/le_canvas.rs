@@ -146,7 +146,7 @@ impl LevelEditor {
                         bg_base.position.y,
                     );
 
-                    let pos = rect.min + self.camera.to_camera(pos);
+                    let pos = rect.min + self.camera.convert_to_camera(pos);
 
                     self.bgst_renderer.le_render(ui, rect, pos.to_vec2());
                 }

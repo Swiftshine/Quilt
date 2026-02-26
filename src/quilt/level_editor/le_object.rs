@@ -45,8 +45,8 @@ impl LevelEditor {
     pub fn update_walls(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
         let painter = ui.painter_at(canvas_rect);
         for (index, wall) in self.current_mapdata.walls.iter_mut().enumerate() {
-            let start = canvas_rect.min + self.camera.to_camera(wall.start.get_vec2());
-            let end = canvas_rect.min + self.camera.to_camera(wall.end.get_vec2());
+            let start = canvas_rect.min + self.camera.convert_to_camera(wall.start.get_vec2());
+            let end = canvas_rect.min + self.camera.convert_to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
                 egui::Pos2::new(start.x, start.y - CIRCLE_RADIUS * 2.0),
@@ -120,8 +120,8 @@ impl LevelEditor {
     pub fn update_labeled_walls(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
         let painter = ui.painter_at(canvas_rect);
         for (index, wall) in self.current_mapdata.labeled_walls.iter_mut().enumerate() {
-            let start = canvas_rect.min + self.camera.to_camera(wall.start.get_vec2());
-            let end = canvas_rect.min + self.camera.to_camera(wall.end.get_vec2());
+            let start = canvas_rect.min + self.camera.convert_to_camera(wall.start.get_vec2());
+            let end = canvas_rect.min + self.camera.convert_to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
                 egui::Pos2::new(start.x, start.y - CIRCLE_RADIUS * 2.0),
@@ -204,7 +204,8 @@ impl LevelEditor {
             }
 
             let pos = gmk.position.get_point2d();
-            let screen_pos = canvas_rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
+            let screen_pos =
+                canvas_rect.min.to_vec2() + self.camera.convert_to_camera(pos.get_vec2());
 
             let square = egui::Rect::from_center_size(
                 {
@@ -311,7 +312,8 @@ impl LevelEditor {
             }
 
             let pos = gmk.position.get_point2d();
-            let screen_pos = canvas_rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
+            let screen_pos =
+                canvas_rect.min.to_vec2() + self.camera.convert_to_camera(pos.get_vec2());
             let square = egui::Rect::from_center_size(
                 {
                     let pos = screen_pos.to_pos2();
@@ -387,9 +389,10 @@ impl LevelEditor {
             }
 
             for i in 0..path.points.len() - 1 {
-                let start_pos = canvas_rect.min + self.camera.to_camera(path.points[i].get_vec2());
+                let start_pos =
+                    canvas_rect.min + self.camera.convert_to_camera(path.points[i].get_vec2());
                 let end_pos =
-                    canvas_rect.min + self.camera.to_camera(path.points[i + 1].get_vec2());
+                    canvas_rect.min + self.camera.convert_to_camera(path.points[i + 1].get_vec2());
 
                 painter.line_segment([start_pos, end_pos], egui::Stroke::new(1.0, PATH_COLOR));
 
@@ -462,9 +465,10 @@ impl LevelEditor {
                 continue;
             }
 
-            let start = canvas_rect.min + self.camera.to_camera(zone.bounds_start.get_vec2());
+            let start =
+                canvas_rect.min + self.camera.convert_to_camera(zone.bounds_start.get_vec2());
 
-            let end = canvas_rect.min + self.camera.to_camera(zone.bounds_end.get_vec2());
+            let end = canvas_rect.min + self.camera.convert_to_camera(zone.bounds_end.get_vec2());
 
             let square = egui::Rect::from_points(&[start, end]);
 
@@ -563,7 +567,7 @@ impl LevelEditor {
             let pos = canvas_rect.min
                 + self
                     .camera
-                    .to_camera(info.position.get_point2d().get_vec2());
+                    .convert_to_camera(info.position.get_point2d().get_vec2());
 
             let square = egui::Rect::from_center_size(
                 egui::Pos2::new(pos.x, pos.y - SQUARE_SIZE * 2.0),
@@ -615,7 +619,8 @@ impl LevelEditor {
 
         for (index, enemy) in self.current_endata.enemies.iter_mut().enumerate() {
             let pos = enemy.position_1.get_point2d();
-            let screen_pos = canvas_rect.min.to_vec2() + self.camera.to_camera(pos.get_vec2());
+            let screen_pos =
+                canvas_rect.min.to_vec2() + self.camera.convert_to_camera(pos.get_vec2());
             let square = egui::Rect::from_center_size(
                 {
                     let pos = screen_pos.to_pos2();
@@ -958,7 +963,7 @@ impl LevelEditor {
                         && !note.is_empty() {
                             ui.label(format!("Note: {note}"));
                         }
-                    
+
                     // regular parameters
                     if let Some(params) = gmk_data.get("parameters").and_then(|p| p.as_object()) {
                         for (param_name, param_data) in params {
@@ -1000,7 +1005,7 @@ impl LevelEditor {
                                             gmk.params.int_params[slot] = if bool_value { 1 } else { 0 }
                                         }
                                     }
-                                    
+
                                     DataType::Float => {
                                         ui.add(
                                             egui::DragValue::new(&mut gmk.params.float_params[slot])
@@ -1151,7 +1156,7 @@ impl LevelEditor {
                                             gmk.params.common_int_params[slot] = if bool_value { 1 } else { 0 }
                                         }
                                     }
-                                    
+
                                     DataType::Float => {
                                         ui.add(
                                             egui::DragValue::new(&mut gmk.params.common_float_params[slot])
@@ -1379,7 +1384,7 @@ impl LevelEditor {
                                     object_params.int_params[slot] = if bool_value { 1 } else { 0 }
                                 }
                             }
-                            
+
                             DataType::Float => {
                                 ui.add(
                                     egui::DragValue::new(&mut object_params.float_params[slot])

@@ -120,11 +120,10 @@ impl LevelEditor {
         }
     }
 
-    pub fn show_ui(&mut self, ui: &mut egui::Ui, _settings: &LevelEditorSettings) {
+    pub fn show_ui(&mut self, ui: &mut egui::Ui, settings: &LevelEditorSettings) {
         egui::TopBottomPanel::top("le_top_panel")
         .show(ui.ctx(), |ui|{
             egui::menu::bar(ui, |ui|{
-
                 // file submenu
                 ui.menu_button("File", |ui|{
                     if ui.button("New").clicked() {
@@ -134,11 +133,21 @@ impl LevelEditor {
 
                     if ui.button("Open Archive").clicked() {
                         let _ = self.open_file(ui.ctx());
+
+                        if settings.snap_to_start {
+                            self.snap_to_start();
+                        }
+
                         ui.close_menu();
                     }
 
                     if ui.button("Open Folder").clicked() {
                         let _ = self.open_folder(ui.ctx());
+
+                        if settings.snap_to_start {
+                            self.snap_to_start();
+                        }
+
                         ui.close_menu();
                     }
 
@@ -174,7 +183,6 @@ impl LevelEditor {
                 });
 
                 ui.menu_button("Object Data", |ui|{
-
                     if ui.button("Update")
                     .on_hover_text("Updates 'objectdata.json' from the internet.")
                     .clicked()
@@ -198,6 +206,7 @@ impl LevelEditor {
 
                     false
                 };
+
 
                 let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
 
@@ -235,8 +244,6 @@ impl LevelEditor {
                         DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
                     );
                 }
-
-
             });
         });
 
