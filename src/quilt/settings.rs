@@ -13,6 +13,8 @@ struct QuiltVersion {
 impl QuiltVersion {
     /// This version is to match the latest version of Quilt in which the available settings
     /// were updated.
+    /// When updating versions, if nothing about the settings structure changes, this field
+    /// should be left alone.
     const fn latest() -> Self {
         // 1.2.3
         Self {
