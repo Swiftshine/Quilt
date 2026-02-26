@@ -2,7 +2,6 @@ mod le_canvas;
 mod le_io;
 mod le_object;
 mod le_util;
-
 use anyhow::Context;
 
 use egui::{self, Button, DragValue, TextureHandle};
@@ -14,6 +13,7 @@ use super::{bgst_renderer::BGSTRenderer, common::Camera};
 use crate::quilt::{
     game::{endata::*, mapdata::*},
     settings::*,
+    util::comment::*,
 };
 
 #[derive(PartialEq)]
@@ -27,6 +27,7 @@ enum ObjectIndex {
     Zone(usize),
     CourseInfo(usize),
     Enemy(usize),
+    Comment(usize),
 }
 
 #[derive(PartialEq)]
@@ -39,6 +40,7 @@ enum ObjectType {
     Zone,
     CourseInfo,
     Enemy,
+    Comment,
 }
 
 #[derive(PartialEq, Clone, Copy, Default)]
@@ -62,6 +64,7 @@ pub struct LevelEditor {
     selected_mapbin_index: Option<usize>,
     current_mapdata: Mapdata,
     current_endata: Endata,
+    comments: Option<Vec<Comment>>,
 
     // editor
     display_none: bool,
@@ -79,6 +82,8 @@ pub struct LevelEditor {
     path_edit_mode: EditMode,
     zone_edit_mode: EditMode,
     course_info_edit_mode: EditMode,
+    comment_edit_mode: EditMode,
+    show_canvas_options: bool,
 
     // ui
     show_object_context_menu: bool,
@@ -112,8 +117,7 @@ impl LevelEditor {
 
             common_gimmick_edit_mode: EditMode::Edit,
             gimmick_edit_mode: EditMode::Edit,
-            zone_edit_mode: EditMode::Edit,
-            course_info_edit_mode: EditMode::Edit,
+            comment_edit_mode: EditMode::Edit,
             bgst_renderer: BGSTRenderer::new(),
 
             ..Default::default()
@@ -346,6 +350,10 @@ impl LevelEditor {
                         if ui.button("Add Enemy").clicked() {
                             self.current_add_object = Some(ObjectType::Enemy);
                         }
+
+                        if ui.button("Add Comment").clicked() {
+                            self.current_add_object = Some(ObjectType::Comment);
+                        }
                     });
             });
     }
@@ -405,6 +413,10 @@ impl LevelEditor {
 
             ObjectIndex::Enemy(index) => {
                 self.process_enemy_attributes(ui, index);
+            }
+
+            ObjectIndex::Comment(index) => {
+                self.process_comment_attributes(ui, index);
             }
         }
     }

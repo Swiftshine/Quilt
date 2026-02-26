@@ -3,7 +3,10 @@ use super::{EditMode, LevelEditor, ObjectType, le_object};
 //     EditMode, LevelEditor, ObjectType
 // };
 
-use crate::quilt::game::{endata::*, mapdata::*};
+use crate::quilt::{
+    game::{endata::*, mapdata::*},
+    util::comment::Comment,
+};
 
 use std::fs;
 
@@ -65,49 +68,59 @@ impl LevelEditor {
                     .zones
                     .retain(|zone| zone.name != "NONE");
             }
-        });
 
-        // canvas options
-        ui.horizontal(|ui| {
-            ui.label("Canvas Options");
-            ui.separator();
-
-            let targets = [
-                (&mut self.wall_edit_mode, "Walls"),
-                (&mut self.labeled_wall_edit_mode, "Labeled Walls"),
-                (&mut self.common_gimmick_edit_mode, "Common Gimmicks"),
-                (&mut self.gimmick_edit_mode, "Gimmicks"),
-                (&mut self.path_edit_mode, "Paths"),
-                (&mut self.zone_edit_mode, "Zones"),
-                (&mut self.course_info_edit_mode, "Course Infos"),
-            ];
-
-            for (mode, text) in targets {
-                // egui's combo boxes has the text be on the right of the
-                // combo box. frankly, it looks bad when multiple options
-                // are strung together horizontally, because English
-                // is read from left-to-right.
-                // unfortunately, there's no option to edit this,
-                // so this will be the solution instead
-
-                ui.label(text);
-
-                egui::ComboBox::from_id_salt(format!("le_edit_mode_change_{}", text))
-                    .selected_text(Self::edit_mode_to_string(*mode))
-                    .show_ui(ui, |ui| {
-                        let edit_modes = [EditMode::Hide, EditMode::View, EditMode::Edit];
-
-                        for edit_mode in edit_modes {
-                            ui.selectable_value(
-                                mode,
-                                edit_mode,
-                                Self::edit_mode_to_string(edit_mode),
-                            );
-                        }
-                    });
+            if ui.button("Canvas Options").clicked() {
+                self.show_canvas_options = !self.show_canvas_options;
             }
         });
 
+        // canvas options
+
+        if self.show_canvas_options {
+            egui::Window::new("Canvas Options")
+                .collapsible(true)
+                .show(ui.ctx(), |ui| {
+                    // egui's combo boxes has the text located on the right of the
+                    // combo box. as English is read from left-to-right,
+                    // I find this unintuitive.
+                    // unfortunately, there's no option to edit this,
+                    // and since I'd rather not artificually inflate the length of
+                    // these strings to get around that, this is what we'll deal with for now.
+
+                    let targets = [
+                        (&mut self.wall_edit_mode, "Walls"),
+                        (&mut self.labeled_wall_edit_mode, "Labeled Walls"),
+                        (&mut self.common_gimmick_edit_mode, "Common Gimmicks"),
+                        (&mut self.gimmick_edit_mode, "Gimmicks"),
+                        (&mut self.path_edit_mode, "Paths"),
+                        (&mut self.zone_edit_mode, "Zones"),
+                        (&mut self.course_info_edit_mode, "Course Infos"),
+                        (&mut self.comment_edit_mode, "Comments"),
+                    ];
+
+                    for (mode, text) in targets {
+                        ui.horizontal(|ui| {
+                            egui::ComboBox::from_label(text)
+                                .selected_text(Self::edit_mode_to_string(*mode))
+                                .show_ui(ui, |ui| {
+                                    let edit_modes =
+                                        [EditMode::Hide, EditMode::View, EditMode::Edit];
+
+                                    for edit_mode in edit_modes {
+                                        ui.selectable_value(
+                                            mode,
+                                            edit_mode,
+                                            Self::edit_mode_to_string(edit_mode),
+                                        );
+                                    }
+                                });
+                        });
+                    }
+                });
+        }
+        /*
+
+        */
         // the actual canvas drawn
         egui::Frame::canvas(ui.style()).show(ui, |ui| {
             // ui.label(format!("Camera x: {}, y: {}, zoom: {}", self.camera.position.x, self.camera.position.y, self.camera.zoom));
@@ -178,6 +191,10 @@ impl LevelEditor {
 
             if !matches!(self.course_info_edit_mode, EditMode::Hide) {
                 self.update_course_info(ui, rect);
+            }
+
+            if !matches!(self.comment_edit_mode, EditMode::Hide) && self.comments.is_some() {
+                self.update_comments(ui, rect);
             }
 
             self.update_enemies(ui, rect);
@@ -373,7 +390,26 @@ impl LevelEditor {
                             .to_pos2();
                         enemy.position_1 = Point2D::from_pos2(pos).get_point3d();
                         self.current_endata.enemies.push(enemy);
-                    } // _ => {}
+                    }
+
+                    ObjectType::Comment => {
+                        let mut comment = Comment::default();
+
+                        // the file this comment is for
+                        comment.file = self.archive_contents[self.selected_file_index].0.to_owned();
+
+                        let pos = self
+                            .camera
+                            .convert_from_camera(pointer_pos.to_vec2())
+                            .to_pos2();
+                        comment.position = Point2D::from_pos2(pos);
+
+                        if self.comments.is_none() {
+                            self.comments = Some(Vec::new());
+                        }
+
+                        self.comments.as_mut().unwrap().push(comment);
+                    }
                 }
                 self.current_add_object = None;
             }

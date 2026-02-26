@@ -130,6 +130,12 @@ impl LevelEditor {
                 ObjectIndex::Enemy(index) => {
                     self.current_endata.enemies[*index].is_selected = false;
                 }
+
+                ObjectIndex::Comment(index) => {
+                    if let Some(comments) = self.comments.as_mut() {
+                        comments[*index].is_selected = false;
+                    }
+                }
             }
         }
         self.selected_object_indices.clear();

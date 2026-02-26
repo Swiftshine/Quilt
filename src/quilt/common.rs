@@ -1,5 +1,6 @@
 use byteorder::{BigEndian, ByteOrder};
 use egui::{Pos2, Vec2};
+use serde::{Deserialize, Serialize};
 // use encoding_rs::SHIFT_JIS;
 
 // pub fn shift_jis_to_utf8(raw: &[u8]) -> String {
@@ -12,7 +13,7 @@ use egui::{Pos2, Vec2};
 //     decoded.to_string()
 // }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Point2D {
     pub x: f32,
     pub y: f32,

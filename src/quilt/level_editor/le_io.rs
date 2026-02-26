@@ -1,5 +1,6 @@
 use super::LevelEditor;
 use crate::quilt::game::{endata::*, mapdata::*};
+use crate::quilt::util::comment::Comment;
 use anyhow::{Result, bail};
 use gfarch::gfarch;
 use rfd::FileDialog;
@@ -31,11 +32,32 @@ impl LevelEditor {
             self.file_path = Some(path);
             let path = self.file_path.as_ref().unwrap();
             let data = fs::read(path)?;
-            self.archive_contents = gfarch::extract(&data)?;
 
-            if self.archive_contents.is_empty() {
+            let mut archive_contents = gfarch::extract(&data)?;
+
+            if archive_contents.is_empty() {
                 bail!("archive is invalid");
             }
+
+            self.comments = None;
+
+            // if the comment file is found, read it and exclude it from our instance of the archive
+            let comment = archive_contents
+                .iter()
+                .enumerate()
+                .find(|f| &f.1.0 == "comments.json");
+
+            if let Some((index, comment_file)) = comment {
+                let contents = String::from_utf8_lossy(&comment_file.1).to_string();
+                self.load_comments(contents);
+                archive_contents.remove(index);
+            }
+
+            if archive_contents.is_empty() {
+                bail!("archive only contained comments");
+            }
+
+            self.archive_contents = archive_contents;
 
             self.selected_enbin_index = if self.archive_contents[0].0.contains(".enbin") {
                 Some(0)
@@ -92,6 +114,21 @@ impl LevelEditor {
                     bail!("no files found in the folder");
                 }
 
+                self.comments = None;
+
+                // if the comment file is found, read it and exclude it from our instance of the archive
+                let comment = files.iter().enumerate().find(|f| &f.1.0 == "comments.json");
+
+                if let Some((index, comment_file)) = comment {
+                    let contents = String::from_utf8_lossy(&comment_file.1).to_string();
+                    self.load_comments(contents);
+                    files.remove(index);
+                }
+
+                if files.is_empty() {
+                    bail!("folder only contained comments");
+                }
+
                 self.archive_contents = files;
 
                 self.selected_enbin_index = if self.archive_contents[0].0.contains(".enbin") {
@@ -146,6 +183,16 @@ impl LevelEditor {
             self.archive_contents[index].1 = self.current_mapdata.encode();
         }
 
+        // comments
+        if let Some(comments) = &self.comments {
+            if !comments.is_empty() {
+                let json_string = serde_json::to_string_pretty(&comments)?;
+
+                self.archive_contents
+                    .push(("comments.json".to_string(), json_string.as_bytes().to_vec()))
+            }
+        }
+
         let archive = gfarch::pack_from_files(
             &self.archive_contents,
             gfarch::Version::V3,
@@ -188,6 +235,16 @@ impl LevelEditor {
             self.archive_contents[index].1 = self.current_mapdata.encode();
         }
 
+        // comments
+        if let Some(comments) = &self.comments {
+            if !comments.is_empty() {
+                let json_string = serde_json::to_string_pretty(&comments)?;
+
+                self.archive_contents
+                    .push(("comments.json".to_string(), json_string.as_bytes().to_vec()))
+            }
+        }
+
         for file in self.archive_contents.iter() {
             let filepath = self
                 .file_path
@@ -219,6 +276,12 @@ impl LevelEditor {
             .push((String::from("1.mapbin"), Mapdata::default().encode()));
         self.selected_enbin_index = Some(0);
         self.selected_mapbin_index = Some(1);
+        self.comments = None;
         self.update_level_data();
+    }
+
+    fn load_comments(&mut self, contents: String) {
+        let comments = serde_json::from_str::<Vec<Comment>>(&contents).unwrap_or_default();
+        self.comments = Some(comments);
     }
 }

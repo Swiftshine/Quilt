@@ -5,6 +5,7 @@ mod game;
 mod gfarch_utility;
 mod level_editor;
 mod settings;
+mod util;
 mod views;
 
 use std::sync::Arc;

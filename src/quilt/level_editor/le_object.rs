@@ -20,8 +20,12 @@ const ZONE_COLOR: Color32 = egui::Color32::from_rgb(0x2B, 0x9E, 0xB3);
 
 const COURSE_INFO_COLOR: Color32 = egui::Color32::from_rgb(0xEA, 0x8C, 0x55);
 
+const COMMENT_COLOR: Color32 = egui::Color32::from_rgb(0x77, 0x77, 0x77);
+
 pub const SQUARE_SIZE: f32 = 2.0;
-const CIRCLE_RADIUS: f32 = 0.1;
+
+const BIG_CIRCLE_RADIUS: f32 = 0.5;
+const SMALL_CIRCLE_RADIUS: f32 = 0.1;
 
 #[derive(PartialEq)]
 enum DataType {
@@ -49,13 +53,13 @@ impl LevelEditor {
             let end = canvas_rect.min + self.camera.convert_to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
-                egui::Pos2::new(start.x, start.y - CIRCLE_RADIUS * 2.0),
-                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                egui::Pos2::new(start.x, start.y - SMALL_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
             );
 
             let end_rect = egui::Rect::from_center_size(
-                egui::Pos2::new(end.x, end.y - CIRCLE_RADIUS * 2.0),
-                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                egui::Pos2::new(end.x, end.y - SMALL_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
             );
 
             let start_resp = ui.interact(
@@ -82,8 +86,8 @@ impl LevelEditor {
                 continue;
             }
 
-            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, color);
-            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, color);
+            painter.circle_filled(start, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
+            painter.circle_filled(end, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
 
             let mut clicked = false;
             let mut dragged = false;
@@ -124,13 +128,13 @@ impl LevelEditor {
             let end = canvas_rect.min + self.camera.convert_to_camera(wall.end.get_vec2());
 
             let start_rect = egui::Rect::from_center_size(
-                egui::Pos2::new(start.x, start.y - CIRCLE_RADIUS * 2.0),
-                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                egui::Pos2::new(start.x, start.y - SMALL_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
             );
 
             let end_rect = egui::Rect::from_center_size(
-                egui::Pos2::new(end.x, end.y - CIRCLE_RADIUS * 2.0),
-                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                egui::Pos2::new(end.x, end.y - SMALL_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
             );
 
             let start_resp = ui.interact(
@@ -160,8 +164,8 @@ impl LevelEditor {
                 continue;
             }
 
-            painter.circle_filled(start, CIRCLE_RADIUS * self.camera.zoom, color);
-            painter.circle_filled(end, CIRCLE_RADIUS * self.camera.zoom, color);
+            painter.circle_filled(start, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
+            painter.circle_filled(end, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
 
             let mut clicked = false;
             let mut dragged = false;
@@ -406,17 +410,17 @@ impl LevelEditor {
                     egui::Color32::WHITE
                 };
 
-                painter.circle_filled(start_pos, CIRCLE_RADIUS * self.camera.zoom, color);
-                painter.circle_filled(end_pos, CIRCLE_RADIUS * self.camera.zoom, color);
+                painter.circle_filled(start_pos, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
+                painter.circle_filled(end_pos, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
 
                 let start_rect = egui::Rect::from_center_size(
-                    egui::Pos2::new(start_pos.x, start_pos.y - CIRCLE_RADIUS * 2.0),
-                    egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                    egui::Pos2::new(start_pos.x, start_pos.y - SMALL_CIRCLE_RADIUS * 2.0),
+                    egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
                 );
 
                 let end_rect = egui::Rect::from_center_size(
-                    egui::Pos2::new(end_pos.x, end_pos.y - CIRCLE_RADIUS * 2.0),
-                    egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                    egui::Pos2::new(end_pos.x, end_pos.y - SMALL_CIRCLE_RADIUS * 2.0),
+                    egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
                 );
 
                 let start_resp = ui.interact(
@@ -512,18 +516,18 @@ impl LevelEditor {
             }
 
             let start_rect = egui::Rect::from_center_size(
-                egui::Pos2::new(start.x, start.y - CIRCLE_RADIUS * 2.0),
-                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                egui::Pos2::new(start.x, start.y - SMALL_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
             );
 
             let end_rect = egui::Rect::from_center_size(
-                egui::Pos2::new(end.x, end.y - CIRCLE_RADIUS * 2.0),
-                egui::Vec2::splat(CIRCLE_RADIUS * self.camera.zoom),
+                egui::Pos2::new(end.x, end.y - SMALL_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(SMALL_CIRCLE_RADIUS * self.camera.zoom),
             );
 
             let color = egui::Color32::from_rgb(0x00, 0x9F, 0xFD);
 
-            let radius = CIRCLE_RADIUS * 2.0;
+            let radius = SMALL_CIRCLE_RADIUS * 2.0;
 
             painter.circle_filled(start, radius * self.camera.zoom, color);
             painter.circle_filled(end, radius * self.camera.zoom, color);
@@ -657,6 +661,66 @@ impl LevelEditor {
 
                 enemy.position_1.x += world_delta.x;
                 enemy.position_1.y -= world_delta.y;
+            }
+        }
+    }
+
+    pub fn update_comments(&mut self, ui: &mut egui::Ui, canvas_rect: Rect) {
+        let painter = ui.painter_at(canvas_rect);
+
+        // it's already been checked against None
+        let comments = self.comments.as_mut().unwrap();
+
+        for (index, comment) in comments.iter_mut().enumerate() {
+            // check if this comment should even be processed
+            let current_filename = &self.archive_contents[self.selected_file_index].0;
+
+            if &comment.file != current_filename {
+                continue;
+            }
+
+            let pos = canvas_rect.min + self.camera.convert_to_camera(comment.position.get_vec2());
+
+            let rect = egui::Rect::from_center_size(
+                egui::Pos2::new(pos.x, pos.y - BIG_CIRCLE_RADIUS * 2.0),
+                egui::Vec2::splat(BIG_CIRCLE_RADIUS * self.camera.zoom),
+            );
+
+            let resp = ui.interact(
+                canvas_rect.intersect(rect),
+                egui::Id::new(&comment as *const _),
+                egui::Sense::click_and_drag(),
+            );
+
+            let color = if comment.is_selected {
+                COMMENT_COLOR
+            } else {
+                egui::Color32::WHITE
+            };
+
+            painter.circle_stroke(
+                pos,
+                BIG_CIRCLE_RADIUS * self.camera.zoom,
+                egui::Stroke::new(1.0, color),
+            );
+
+            if !matches!(self.comment_edit_mode, EditMode::Edit) {
+                continue;
+            }
+
+            let mut clicked = false;
+
+            if resp.clicked() {
+                clicked = true;
+            } else if resp.dragged() {
+                let world_delta = resp.drag_delta() / self.camera.zoom;
+                comment.position.x += world_delta.x;
+                comment.position.y -= world_delta.y;
+            }
+
+            if clicked {
+                self.selected_object_indices
+                    .push(ObjectIndex::Comment(index));
             }
         }
     }
@@ -2059,6 +2123,59 @@ impl LevelEditor {
                                 });
                             }
                         });
+                    });
+            });
+    }
+
+    pub fn process_comment_attributes(&mut self, ui: &mut egui::Ui, index: usize) {
+        if ui.ctx().input(|i| i.key_pressed(egui::Key::Delete)) {
+            if let Some(comments) = self.comments.as_mut() {
+                comments.remove(index);
+
+                if comments.is_empty() {
+                    self.comments = None;
+                }
+
+                self.selected_object_indices.clear();
+                return;
+            }
+        }
+
+        if ui.ctx().input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.deselect_all();
+            return;
+        }
+
+        let comment = &mut self.comments.as_mut().unwrap()[index];
+
+        comment.is_selected = true;
+
+        egui::Area::new(egui::Id::from("le_comment_attribute_editor"))
+            .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+            .show(ui.ctx(), |ui| {
+                egui::Frame::popup(ui.style())
+                    .inner_margin(egui::Vec2::splat(8.0))
+                    .show(ui, |ui| {
+                        ui.label("Edit comment attributes");
+
+                        ui.label("Position");
+                        ui.horizontal(|ui| {
+                            ui.label("X");
+                            ui.add(
+                                egui::DragValue::new(&mut comment.position.x)
+                                    .speed(0.5)
+                                    .range(f32::MIN..=f32::MAX),
+                            );
+                            ui.label("Y");
+                            ui.add(
+                                egui::DragValue::new(&mut comment.position.y)
+                                    .speed(0.5)
+                                    .range(f32::MIN..=f32::MAX),
+                            );
+                        });
+
+                        ui.label("Contents");
+                        ui.text_edit_multiline(&mut comment.contents);
                     });
             });
     }
