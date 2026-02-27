@@ -59,4 +59,4 @@ In the end, your folder structure should look like this:
     └── [Quilt executable (Quilt.exe, etc.)]
 ```
 
-Note that Quilt will autogenerate the `quilt_res` folder in order to download `objectdata.json`.
+Note that Quilt will autogenerate the `quilt_res` folder in order to download `objectdata.json` or create `quilt_settings.json`.
