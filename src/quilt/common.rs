@@ -1,6 +1,8 @@
 use byteorder::{BigEndian, ByteOrder};
 use egui::{Pos2, Vec2};
 use serde::{Deserialize, Serialize};
+
+use crate::quilt::settings::ZoomType;
 // use encoding_rs::SHIFT_JIS;
 
 // pub fn shift_jis_to_utf8(raw: &[u8]) -> String {
@@ -171,6 +173,7 @@ impl HexMap {
 pub struct Camera {
     pub position: egui::Vec2,
     pub zoom: f32,
+    pub zoom_type: ZoomType,
     center_attempted: bool,
 }
 
@@ -180,6 +183,7 @@ impl Default for Camera {
             position: egui::Vec2::ZERO,
             zoom: 1.0,
             center_attempted: false,
+            zoom_type: ZoomType::TowardsMouse,
         }
     }
 }
@@ -191,11 +195,33 @@ impl Camera {
         let zoom_max = 100.0;
 
         // zoom handling
-        if canvas_response.hovered() {
-            let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
-            if scroll_delta != 0.0 {
-                let zoom_change = zoom_sensitivity * scroll_delta.signum();
-                self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max);
+
+        match self.zoom_type {
+            ZoomType::TowardsMouse => {
+                if canvas_response.hovered() {
+                    let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
+                    if scroll_delta != 0.0 {
+                        let mouse_pos = ctx
+                            .input(|i| i.pointer.hover_pos().unwrap_or(egui::Pos2::ZERO).to_vec2());
+                        let world_pos_before = self.convert_from_camera(mouse_pos);
+
+                        let zoom_change = zoom_sensitivity * scroll_delta.signum();
+                        self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max);
+
+                        let world_pos_after = self.convert_from_camera(mouse_pos);
+                        self.position += world_pos_before - world_pos_after;
+                    }
+                }
+            }
+
+            ZoomType::TowardsTopLeft => {
+                if canvas_response.hovered() {
+                    let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
+                    if scroll_delta != 0.0 {
+                        let zoom_change = zoom_sensitivity * scroll_delta.signum();
+                        self.zoom = (self.zoom + zoom_change).clamp(zoom_min, zoom_max);
+                    }
+                }
             }
         }
 

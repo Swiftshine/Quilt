@@ -2,6 +2,8 @@ use anyhow::Result;
 use eframe::egui;
 use serde::{Deserialize, Serialize};
 use std::{env, fmt::Display, fs};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 #[derive(Serialize, Deserialize, PartialEq)]
 struct QuiltVersion {
@@ -16,11 +18,11 @@ impl QuiltVersion {
     /// When updating versions, if nothing about the settings structure changes, this field
     /// should be left alone.
     const fn latest() -> Self {
-        // 1.2.3
+        // 1.2.5
         Self {
             major: 1,
             minor: 2,
-            patch: 3,
+            patch: 5,
         }
     }
 }
@@ -31,16 +33,37 @@ impl Display for QuiltVersion {
     }
 }
 
+#[derive(Default, Serialize, Deserialize, EnumIter, PartialEq, Clone)]
+pub enum ZoomType {
+    /// Zoom towards the mouse
+    #[default]
+    TowardsMouse,
+    /// The old zoom method
+    TowardsTopLeft,
+}
+
+impl Display for ZoomType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TowardsMouse => write!(f, "Towards Mouse"),
+            Self::TowardsTopLeft => write!(f, "Towards Top Left"),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct LevelEditorSettings {
     /// When a level is loaded, the camera will snap to the `START` gimmick, if present.
     pub snap_to_start: bool,
+    #[serde(default)]
+    pub zoom_type: ZoomType,
 }
 
 impl Default for LevelEditorSettings {
     fn default() -> Self {
         Self {
             snap_to_start: true,
+            zoom_type: ZoomType::TowardsMouse,
         }
     }
 }
@@ -136,5 +159,17 @@ impl QuiltSettings {
         .on_hover_text(
             "When a level is loaded, the camera will snap to the \"START\" gimmick, if present.",
         );
+
+        egui::ComboBox::from_label("Zoom Type")
+            .selected_text(self.level_editor_settings.zoom_type.to_string())
+            .show_ui(ui, |ui| {
+                for e in ZoomType::iter() {
+                    ui.selectable_value(
+                        &mut self.level_editor_settings.zoom_type,
+                        e.clone(),
+                        e.to_string(),
+                    );
+                }
+            });
     }
 }
