@@ -3,6 +3,10 @@ name = "quilt"
 version = "1.2.5"
 edition = "2024"
 
+[profile.release]
+panic = "abort"
+strip = "debuginfo"
+
 [dependencies]
 anyhow = "1.0.93"
 byteorder = "1.5.0"
