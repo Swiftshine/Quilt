@@ -126,7 +126,9 @@ impl LevelEditor {
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui, settings: &LevelEditorSettings) {
         // update camera settings
-        self.camera.zoom_type = settings.zoom_type.clone();
+        if self.camera.zoom_type != settings.zoom_type {
+            self.camera.zoom_type = settings.zoom_type.clone();
+        }
 
         egui::TopBottomPanel::top("le_top_panel")
         .show(ui.ctx(), |ui|{
