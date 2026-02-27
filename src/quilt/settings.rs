@@ -55,6 +55,8 @@ impl Display for ZoomType {
 pub struct LevelEditorSettings {
     /// When a level is loaded, the camera will snap to the `START` gimmick, if present.
     pub snap_to_start: bool,
+    /// The zoom method for cameras.
+    // Note: Move this out of "Level Editor Settings" and into "General" when writing new camera-based editors.
     #[serde(default)]
     pub zoom_type: ZoomType,
 }
