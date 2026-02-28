@@ -194,11 +194,19 @@ impl Camera {
         let zoom_min = 0.5;
         let zoom_max = 100.0;
 
+        let is_mouse_over_canvas = ctx.input(|i| {
+            if let Some(pos) = i.pointer.hover_pos() {
+                canvas_response.rect.contains(pos)
+            } else {
+                false
+            }
+        });
+
         // zoom handling
 
         match self.zoom_type {
             ZoomType::TowardsMouse => {
-                if canvas_response.hovered() {
+                if is_mouse_over_canvas {
                     let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
                     if scroll_delta != 0.0 {
                         let mouse_pos = ctx
@@ -215,7 +223,7 @@ impl Camera {
             }
 
             ZoomType::TowardsTopLeft => {
-                if canvas_response.hovered() {
+                if is_mouse_over_canvas {
                     let scroll_delta = ctx.input(|i| i.smooth_scroll_delta.y);
                     if scroll_delta != 0.0 {
                         let zoom_change = zoom_sensitivity * scroll_delta.signum();
