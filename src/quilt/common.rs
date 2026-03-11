@@ -196,7 +196,7 @@ impl Camera {
 
         let is_mouse_over_canvas = ctx.input(|i| {
             if let Some(pos) = i.pointer.hover_pos() {
-                canvas_response.rect.contains(pos)
+                canvas_response.rect.contains(pos) && canvas_response.hovered()
             } else {
                 false
             }
