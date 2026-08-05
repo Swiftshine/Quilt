@@ -3,7 +3,7 @@ use crate::quilt::views::QuiltViewer;
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub enum QuiltViewerTab {
     Home,
-    // LevelEditor,
+    LevelEditor,
     // BGSTEditor,
 }
 
@@ -12,7 +12,7 @@ impl QuiltViewerTab {
         // todo: emojis eventually
         match self {
             Self::Home => "Home",
-            // Self::LevelEditor => "Level Editor",
+            Self::LevelEditor => "Level Editor",
             // Self::BGSTEditor => "BGST Editor",
         }
         .to_string()
@@ -49,6 +49,10 @@ impl<'a> egui_dock::TabViewer for QuiltViewerTabViewer<'a> {
             Self::Tab::Home => {
                 self.quilt_viewer.show_home_ui(ui);
             }
+
+            Self::Tab::LevelEditor => {
+                self.quilt_viewer.level_editor.show_ui(ui);
+            }
         }
     }
 
@@ -69,5 +73,34 @@ impl QuiltViewer {
 
         // put it back
         self.dock_state = Some(dock_state);
+
+        // tab adding
+        if let Some(tab) = self.tab_to_open.take() {
+            self.open_tab(tab);
+        }
+    }
+
+    // needs to be delayed due to ownership of the dock state
+    pub fn schedule_open_tab(&mut self, tab: QuiltViewerTab) {
+        self.tab_to_open = Some(tab);
+    }
+
+    pub fn open_tab(&mut self, tab: QuiltViewerTab) {
+        let found = {
+            self.dock_state
+                .as_ref()
+                .unwrap()
+                .main_surface()
+                .iter()
+                .any(|node| node.tabs().is_some_and(|tabs| tabs.contains(&tab)))
+        };
+
+        if !found {
+            self.dock_state
+                .as_mut()
+                .unwrap()
+                .main_surface_mut()
+                .push_to_first_leaf(tab);
+        }
     }
 }

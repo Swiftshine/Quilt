@@ -1,3 +1,5 @@
+mod home_view;
+
 use egui::Ui;
 
 use crate::quilt::{bgst_editor::BGSTEditor, docking::QuiltViewerTab, level_editor::LevelEditor};
@@ -52,9 +54,5 @@ impl QuiltViewer {
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
         self.update_dock(ui);
-    }
-
-    pub fn show_home_ui(&mut self, ui: &mut egui::Ui) {
-        ui.label("Home");
     }
 }
