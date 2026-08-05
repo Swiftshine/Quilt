@@ -65,6 +65,7 @@ impl LevelEditor {
 
         Ok(egui::ColorImage {
             size: [width as usize, height as usize],
+            source_size: egui::Vec2::new(width as f32, height as f32),
             pixels,
         })
     }

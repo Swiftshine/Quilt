@@ -29,83 +29,83 @@ impl BGSTEditor {
     }
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
-        egui::TopBottomPanel::top("be_top_panel").show(ui.ctx(), |ui| {
-            egui::menu::bar(ui, |ui| {
-                // file submenu
-                ui.menu_button("File", |ui| {
-                    if ui.button("Open").clicked() {
-                        if let Ok(p) = self.bgst_renderer.open_file(ui) {
-                            self.file_path = Some(p);
-                            self.selected_tile = None;
-                        }
+        // egui::TopBottomPanel::top("be_top_panel").show(ui.ctx(), |ui| {
+        //     egui::menu::bar(ui, |ui| {
+        //         // file submenu
+        //         ui.menu_button("File", |ui| {
+        //             if ui.button("Open").clicked() {
+        //                 if let Ok(p) = self.bgst_renderer.open_file(ui) {
+        //                     self.file_path = Some(p);
+        //                     self.selected_tile = None;
+        //                 }
 
-                        ui.close_menu();
-                    }
+        //                 ui.close_menu();
+        //             }
 
-                    if ui
-                        .add_enabled(
-                            self.bgst_renderer.bgst_file.is_some(),
-                            egui::Button::new("Save"),
-                        )
-                        .clicked()
-                    {
-                        // save file
-                        let _ = self.save_file(false);
-                        ui.close_menu();
-                    }
+        //             if ui
+        //                 .add_enabled(
+        //                     self.bgst_renderer.bgst_file.is_some(),
+        //                     egui::Button::new("Save"),
+        //                 )
+        //                 .clicked()
+        //             {
+        //                 // save file
+        //                 let _ = self.save_file(false);
+        //                 ui.close_menu();
+        //             }
 
-                    if ui
-                        .add_enabled(
-                            self.bgst_renderer.bgst_file.is_some(),
-                            egui::Button::new("Save as"),
-                        )
-                        .clicked()
-                    {
-                        // save file as
-                        let _ = self.save_file(true);
-                        ui.close_menu();
-                    }
-                });
-            });
-        });
+        //             if ui
+        //                 .add_enabled(
+        //                     self.bgst_renderer.bgst_file.is_some(),
+        //                     egui::Button::new("Save as"),
+        //                 )
+        //                 .clicked()
+        //             {
+        //                 // save file as
+        //                 let _ = self.save_file(true);
+        //                 ui.close_menu();
+        //             }
+        //         });
+        //     });
+        // });
 
-        if self.bgst_renderer.bgst_file.is_some() {
-            egui::CentralPanel::default().show(ui.ctx(), |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Selected Layer");
-                    egui::ComboBox::from_id_salt("be_selected_layer")
-                        .selected_text(LAYER_NAMES[self.selected_layer as usize])
-                        .show_ui(ui, |ui| {
-                            for (i, name) in LAYER_NAMES.iter().enumerate() {
-                                ui.selectable_value(
-                                    &mut self.selected_layer,
-                                    i as i16,
-                                    format!("{} ({})", name, i),
-                                );
-                            }
-                        }); // selected layer combo box
+        // if self.bgst_renderer.bgst_file.is_some() {
+        //     egui::CentralPanel::default().show(ui, |ui| {
+        //         ui.horizontal(|ui| {
+        //             ui.label("Selected Layer");
+        //             egui::ComboBox::from_id_salt("be_selected_layer")
+        //                 .selected_text(LAYER_NAMES[self.selected_layer as usize])
+        //                 .show_ui(ui, |ui| {
+        //                     for (i, name) in LAYER_NAMES.iter().enumerate() {
+        //                         ui.selectable_value(
+        //                             &mut self.selected_layer,
+        //                             i as i16,
+        //                             format!("{} ({})", name, i),
+        //                         );
+        //                     }
+        //                 }); // selected layer combo box
 
-                    ui.label("Scale Factor");
-                    ui.add(
-                        egui::DragValue::new(
-                            &mut self
-                                .bgst_renderer
-                                .bgst_file
-                                .as_mut()
-                                .unwrap()
-                                .scale_modifier,
-                        )
-                        .speed(1.0)
-                        .range(f32::MIN..=f32::MAX),
-                    );
-                });
+        //             ui.label("Scale Factor");
+        //             ui.add(
+        //                 egui::DragValue::new(
+        //                     &mut self
+        //                         .bgst_renderer
+        //                         .bgst_file
+        //                         .as_mut()
+        //                         .unwrap()
+        //                         .scale_modifier,
+        //                 )
+        //                 .speed(1.0)
+        //                 .range(f32::MIN..=f32::MAX),
+        //             );
+        //         });
 
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    self.render_contents(ui);
-                    self.handle_selected_tile(ui);
-                });
-            });
-        }
+        //         egui::ScrollArea::vertical().show(ui, |ui| {
+        //             self.render_contents(ui);
+        //             self.handle_selected_tile(ui);
+        //         });
+        //     });
+        // }
     }
 
     pub fn save_file(&mut self, save_as: bool) -> Result<()> {

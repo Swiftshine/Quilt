@@ -12,19 +12,19 @@ impl GfArchUtility {
     }
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui) {
-        egui::TopBottomPanel::top("gu_top_panel").show(ui.ctx(), |ui| {
-            egui::menu::bar(ui, |ui| {
-                if ui.button("Extract Archive").clicked() {
-                    let _ = self.extract_archive();
-                    ui.close_menu();
-                }
+        // egui::TopBottomPanel::top("gu_top_panel").show(ui.ctx(), |ui| {
+        //     egui::menu::bar(ui, |ui| {
+        //         if ui.button("Extract Archive").clicked() {
+        //             let _ = self.extract_archive();
+        //             ui.close_menu();
+        //         }
 
-                if ui.button("Create Archive (Wii)").clicked() {
-                    let _ = self.create_archive(gfarch::CompressionType::BPE, gfarch::Version::V3);
-                    ui.close_menu();
-                }
-            });
-        });
+        //         if ui.button("Create Archive (Wii)").clicked() {
+        //             let _ = self.create_archive(gfarch::CompressionType::BPE, gfarch::Version::V3);
+        //             ui.close_menu();
+        //         }
+        //     });
+        // });
     }
 
     fn extract_archive(&self) -> Result<()> {

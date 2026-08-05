@@ -1,7 +1,4 @@
 use super::{EditMode, LevelEditor, ObjectType, le_object};
-// use super::{
-//     EditMode, LevelEditor, ObjectType
-// };
 
 use crate::quilt::{
     game::{endata::*, mapdata::*},

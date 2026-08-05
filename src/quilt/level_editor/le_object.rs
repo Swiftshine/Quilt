@@ -251,7 +251,12 @@ impl LevelEditor {
                     egui::Color32::LIGHT_GRAY
                 };
 
-                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+                painter.rect_stroke(
+                    square,
+                    0.0,
+                    egui::Stroke::new(1.0, color),
+                    egui::StrokeKind::Outside,
+                );
             }
 
             if !matches!(self.common_gimmick_edit_mode, EditMode::Edit) {
@@ -355,7 +360,12 @@ impl LevelEditor {
                     egui::Color32::LIGHT_GRAY
                 };
 
-                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+                painter.rect_stroke(
+                    square,
+                    0.0,
+                    egui::Stroke::new(1.0, color),
+                    egui::StrokeKind::Outside,
+                );
             }
 
             if !matches!(self.gimmick_edit_mode, EditMode::Edit) {
@@ -494,6 +504,7 @@ impl LevelEditor {
                 Rect::from_points(&[start, end]),
                 0.0,
                 egui::Stroke::new(1.0, ZONE_COLOR),
+                egui::StrokeKind::Outside,
             );
 
             if !matches!(self.zone_edit_mode, EditMode::Edit) {
@@ -584,7 +595,12 @@ impl LevelEditor {
                 egui::Color32::WHITE
             };
 
-            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            painter.rect_stroke(
+                square,
+                0.0,
+                egui::Stroke::new(1.0, color),
+                egui::StrokeKind::Outside,
+            );
 
             if !matches!(self.course_info_edit_mode, EditMode::Edit) {
                 continue;
@@ -642,7 +658,12 @@ impl LevelEditor {
 
             let color = egui::Color32::from_rgb(0xE3, 0x96, 0xDF);
 
-            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            painter.rect_stroke(
+                square,
+                0.0,
+                egui::Stroke::new(1.0, color),
+                egui::StrokeKind::Outside,
+            );
 
             if resp.hovered() {
                 painter.text(
@@ -899,7 +920,7 @@ impl LevelEditor {
                         bytes.iter().map(|byte| format!("{:02X}", byte)).collect();
 
                     ui.ctx().copy_text(format!("0x{}", byte_string));
-                    ui.close_menu();
+                    ui.close();
                 }
             } else {
                 // allow for big- or little-endian copying
@@ -927,7 +948,7 @@ impl LevelEditor {
                     };
 
                     ui.ctx().copy_text(format!("0x{}", byte_string));
-                    ui.close_menu();
+                    ui.close();
                 }
             }
         });
@@ -1170,7 +1191,6 @@ impl LevelEditor {
                                         });
                                     }
 
-
                                     DataType::None => {
                                         ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
                                     }
@@ -1320,7 +1340,6 @@ impl LevelEditor {
                                             }
                                         });
                                     }
-
 
                                     DataType::None => {
                                         ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");
@@ -1565,7 +1584,6 @@ impl LevelEditor {
                                     }
                                 });
                             }
-
 
                             DataType::None => {
                                 ui.label("The provided data type is invalid. You might want to check 'objectdata.json'.");

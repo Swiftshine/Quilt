@@ -6,141 +6,141 @@ use super::BGSTEditor;
 
 impl BGSTEditor {
     pub fn render_contents(&mut self, ui: &mut egui::Ui) {
-        egui::Frame::canvas(ui.style()).show(ui, |ui| {
-            egui::ScrollArea::both()
-                .id_salt("be_image_render_scroll_area")
-                .show(ui, |ui| {
-                    // grid
+        // egui::Frame::canvas(ui.style()).show(ui, |ui| {
+        //     egui::ScrollArea::both()
+        //         .id_salt("be_image_render_scroll_area")
+        //         .show(ui, |ui| {
+        //             // grid
 
-                    egui::Grid::new("bg_image_grid")
-                        .spacing(egui::Vec2::ZERO) // no padding in between squares
-                        .show(ui, |ui| {
-                            if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_ref() {
-                                let image_render_size = egui::Vec2::splat(100.0);
+        //             egui::Grid::new("bg_image_grid")
+        //                 .spacing(egui::Vec2::ZERO) // no padding in between squares
+        //                 .show(ui, |ui| {
+        //                     if let Some(bgst_file) = self.bgst_renderer.bgst_file.as_ref() {
+        //                         let image_render_size = egui::Vec2::splat(100.0);
 
-                                // we need to be able to draw empty squares should a coordinate not have
-                                // any associated cells
+        //                         // we need to be able to draw empty squares should a coordinate not have
+        //                         // any associated cells
 
-                                // make a map for lookup
+        //                         // make a map for lookup
 
-                                // (y, x), index
-                                let mut entry_map: HashMap<(u32, u32), usize> = HashMap::new();
+        //                         // (y, x), index
+        //                         let mut entry_map: HashMap<(u32, u32), usize> = HashMap::new();
 
-                                for (index, entry) in bgst_file.bgst_entries.iter().enumerate() {
-                                    if entry.layer == self.selected_layer && entry.is_valid() {
-                                        entry_map.insert(
-                                            (
-                                                entry.grid_y_position as u32,
-                                                entry.grid_x_position as u32,
-                                            ),
-                                            index,
-                                        );
-                                    }
-                                }
-                                // println!("{:#?}", bgst_file);
+        //                         for (index, entry) in bgst_file.bgst_entries.iter().enumerate() {
+        //                             if entry.layer == self.selected_layer && entry.is_valid() {
+        //                                 entry_map.insert(
+        //                                     (
+        //                                         entry.grid_y_position as u32,
+        //                                         entry.grid_x_position as u32,
+        //                                     ),
+        //                                     index,
+        //                                 );
+        //                             }
+        //                         }
+        //                         // println!("{:#?}", bgst_file);
 
-                                // render by y coordinate
+        //                         // render by y coordinate
 
-                                for y in 0..bgst_file.grid_height {
-                                    for x in 0..bgst_file.grid_width {
-                                        let coordinate = (y, x);
+        //                         for y in 0..bgst_file.grid_height {
+        //                             for x in 0..bgst_file.grid_width {
+        //                                 let coordinate = (y, x);
 
-                                        if let Some(index) = entry_map.get(&coordinate) {
-                                            // render filled square
-                                            if let Some(texture_handle) =
-                                                self.bgst_renderer.get_texture_handle(*index)
-                                            {
-                                                // resize image because it's much too big
+        //                                 if let Some(index) = entry_map.get(&coordinate) {
+        //                                     // render filled square
+        //                                     if let Some(texture_handle) =
+        //                                         self.bgst_renderer.get_texture_handle(*index)
+        //                                     {
+        //                                         // resize image because it's much too big
 
-                                                let image = egui::Image::new(texture_handle)
-                                                    .fit_to_exact_size(image_render_size);
+        //                                         let image = egui::Image::new(texture_handle)
+        //                                             .fit_to_exact_size(image_render_size);
 
-                                                let image_button =
-                                                    egui::ImageButton::new(image).frame(false); // disable frame, it's distracting
+        //                                         let image_button =
+        //                                             egui::ImageButton::new(image).frame(false); // disable frame, it's distracting
 
-                                                let resp = ui.add(image_button);
+        //                                         let resp = ui.add(image_button);
 
-                                                if resp.clicked() {
-                                                    self.selected_tile =
-                                                        Some(TileSelection::Entry(*index));
-                                                }
+        //                                         if resp.clicked() {
+        //                                             self.selected_tile =
+        //                                                 Some(TileSelection::Entry(*index));
+        //                                         }
 
-                                                if let Some(tile) = &self.selected_tile
-                                                    && *tile == TileSelection::Entry(*index)
-                                                {
-                                                    ui.painter_at(resp.rect).rect_filled(
-                                                        resp.rect,
-                                                        0.0,
-                                                        egui::Color32::from_rgba_unmultiplied(
-                                                            0xFF, 0xFF, 0xFF, 0x10,
-                                                        ),
-                                                    );
-                                                } else if resp.hovered() {
-                                                    ui.painter_at(resp.rect).rect_filled(
-                                                        resp.rect,
-                                                        0.0,
-                                                        egui::Color32::from_rgba_unmultiplied(
-                                                            0xFF, 0xFF, 0xFF, 0x5,
-                                                        ),
-                                                    );
-                                                }
-                                            }
-                                        } else {
-                                            // render empty square
+        //                                         if let Some(tile) = &self.selected_tile
+        //                                             && *tile == TileSelection::Entry(*index)
+        //                                         {
+        //                                             ui.painter_at(resp.rect).rect_filled(
+        //                                                 resp.rect,
+        //                                                 0.0,
+        //                                                 egui::Color32::from_rgba_unmultiplied(
+        //                                                     0xFF, 0xFF, 0xFF, 0x10,
+        //                                                 ),
+        //                                             );
+        //                                         } else if resp.hovered() {
+        //                                             ui.painter_at(resp.rect).rect_filled(
+        //                                                 resp.rect,
+        //                                                 0.0,
+        //                                                 egui::Color32::from_rgba_unmultiplied(
+        //                                                     0xFF, 0xFF, 0xFF, 0x5,
+        //                                                 ),
+        //                                             );
+        //                                         }
+        //                                     }
+        //                                 } else {
+        //                                     // render empty square
 
-                                            let (rect, resp) = ui.allocate_exact_size(
-                                                image_render_size,
-                                                egui::Sense::click(),
-                                            );
+        //                                     let (rect, resp) = ui.allocate_exact_size(
+        //                                         image_render_size,
+        //                                         egui::Sense::click(),
+        //                                     );
 
-                                            if resp.clicked() {
-                                                self.selected_tile =
-                                                    Some(TileSelection::Empty((y, x)));
-                                            }
+        //                                     if resp.clicked() {
+        //                                         self.selected_tile =
+        //                                             Some(TileSelection::Empty((y, x)));
+        //                                     }
 
-                                            if let Some(tile) = &self.selected_tile
-                                                && *tile == TileSelection::Empty((y, x))
-                                            {
-                                                ui.painter_at(rect).rect(
-                                                    rect,
-                                                    0.0,
-                                                    egui::Color32::from_rgba_unmultiplied(
-                                                        0xFF, 0xFF, 0xFF, 0x1,
-                                                    ),
-                                                    egui::Stroke::new(1.0, egui::Color32::WHITE),
-                                                );
-                                            } else if resp.hovered() {
-                                                ui.painter_at(rect).rect(
-                                                    rect,
-                                                    0.0,
-                                                    egui::Color32::from_rgba_unmultiplied(
-                                                        0xFF, 0xFF, 0xFF, 0x1,
-                                                    ),
-                                                    egui::Stroke::new(1.0, egui::Color32::WHITE),
-                                                );
-                                            }
-                                        }
-                                    }
+        //                                     if let Some(tile) = &self.selected_tile
+        //                                         && *tile == TileSelection::Empty((y, x))
+        //                                     {
+        //                                         ui.painter_at(rect).rect(
+        //                                             rect,
+        //                                             0.0,
+        //                                             egui::Color32::from_rgba_unmultiplied(
+        //                                                 0xFF, 0xFF, 0xFF, 0x1,
+        //                                             ),
+        //                                             egui::Stroke::new(1.0, egui::Color32::WHITE),
+        //                                         );
+        //                                     } else if resp.hovered() {
+        //                                         ui.painter_at(rect).rect(
+        //                                             rect,
+        //                                             0.0,
+        //                                             egui::Color32::from_rgba_unmultiplied(
+        //                                                 0xFF, 0xFF, 0xFF, 0x1,
+        //                                             ),
+        //                                             egui::Stroke::new(1.0, egui::Color32::WHITE),
+        //                                         );
+        //                                     }
+        //                                 }
+        //                             }
 
-                                    ui.end_row();
-                                }
-                            }
-                        });
+        //                             ui.end_row();
+        //                         }
+        //                     }
+        //                 });
 
-                    // image list
-                    egui::Area::new(egui::Id::from("be_image_list"))
-                        .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
-                        .show(ui.ctx(), |ui| {
-                            egui::Frame::popup(ui.style())
-                                .inner_margin(egui::Vec2::splat(8.0))
-                                .show(ui, |ui| {
-                                    ui.collapsing("Image list", |ui| {
-                                        self.display_image_list(ui);
-                                    });
-                                });
-                        });
-                }); // scroll area
-        });
+        //             // image list
+        //             egui::Area::new(egui::Id::from("be_image_list"))
+        //                 .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-10.0, 10.0))
+        //                 .show(ui.ctx(), |ui| {
+        //                     egui::Frame::popup(ui.style())
+        //                         .inner_margin(egui::Vec2::splat(8.0))
+        //                         .show(ui, |ui| {
+        //                             ui.collapsing("Image list", |ui| {
+        //                                 self.display_image_list(ui);
+        //                             });
+        //                         });
+        //                 });
+        //         }); // scroll area
+        // });
     }
 
     pub fn handle_selected_tile(&mut self, ui: &mut egui::Ui) {
@@ -386,29 +386,29 @@ impl BGSTEditor {
     }
 
     pub fn display_image_list(&mut self, ui: &mut egui::Ui) {
-        let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
-        ui.label(format!("Count: {}", bgst_file.compressed_images.len()));
+        // let bgst_file = self.bgst_renderer.bgst_file.as_ref().unwrap();
+        // ui.label(format!("Count: {}", bgst_file.compressed_images.len()));
 
-        let table = egui_extras::TableBuilder::new(ui)
-            .striped(true)
-            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(egui_extras::Column::auto()) // image column
-            .column(egui_extras::Column::auto()); // index column
+        // let table = egui_extras::TableBuilder::new(ui)
+        //     .striped(true)
+        //     .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        //     .column(egui_extras::Column::auto()) // image column
+        //     .column(egui_extras::Column::auto()); // index column
 
-        table.body(|mut body| {
-            for (index, image_handle) in self.bgst_renderer.decoded_image_handles.iter().enumerate()
-            {
-                body.row(32.0, |mut row| {
-                    // image column
-                    row.col(|ui| {
-                        ui.add(egui::Image::new(image_handle).max_size(egui::Vec2::splat(100.0)));
-                    });
-                    // index column
-                    row.col(|ui| {
-                        ui.label(format!("Index {index}"));
-                    });
-                });
-            }
-        });
+        // table.body(|mut body| {
+        //     for (index, image_handle) in self.bgst_renderer.decoded_image_handles.iter().enumerate()
+        //     {
+        //         body.row(32.0, |mut row| {
+        //             // image column
+        //             row.col(|ui| {
+        //                 ui.add(egui::Image::new(image_handle).max_size(egui::Vec2::splat(100.0)));
+        //             });
+        //             // index column
+        //             row.col(|ui| {
+        //                 ui.label(format!("Index {index}"));
+        //             });
+        //         });
+        //     }
+        // });
     }
 }

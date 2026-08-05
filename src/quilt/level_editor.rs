@@ -125,142 +125,141 @@ impl LevelEditor {
     }
 
     pub fn show_ui(&mut self, ui: &mut egui::Ui, settings: &LevelEditorSettings) {
-        // update camera settings
-        if self.camera.zoom_type != settings.zoom_type {
-            self.camera.zoom_type = settings.zoom_type.clone();
-        }
+        // // update camera settings
+        // if self.camera.zoom_type != settings.zoom_type {
+        //     self.camera.zoom_type = settings.zoom_type.clone();
+        // }
 
-        egui::TopBottomPanel::top("le_top_panel")
-        .show(ui.ctx(), |ui|{
-            egui::menu::bar(ui, |ui|{
-                // file submenu
-                ui.menu_button("File", |ui|{
-                    if ui.button("New").clicked() {
-                        self.make_new();
-                        ui.close_menu();
-                    }
+        // egui::TopBottomPanel::top("le_top_panel")
+        // .show(ui.ctx(), |ui|{
+        //     egui::menu::bar(ui, |ui|{
+        //         // file submenu
+        //         ui.menu_button("File", |ui|{
+        //             if ui.button("New").clicked() {
+        //                 self.make_new();
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.button("Open Archive").clicked() {
-                        let _ = self.open_file(ui.ctx());
+        //             if ui.button("Open Archive").clicked() {
+        //                 let _ = self.open_file(ui.ctx());
 
-                        if settings.snap_to_start {
-                            self.snap_to_start();
-                        }
+        //                 if settings.snap_to_start {
+        //                     self.snap_to_start();
+        //                 }
 
-                        ui.close_menu();
-                    }
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.button("Open Folder").clicked() {
-                        let _ = self.open_folder(ui.ctx());
+        //             if ui.button("Open Folder").clicked() {
+        //                 let _ = self.open_folder(ui.ctx());
 
-                        if settings.snap_to_start {
-                            self.snap_to_start();
-                        }
+        //                 if settings.snap_to_start {
+        //                     self.snap_to_start();
+        //                 }
 
-                        ui.close_menu();
-                    }
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Archive"))
-                    .clicked() {
-                        let _ = self.save_file(false);
-                        ui.close_menu();
-                    }
+        //             if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Archive"))
+        //             .clicked() {
+        //                 let _ = self.save_file(false);
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.add_enabled(self.file_open, Button::new("Save Archive as"))
-                    .clicked() {
-                        let _ = self.save_file(true);
-                        ui.close_menu();
-                    }
+        //             if ui.add_enabled(self.file_open, Button::new("Save Archive as"))
+        //             .clicked() {
+        //                 let _ = self.save_file(true);
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Folder"))
-                    .clicked() {
-                        let _ = self.save_folder(false);
-                        ui.close_menu();
-                    }
+        //             if ui.add_enabled(self.file_open && self.file_path.is_some(), Button::new("Save Folder"))
+        //             .clicked() {
+        //                 let _ = self.save_folder(false);
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.add_enabled(self.file_open, Button::new("Save Folder as"))
-                    .clicked() {
-                        let _ = self.save_folder(true);
-                        ui.close_menu();
-                    }
+        //             if ui.add_enabled(self.file_open, Button::new("Save Folder as"))
+        //             .clicked() {
+        //                 let _ = self.save_folder(true);
+        //                 ui.close_menu();
+        //             }
 
-                    if ui.add_enabled(self.file_open, Button::new("Open BGST"))
-                    .clicked() {
-                        let _ = self.bgst_renderer.open_file(ui);
-                        ui.close_menu();
-                    }
-                });
+        //             if ui.add_enabled(self.file_open, Button::new("Open BGST"))
+        //             .clicked() {
+        //                 let _ = self.bgst_renderer.open_file(ui);
+        //                 ui.close_menu();
+        //             }
+        //         });
 
-                ui.menu_button("Object Data", |ui|{
-                    if ui.button("Update")
-                    .on_hover_text("Updates 'objectdata.json' from the internet.")
-                    .clicked()
-                        && let Err(e) = self.update_object_data() {
-                            eprintln!("Failed to update object data. Reason: {:?}", e);
-                        }
+        //         ui.menu_button("Object Data", |ui|{
+        //             if ui.button("Update")
+        //             .on_hover_text("Updates 'objectdata.json' from the internet.")
+        //             .clicked()
+        //                 && let Err(e) = self.update_object_data() {
+        //                     eprintln!("Failed to update object data. Reason: {:?}", e);
+        //                 }
 
-                    if ui.button("Refresh")
-                    .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
-                    .clicked() {
-                        let _ = self.refresh_object_data();
-                    }
-                });
+        //             if ui.button("Refresh")
+        //             .on_hover_text("Refreshes data from the local copy of 'objectdata.json'.")
+        //             .clicked() {
+        //                 let _ = self.refresh_object_data();
+        //             }
+        //         });
 
-                let bg_base_found =
-                if self.file_open {
-                    // check mapdata
-                    self.current_mapdata.gimmicks.iter().any(|g| &g.name == "BG_BASE")
-                } else {
-                    self.render_bgst = false;
+        //         let bg_base_found =
+        //         if self.file_open {
+        //             // check mapdata
+        //             self.current_mapdata.gimmicks.iter().any(|g| &g.name == "BG_BASE")
+        //         } else {
+        //             self.render_bgst = false;
 
-                    false
-                };
+        //             false
+        //         };
 
+        //         let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
 
-                let bgst_valid = self.bgst_renderer.bgst_file.is_some() && bg_base_found;
+        //         if bgst_valid {
+        //             ui.checkbox(&mut self.render_bgst, "Display background?")
+        //             .on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
 
-                if bgst_valid {
-                    ui.checkbox(&mut self.render_bgst, "Display background?")
-                    .on_hover_text("This rendering is by no means perfect; it is a best estimate. Use the values on the right to change render settings.");
+        //             ui.label("Tile size");
+        //             ui.add(
+        //                 DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
+        //             );
 
-                    ui.label("Tile size");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_size).speed(0.1)
-                    );
+        //             ui.label("Tile X offset");
+        //             ui.add(
+        //                 DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
+        //             );
 
-                    ui.label("Tile X offset");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_offset.x).speed(0.1)
-                    );
+        //             ui.label("Tile Y offset");
+        //             ui.add(
+        //                 DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
+        //             );
 
-                    ui.label("Tile Y offset");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_offset.y).speed(0.1)
-                    );
+        //             ui.label("Tile X scale");
+        //             ui.add(
+        //                 DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
+        //             );
 
-                    ui.label("Tile X scale");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_scale.x).speed(0.1)
-                    );
+        //             ui.label("Tile Y scale");
+        //             ui.add(
+        //                 DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
+        //             );
 
-                    ui.label("Tile Y scale");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.tile_scale.y).speed(0.1)
-                    );
+        //             ui.label("Tile opacity");
+        //             ui.add(
+        //                 DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
+        //             );
+        //         }
+        //     });
+        // });
 
-                    ui.label("Tile opacity");
-                    ui.add(
-                        DragValue::new(&mut self.bgst_renderer.opacity).speed(1).range(u8::MIN..=u8::MAX)
-                    );
-                }
-            });
-        });
-
-        egui::CentralPanel::default().show(ui.ctx(), |ui| {
-            if self.file_open {
-                self.show_editor_ui(ui);
-            }
-        });
+        // egui::CentralPanel::default().show(ui.ctx(), |ui| {
+        //     if self.file_open {
+        //         self.show_editor_ui(ui);
+        //     }
+        // });
     }
 
     fn add_object_context_menu(&mut self, ui: &mut egui::Ui) {
