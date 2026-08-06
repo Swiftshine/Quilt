@@ -306,7 +306,7 @@ pub const ENEMY_LIST: [(&str, &str); 103] = [
     ("ENEMY38", "Shotso"),
     ("ENEMY39", "Parasol Waddle Dee"),
     ("ENEMY40", "Chilly"),
-    ("ENEMY41", "Waddle Dee (Duplicate)"),
+    ("ENEMY41", "Balloon Waddle Dee"),
     ("ENEMY42", "UFO"),
     ("ENEMY43", "Bow Waddle Dee"),
     ("ENEMY45", "Cyclod"),
