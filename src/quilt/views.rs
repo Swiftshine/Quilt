@@ -2,7 +2,7 @@ mod home_view;
 
 use egui::Ui;
 
-use crate::quilt::{bgst_editor::BGSTEditor, docking::QuiltViewerTab, level_editor::LevelEditor};
+use crate::quilt::{archive_viewer::ArchiveViewer, bgst_editor::BGSTEditor, docking::QuiltViewerTab, level_editor::LevelEditor};
 
 #[derive(PartialEq)]
 pub enum QuiltView {
@@ -13,8 +13,9 @@ pub enum QuiltView {
 }
 
 pub struct QuiltViewer {
+    // viewers
+    pub archive_viewer: ArchiveViewer,
     // editors
-    pub level_editor: LevelEditor,
     pub bgst_editor: BGSTEditor,
 
     // dock state
@@ -31,7 +32,7 @@ impl QuiltViewer {
         let dock_state = Some(Self::default_dock());
 
         let mut viewer = Self {
-            level_editor: LevelEditor::new(),
+            archive_viewer: ArchiveViewer::new(),
             bgst_editor: BGSTEditor::new(),
             dock_state,
             tab_to_open: None,

@@ -3,8 +3,8 @@ use crate::quilt::views::QuiltViewer;
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub enum QuiltViewerTab {
     Home,
-    LevelEditor,
-    // BGSTEditor,
+    ArchiveViewer,
+    BGSTEditor,
 }
 
 impl QuiltViewerTab {
@@ -12,8 +12,8 @@ impl QuiltViewerTab {
         // todo: emojis eventually
         match self {
             Self::Home => "Home",
-            Self::LevelEditor => "Level Editor",
-            // Self::BGSTEditor => "BGST Editor",
+            Self::ArchiveViewer => "Archive Viewer",
+            Self::BGSTEditor => "BGST Editor",
         }
         .to_string()
     }
@@ -50,8 +50,12 @@ impl<'a> egui_dock::TabViewer for QuiltViewerTabViewer<'a> {
                 self.quilt_viewer.show_home_ui(ui);
             }
 
-            Self::Tab::LevelEditor => {
-                self.quilt_viewer.level_editor.show_ui(ui);
+            Self::Tab::ArchiveViewer => {
+                self.quilt_viewer.archive_viewer.show_ui(ui);
+            }
+
+            Self::Tab::BGSTEditor => {
+                // ui.label("BGST Editor would go here");
             }
         }
     }

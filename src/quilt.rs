@@ -8,6 +8,7 @@ mod level_editor;
 mod settings;
 mod util;
 mod views;
+mod archive_viewer;
 
 use std::sync::Arc;
 
@@ -101,7 +102,7 @@ impl eframe::App for QuiltApp {
         });
     }
 
-    fn on_exit(&mut self) {
+    fn on_exit(&mut self, _gl: std::option::Option<&eframe::glow::Context>) {
         self.viewer.on_exit();
     }
     // /// Called when the UI needs to be updated.

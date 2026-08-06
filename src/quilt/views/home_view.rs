@@ -7,8 +7,12 @@ impl QuiltViewer {
             .show(ui, |ui| {
                 egui::MenuBar::new().ui(ui, |ui| {
                     ui.menu_button("Editors", |ui| {
-                        if ui.button("Level Editor").clicked() {
-                            self.schedule_open_tab(QuiltViewerTab::LevelEditor);
+                        if ui.button("Archive Viewer").clicked() {
+                            self.schedule_open_tab(QuiltViewerTab::ArchiveViewer);
+                        }
+
+                        if ui.button("BGST Editor").clicked() {
+                            self.schedule_open_tab(QuiltViewerTab::BGSTEditor);
                         }
                     });
                 });
