@@ -1,3 +1,4 @@
+mod archive_viewer;
 mod bgst_editor;
 mod bgst_renderer;
 mod common;
@@ -8,12 +9,11 @@ mod level_editor;
 mod settings;
 mod util;
 mod views;
-mod archive_viewer;
 
 use std::sync::Arc;
 
 use bgst_editor::BGSTEditor;
-use eframe::{NativeOptions, egui};
+use eframe::{egui, NativeOptions};
 use egui::IconData;
 use gfarch_utility::GfArchUtility;
 use level_editor::LevelEditor;
@@ -102,7 +102,7 @@ impl eframe::App for QuiltApp {
         });
     }
 
-    fn on_exit(&mut self, _gl: std::option::Option<&eframe::glow::Context>) {
+    fn on_exit(&mut self) {
         self.viewer.on_exit();
     }
     // /// Called when the UI needs to be updated.
