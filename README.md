@@ -1,6 +1,8 @@
 # Quilt
 A <em>Kirby's Epic Yarn</em> modding tool.
 
+If you have any questions or need help using this tool, feel free to ask in the [Good-Feel Modding Discord](https://discord.gg/fk8X8EgRkx).
+
 ## Features
 - [X] Level editor
 - [X] Level graphics editor
