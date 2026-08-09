@@ -114,10 +114,6 @@ impl LevelEditor {
             if clicked {
                 self.selected_object_indices.push(ObjectIndex::Wall(index));
             }
-
-            if dragged {
-                wall.set_normalized_vector();
-            }
         }
     }
 
@@ -192,10 +188,6 @@ impl LevelEditor {
             if clicked {
                 self.selected_object_indices
                     .push(ObjectIndex::LabeledWall(index));
-            }
-
-            if dragged {
-                wall.set_normalized_vector();
             }
         }
     }

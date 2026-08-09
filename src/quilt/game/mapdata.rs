@@ -16,7 +16,7 @@ const BASE_PATH_SIZE: usize = 0x11C;
 pub struct Wall {
     pub start: Point2D,
     pub end: Point2D,
-    pub normalized_vector: Point2D, // this field is a bit odd in that x and y are swapped
+    pub _normalized_vector: Point2D, // this field is a bit odd in that x and y are swapped
     pub collision_type: String,
 
     pub is_selected: bool,
@@ -26,7 +26,7 @@ pub struct Wall {
 pub struct LabeledWall {
     pub start: Point2D,
     pub end: Point2D,
-    pub normalized_vector: Point2D, // this is an angle of some sort
+    pub _normalized_vector: Point2D,
     pub collision_type: String,
     pub label: String,
 
@@ -420,14 +420,14 @@ impl Wall {
     fn decode(input: &[u8], name_map: &NameMap) -> Self {
         let start = Point2D::from_be_bytes(&input[..8]);
         let end = Point2D::from_be_bytes(&input[8..0x10]);
-        let normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
+        let _normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
         let type_index = BigEndian::read_u32(&input[0x1C..0x20]) as usize;
         let collision_type = name_map.names[type_index].clone();
 
         Wall {
             start,
             end,
-            normalized_vector,
+            _normalized_vector,
             collision_type,
             ..Default::default()
         }
@@ -438,7 +438,7 @@ impl Wall {
 
         out.extend(self.start.get_be_bytes());
         out.extend(self.end.get_be_bytes());
-        out.extend(self.normalized_vector.get_be_bytes());
+        out.extend(self.get_normalized_vector().get_be_bytes());
 
         out.extend((wall_index as u32).to_be_bytes());
 
@@ -453,15 +453,15 @@ impl Wall {
         out
     }
 
-    pub fn set_normalized_vector(&mut self) {
+    pub fn get_normalized_vector(&self) -> Point2D {
         let direction = (self.end.x - self.start.x, self.end.y - self.start.y);
         let magnitude = f32::sqrt(direction.0.powf(2.0) + direction.1.powf(2.0));
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
 
-        self.normalized_vector = Point2D {
+        Point2D {
             x: normalized.1,
             y: normalized.0,
-        };
+        }
     }
 }
 
@@ -469,7 +469,7 @@ impl LabeledWall {
     fn decode(input: &[u8], collision_type_map: &NameMap, label_map: &NameMap) -> Self {
         let start = Point2D::from_be_bytes(&input[..8]);
         let end = Point2D::from_be_bytes(&input[8..0x10]);
-        let normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
+        let _normalized_vector = Point2D::from_be_bytes(&input[0x10..0x18]);
         let type_index = BigEndian::read_u32(&input[0x1C..0x20]) as usize;
         let collision_type = collision_type_map.names[type_index].clone();
         let label_index = BigEndian::read_u32(&input[0x20..0x24]) as usize;
@@ -478,7 +478,7 @@ impl LabeledWall {
         LabeledWall {
             start,
             end,
-            normalized_vector,
+            _normalized_vector,
             collision_type,
             label,
             ..Default::default()
@@ -497,7 +497,7 @@ impl LabeledWall {
 
         out.extend(self.end.get_be_bytes());
 
-        out.extend(self.normalized_vector.get_be_bytes());
+        out.extend(self.get_normalized_vector().get_be_bytes());
 
         out.extend((index as u32).to_be_bytes());
 
@@ -518,15 +518,15 @@ impl LabeledWall {
         out
     }
 
-    pub fn set_normalized_vector(&mut self) {
+    pub fn get_normalized_vector(&self) -> Point2D {
         let direction = (self.end.x - self.start.x, self.end.y - self.start.y);
         let magnitude = f32::sqrt(direction.0.powf(2.0) + direction.1.powf(2.0));
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
 
-        self.normalized_vector = Point2D {
+        Point2D {
             x: normalized.1,
             y: normalized.0,
-        };
+        }
     }
 }
 
