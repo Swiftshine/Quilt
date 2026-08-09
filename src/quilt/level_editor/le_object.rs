@@ -80,7 +80,7 @@ impl LevelEditor {
                 egui::Color32::WHITE
             };
 
-            painter.line_segment([start, end], egui::Stroke::new(1.0, egui::Color32::WHITE));
+            painter.line_segment([start, end], egui::Stroke::new(1.0_f32, egui::Color32::WHITE));
 
             if !matches!(self.wall_edit_mode, EditMode::Edit) {
                 continue;
@@ -153,7 +153,7 @@ impl LevelEditor {
 
             painter.line_segment(
                 [start, end],
-                egui::Stroke::new(1.0, egui::Color32::LIGHT_RED),
+                egui::Stroke::new(1.0_f32, egui::Color32::LIGHT_RED),
             );
 
             if !matches!(self.labeled_wall_edit_mode, EditMode::Edit) {
@@ -220,7 +220,7 @@ impl LevelEditor {
 
             if let Some(texture) = self
                 .object_textures
-                .get(&format!("common_gimmick-{}", &gmk.hex))
+                .get(&format!("common_gimmick-{}", gmk.hex))
             {
                 if gmk.is_selected && matches!(self.common_gimmick_edit_mode, EditMode::Edit) {
                     painter.rect_filled(
@@ -243,7 +243,7 @@ impl LevelEditor {
                     egui::Color32::LIGHT_GRAY
                 };
 
-                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0_f32, color));
             }
 
             if !matches!(self.common_gimmick_edit_mode, EditMode::Edit) {
@@ -295,7 +295,7 @@ impl LevelEditor {
             }
 
             // add texture if not in current level's texture cache
-            let key = format!("gimmick-{}", &gmk.name);
+            let key = format!("gimmick-{}", gmk.name);
             if let std::collections::hash_map::Entry::Vacant(e) =
                 self.object_textures.entry(key.clone())
                 && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name)
@@ -325,7 +325,7 @@ impl LevelEditor {
                 egui::Sense::click_and_drag(),
             );
 
-            if let Some(texture) = self.object_textures.get(&format!("gimmick-{}", &gmk.name)) {
+            if let Some(texture) = self.object_textures.get(&format!("gimmick-{}", gmk.name)) {
                 if gmk.is_selected && matches!(self.gimmick_edit_mode, EditMode::Edit) {
                     painter.rect_filled(
                         square,
@@ -347,7 +347,7 @@ impl LevelEditor {
                     egui::Color32::LIGHT_GRAY
                 };
 
-                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+                painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0_f32, color));
             }
 
             if !matches!(self.gimmick_edit_mode, EditMode::Edit) {
@@ -390,7 +390,7 @@ impl LevelEditor {
                 let end_pos =
                     canvas_rect.min + self.camera.convert_to_camera(path.points[i + 1].get_vec2());
 
-                painter.line_segment([start_pos, end_pos], egui::Stroke::new(1.0, PATH_COLOR));
+                painter.line_segment([start_pos, end_pos], egui::Stroke::new(1.0_f32, PATH_COLOR));
 
                 if !matches!(self.path_edit_mode, EditMode::Edit) {
                     continue;
@@ -485,7 +485,7 @@ impl LevelEditor {
             painter.rect_stroke(
                 Rect::from_points(&[start, end]),
                 0.0,
-                egui::Stroke::new(1.0, ZONE_COLOR),
+                egui::Stroke::new(1.0_f32, ZONE_COLOR),
             );
 
             if !matches!(self.zone_edit_mode, EditMode::Edit) {
@@ -576,7 +576,7 @@ impl LevelEditor {
                 egui::Color32::WHITE
             };
 
-            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0_f32, color));
 
             if !matches!(self.course_info_edit_mode, EditMode::Edit) {
                 continue;
@@ -634,7 +634,7 @@ impl LevelEditor {
 
             let color = egui::Color32::from_rgb(0xE3, 0x96, 0xDF);
 
-            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0, color));
+            painter.rect_stroke(square, 0.0, egui::Stroke::new(1.0_f32, color));
 
             if resp.hovered() {
                 painter.text(
@@ -693,7 +693,7 @@ impl LevelEditor {
             painter.circle_stroke(
                 pos,
                 BIG_CIRCLE_RADIUS * self.camera.zoom,
-                egui::Stroke::new(1.0, color),
+                egui::Stroke::new(1.0_f32, color),
             );
 
             if !matches!(self.comment_edit_mode, EditMode::Edit) {

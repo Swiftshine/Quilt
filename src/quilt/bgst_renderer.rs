@@ -264,8 +264,8 @@ impl BGSTRenderer {
             .partition(|entry| entry.is_masked());
 
         // sort both vectors by entry layer
-        masked.sort_by(|a, b| a.layer.cmp(&b.layer));
-        unmasked.sort_by(|a, b| a.layer.cmp(&b.layer));
+        masked.sort_by_key(|a| a.layer);
+        unmasked.sort_by_key(|a| a.layer);
 
         let grid_origin = egui::Vec2::new(
             position.x - self.tile_offset.x,

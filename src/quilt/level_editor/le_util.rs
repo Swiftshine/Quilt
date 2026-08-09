@@ -73,7 +73,7 @@ impl LevelEditor {
         // gimmicks
 
         for gmk in self.current_mapdata.gimmicks.iter() {
-            let key = format!("gimmick-{}", &gmk.name);
+            let key = format!("gimmick-{}", gmk.name);
             if let std::collections::hash_map::Entry::Vacant(e) =
                 self.object_textures.entry(key.clone())
                 && let Ok(image_data) = Self::load_image_from_tex_folder("gimmick", &gmk.name)
@@ -85,7 +85,7 @@ impl LevelEditor {
         }
 
         for gmk in self.current_mapdata.common_gimmicks.iter() {
-            let key = format!("common_gimmick-{}", &gmk.hex);
+            let key = format!("common_gimmick-{}", gmk.hex);
             if let std::collections::hash_map::Entry::Vacant(e) =
                 self.object_textures.entry(key.clone())
                 && let Ok(image_data) = Self::load_image_from_tex_folder("common_gimmick", &gmk.hex)

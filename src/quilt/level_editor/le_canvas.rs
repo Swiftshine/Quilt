@@ -243,7 +243,7 @@ impl LevelEditor {
                         pointer_pos - egui::vec2(crosshair_size, 0.0),
                         pointer_pos + egui::vec2(crosshair_size, 0.0),
                     ],
-                    egui::Stroke::new(1.0, egui::Color32::WHITE),
+                    egui::Stroke::new(1.0_f32, egui::Color32::WHITE),
                 );
 
                 // draw vertical line
@@ -252,7 +252,7 @@ impl LevelEditor {
                         pointer_pos - egui::vec2(0.0, crosshair_size),
                         pointer_pos + egui::vec2(0.0, crosshair_size),
                     ],
-                    egui::Stroke::new(1.0, egui::Color32::WHITE),
+                    egui::Stroke::new(1.0_f32, egui::Color32::WHITE),
                 );
             }
 

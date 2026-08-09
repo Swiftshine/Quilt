@@ -107,7 +107,7 @@ impl BGSTEditor {
                                                     egui::Color32::from_rgba_unmultiplied(
                                                         0xFF, 0xFF, 0xFF, 0x1,
                                                     ),
-                                                    egui::Stroke::new(1.0, egui::Color32::WHITE),
+                                                    egui::Stroke::new(1.0_f32, egui::Color32::WHITE),
                                                 );
                                             } else if resp.hovered() {
                                                 ui.painter_at(rect).rect(
@@ -116,7 +116,7 @@ impl BGSTEditor {
                                                     egui::Color32::from_rgba_unmultiplied(
                                                         0xFF, 0xFF, 0xFF, 0x1,
                                                     ),
-                                                    egui::Stroke::new(1.0, egui::Color32::WHITE),
+                                                    egui::Stroke::new(1.0_f32, egui::Color32::WHITE),
                                                 );
                                             }
                                         }
