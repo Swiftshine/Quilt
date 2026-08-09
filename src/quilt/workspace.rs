@@ -17,7 +17,7 @@ pub struct Workspace {
 impl Workspace {
     pub fn new() -> Self {
         Self {
-            name: "Untitled".to_string(),
+            name: "New Workspace".to_string(),
             archive_viewer: ArchiveViewer::new(),
             bgst_editor: BGSTEditor::new(),
         }
@@ -35,6 +35,8 @@ impl Workspace {
 pub struct WorkspaceManager {
     pub workspaces: SlotMap<WorkspaceID, Workspace>,
     pub dock_state: Option<egui_dock::DockState<WorkspaceManagerTab>>,
+
+    // things we're waiting to do
     pub pending_workspace_addition: bool,
     pub pending_workspace_deletion: Option<WorkspaceID>,
     pub pending_workspace_focus: Option<WorkspaceID>,
@@ -95,6 +97,7 @@ impl WorkspaceManager {
                 |tab| matches!(tab, WorkspaceManagerTab::Workspace(tab_id) if *tab_id == id),
             ) {
                 dock_state.set_focused_node_and_surface(path.node_path());
+                let _ = dock_state.set_active_tab(path);
                 return;
             }
         }
@@ -107,6 +110,7 @@ impl WorkspaceManager {
                 |tab| matches!(tab, WorkspaceManagerTab::Workspace(tab_id) if *tab_id == id),
             ) {
                 dock_state.set_focused_node_and_surface(path.node_path());
+                let _ = dock_state.set_active_tab(path);
             }
         }
     }
@@ -133,23 +137,36 @@ impl WorkspaceManager {
 
     fn show_workspace_list(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            if ui.button("New Workspace").clicked() {
+            ui.heading("Workspaces");
+
+            if ui.small_button("+").clicked() {
                 self.pending_workspace_addition = true;
             }
-
-            ui.separator();
-
-            for (id, workspace) in self.workspaces.iter() {
-                ui.horizontal(|ui| {
-                    if ui.button(&workspace.name).clicked() {
-                        self.pending_workspace_focus = Some(id);
-                    }
-
-                    if ui.button("Close").clicked() {
-                        self.pending_workspace_deletion = Some(id);
-                    }
-                });
-            }
         });
+
+        ui.add_space(6.0);
+
+        for (id, workspace) in self.workspaces.iter_mut() {
+            egui::Frame::new()
+                .fill(ui.visuals().faint_bg_color)
+                .corner_radius(6.0)
+                .inner_margin(egui::Margin::symmetric(8, 6))
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        if ui.small_button("×").clicked() {
+                            self.pending_workspace_deletion = Some(id);
+                        }
+
+                        if ui.small_button(">").clicked() {
+                            self.pending_workspace_focus = Some(id);
+                        }
+
+                        egui::TextEdit::singleline(&mut workspace.name)
+                            .hint_text("Enter a name for your workspace")
+                            .desired_width(ui.available_width() - 20.0)
+                            .show(ui);
+                    });
+                });
+        }
     }
 }
