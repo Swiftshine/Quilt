@@ -8,35 +8,36 @@ mod gfarch_utility;
 mod level_editor;
 mod settings;
 mod util;
-mod views;
+mod workspace;
 
 use std::sync::Arc;
 
 use bgst_editor::BGSTEditor;
-use eframe::{egui, NativeOptions};
+use eframe::{NativeOptions, egui};
 use egui::IconData;
 use gfarch_utility::GfArchUtility;
 use level_editor::LevelEditor;
-use views::QuiltView;
 
-use crate::quilt::{settings::QuiltSettings, views::QuiltViewer};
+use crate::quilt::{settings::QuiltSettings, workspace::WorkspaceManager};
 
 pub struct QuiltApp {
-    viewer: QuiltViewer, // current_view: QuiltView,
+    workspace_manager: WorkspaceManager,
+    // viewer: QuiltViewer, // current_view: QuiltView,
 
-                         // settings: QuiltSettings,
-                         // show_settings: bool,
+    //                      // settings: QuiltSettings,
+    //                      // show_settings: bool,
 
-                         // level_editor: LevelEditor,
-                         // gfarch_utility: GfArchUtility,
-                         // bgst_editor: BGSTEditor,
+    //                      // level_editor: LevelEditor,
+    //                      // gfarch_utility: GfArchUtility,
+    //                      // bgst_editor: BGSTEditor,
 }
 
 impl QuiltApp {
     /// Constructs a new application.
     fn new() -> Self {
         Self {
-            viewer: QuiltViewer::new(),
+            workspace_manager: WorkspaceManager::new(),
+            // viewer: QuiltViewer::new(),
             // current_view: QuiltView::Home,
 
             // settings: QuiltSettings::load_settings().unwrap_or_else(|_| QuiltSettings::default()),
@@ -98,12 +99,12 @@ impl QuiltApp {
 impl eframe::App for QuiltApp {
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ui, |ui| {
-            self.viewer.show_ui(ui);
+            self.workspace_manager.show_ui(ui);
         });
     }
 
-    fn on_exit(&mut self) {
-        self.viewer.on_exit();
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.workspace_manager.on_exit();
     }
     // /// Called when the UI needs to be updated.
     // fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {

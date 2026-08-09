@@ -13,7 +13,7 @@ strip = "debuginfo"
 [dependencies]
 anyhow = "1.0.93"
 byteorder = "1.5.0"
-eframe = { version = "0.36.0" }
+eframe = { version = "0.36.0", features = ["glow"] }
 egui = "0.36.0"
 egui_dock = "0.21.0"
 egui_extras = "0.29.0"
@@ -26,6 +26,7 @@ reqwest = { version = "0.12.9", features = ["blocking"] }
 rfd = "0.15.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = { version = "1.0.133", features = ["preserve_order"] }
+slotmap = "1.1.1"
 strum = { version = "0.28.0", features = ["derive"] }
 strum_macros = "0.28.0"
 
