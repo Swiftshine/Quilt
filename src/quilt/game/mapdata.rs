@@ -459,7 +459,7 @@ impl Wall {
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
 
         Point2D {
-            x: normalized.1,
+            x: -normalized.1,
             y: normalized.0,
         }
     }
@@ -524,7 +524,7 @@ impl LabeledWall {
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
 
         Point2D {
-            x: normalized.1,
+            x: -normalized.1,
             y: normalized.0,
         }
     }
