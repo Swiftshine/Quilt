@@ -459,9 +459,7 @@ impl Wall {
         let normalized = (direction.0 / magnitude, direction.1 / magnitude);
 
         self.normalized_vector = Point2D {
-            x: -normalized.1, // this has to be inverted,
-            // because otherwise, the player's NURBS animation
-            // (namely, the player's feet) would face the opposite direction
+            x: normalized.1,
             y: normalized.0,
         };
     }
