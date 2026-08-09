@@ -1679,25 +1679,20 @@ impl LevelEditor {
                         ui.label("Name");
                         ui.add(egui::TextEdit::singleline(&mut path.name).char_limit(0x20));
 
-                        let data = self
-                            .object_data_json
-                            .as_ref()
-                            .context("object_data_json is None")?
-                            .get("paths")
-                            .expect("couldn't find 'paths' in objectdata.json");
+                        if let Some(data) = self.object_data_json.as_ref() {
+                            if let Some(path_data) = data.get(&path.name) {
+                                if let Some(desc) =
+                                    path_data.get("description").and_then(|d| d.as_str())
+                                    && !desc.is_empty()
+                                {
+                                    ui.label(desc);
+                                }
 
-                        if let Some(path_data) = data.get(&path.name) {
-                            if let Some(desc) =
-                                path_data.get("description").and_then(|d| d.as_str())
-                                && !desc.is_empty()
-                            {
-                                ui.label(desc);
-                            }
-
-                            if let Some(note) = path_data.get("note").and_then(|n| n.as_str())
-                                && !note.is_empty()
-                            {
-                                ui.label(format!("Note: {note}"));
+                                if let Some(note) = path_data.get("note").and_then(|n| n.as_str())
+                                    && !note.is_empty()
+                                {
+                                    ui.label(format!("Note: {note}"));
+                                }
                             }
                         }
 
