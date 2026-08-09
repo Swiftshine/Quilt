@@ -80,7 +80,10 @@ impl LevelEditor {
                 egui::Color32::WHITE
             };
 
-            painter.line_segment([start, end], egui::Stroke::new(1.0_f32, egui::Color32::WHITE));
+            painter.line_segment(
+                [start, end],
+                egui::Stroke::new(1.0_f32, egui::Color32::WHITE),
+            );
 
             if !matches!(self.wall_edit_mode, EditMode::Edit) {
                 continue;
@@ -90,15 +93,12 @@ impl LevelEditor {
             painter.circle_filled(end, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
 
             let mut clicked = false;
-            let mut dragged = false;
             if start_resp.clicked() {
                 clicked = true;
             } else if start_resp.dragged() {
                 let world_delta = start_resp.drag_delta() / self.camera.zoom;
                 wall.start.x += world_delta.x;
                 wall.start.y -= world_delta.y;
-
-                dragged = true;
             }
 
             if end_resp.clicked() {
@@ -107,8 +107,6 @@ impl LevelEditor {
                 let world_delta = end_resp.drag_delta() / self.camera.zoom;
                 wall.end.x += world_delta.x;
                 wall.end.y -= world_delta.y;
-
-                dragged = true;
             }
 
             if clicked {
@@ -164,15 +162,12 @@ impl LevelEditor {
             painter.circle_filled(end, SMALL_CIRCLE_RADIUS * self.camera.zoom, color);
 
             let mut clicked = false;
-            let mut dragged = false;
             if start_resp.clicked() {
                 clicked = true;
             } else if start_resp.dragged() {
                 let world_delta = start_resp.drag_delta() / self.camera.zoom;
                 wall.start.x += world_delta.x;
                 wall.start.y -= world_delta.y;
-
-                dragged = true;
             }
 
             if end_resp.clicked() {
@@ -181,8 +176,6 @@ impl LevelEditor {
                 let world_delta = end_resp.drag_delta() / self.camera.zoom;
                 wall.end.x += world_delta.x;
                 wall.end.y -= world_delta.y;
-
-                dragged = true;
             }
 
             if clicked {
